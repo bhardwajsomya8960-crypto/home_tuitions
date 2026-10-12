@@ -1,0 +1,69 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: home-tution-backend
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: development
+      PORT: 5000
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-key-change-in-production}
+      CATALYST_PROJECT_ID: ${CATALYST_PROJECT_ID:-}
+      CATALYST_API_KEY: ${CATALYST_API_KEY:-}
+      ZOHO_MAIL_HOST: ${ZOHO_MAIL_HOST:-smtp.zoho.in}
+      ZOHO_MAIL_PORT: ${ZOHO_MAIL_PORT:-465}
+      ZOHO_MAIL_USER: ${ZOHO_MAIL_USER:-}
+      ZOHO_MAIL_PASSWORD: ${ZOHO_MAIL_PASSWORD:-}
+      ZOHO_MAIL_FROM: ${ZOHO_MAIL_FROM:-noreply@hometution.com}
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+      GOOGLE_CALENDAR_CLIENT_ID: ${GOOGLE_CALENDAR_CLIENT_ID:-}
+      GOOGLE_CALENDAR_CLIENT_SECRET: ${GOOGLE_CALENDAR_CLIENT_SECRET:-}
+      GOOGLE_CALENDAR_REDIRECT_URI: ${GOOGLE_CALENDAR_REDIRECT_URI:-http://localhost:5000/api/calendar/callback}
+    volumes:
+      - ./backend/src:/app/src
+    networks:
+      - home-tution-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: home-tution-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://backend:5000}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      NODE_ENV: development
+    volumes:
+      - ./frontend/app:/app/app
+      - ./frontend/components:/app/components
+      - ./frontend/styles:/app/styles
+      - ./frontend/lib:/app/lib
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - home-tution-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  home-tution-network:
+    driver: bridge
+
+volumes:
+  backend_node_modules:
+  frontend_node_modules:

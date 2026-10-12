@@ -2,7 +2,6 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const helmet = require('helmet');
-const ZCatalyst = require('zcatalyst-sdk');
 
 dotenv.config();
 
@@ -12,9 +11,6 @@ const app = express();
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
-
-// Initialize Catalyst
-const catalyst = ZCatalyst.initialize();
 
 // Routes placeholder
 app.get('/health', (req, res) => {

@@ -18,6 +18,8 @@ const { createOperationsRepository } = require('../src/repositories/operationsRe
 const crypto = require('crypto')
 
 const db = openDatabase()
+// Availability is stored as [{ day, slot }]; this lets the data below stay readable.
+const weekly = byDay => Object.entries(byDay).flatMap(([day, slots]) => slots.map(slot => ({ day, slot })))
 const repo = createOperationsRepository(db)
 const uuid = () => crypto.randomUUID()
 const now = new Date().toISOString()
@@ -166,7 +168,7 @@ seed('tutors', {
   boards: ['CBSE', 'ICSE', 'State'],
   languages: ['English', 'Hindi', 'Telugu'],
   modes: ['home', 'online'],
-  availability: { mon: ['evening'], tue: ['evening'], wed: ['evening'], thu: ['evening'], fri: ['evening'], sat: ['morning', 'afternoon'] },
+  availability: weekly({ mon: ['evening'], tue: ['evening'], wed: ['evening'], thu: ['evening'], fri: ['evening'], sat: ['morning', 'afternoon'] }),
   serviceRadiusKm: 10,
   feeMin: 3000,
   feeMax: 8000,
@@ -201,7 +203,7 @@ seed('tutors', {
   boards: ['CBSE', 'ICSE'],
   languages: ['English', 'Hindi', 'Telugu'],
   modes: ['home', 'online'],
-  availability: { mon: ['morning', 'afternoon'], tue: ['morning', 'afternoon'], wed: ['morning'], thu: ['morning', 'afternoon'], fri: ['morning', 'afternoon'] },
+  availability: weekly({ mon: ['morning', 'afternoon'], tue: ['morning', 'afternoon'], wed: ['morning'], thu: ['morning', 'afternoon'], fri: ['morning', 'afternoon'] }),
   serviceRadiusKm: 8,
   feeMin: 2000,
   feeMax: 5000,
@@ -234,7 +236,7 @@ seed('tutors', {
   boards: ['CBSE', 'IB'],
   languages: ['English', 'Hindi'],
   modes: ['home', 'online'],
-  availability: { mon: ['evening', 'night'], wed: ['evening', 'night'], fri: ['evening', 'night'], sat: ['morning', 'afternoon', 'evening'], sun: ['morning', 'afternoon'] },
+  availability: weekly({ mon: ['evening', 'night'], wed: ['evening', 'night'], fri: ['evening', 'night'], sat: ['morning', 'afternoon', 'evening'], sun: ['morning', 'afternoon'] }),
   serviceRadiusKm: 12,
   feeMin: 5000,
   feeMax: 12000,

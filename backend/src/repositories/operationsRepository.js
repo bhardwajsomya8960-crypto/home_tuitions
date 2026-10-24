@@ -26,6 +26,14 @@ const TABLES = {
   audit_log: { json: ['details'], bool: [] },
 }
 
+// Weekly slot lists are stored as [{ day, slot }]. Older seed data used { mon: ['evening'] };
+// convert that on read so those records keep working.
+const SLOT_LIST_COLUMNS = ['availability', 'schedule']
+function toSlotList(value) {
+  if (Array.isArray(value) || value === null || typeof value !== 'object') return Array.isArray(value) ? value : []
+  return Object.entries(value).flatMap(([day, slots]) => (Array.isArray(slots) ? slots : [slots]).map(slot => ({ day, slot })))
+}
+
 const toSnake = key => key.replace(/[A-Z]/g, c => `_${c.toLowerCase()}`)
 const toCamel = key => key.replace(/_([a-z])/g, (_, c) => c.toUpperCase())
 
@@ -50,6 +58,7 @@ function createOperationsRepository(db) {
     for (const [column, value] of Object.entries(row)) {
       let v = value
       if (meta.json.includes(column)) v = value === null ? null : JSON.parse(value)
+      if (SLOT_LIST_COLUMNS.includes(column)) v = toSlotList(v)
       else if (meta.bool.includes(column)) v = value === null ? null : !!value
       out[toCamel(column)] = v
     }

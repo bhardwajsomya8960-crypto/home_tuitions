@@ -3,7 +3,8 @@
 import { DAY_LABELS, SLOT_SHORT } from '../../lib/format'
 
 // Weekly availability grid: days across, time slots down. value = [{ day, slot }].
-export default function SlotGrid({ days, slots, value = [], onChange, label = 'Weekly availability', hint = 'Tap each time you can usually teach.', error, accent = 'blue' }) {
+export default function SlotGrid({ days, slots, value: rawValue, onChange, label = 'Weekly availability', hint = 'Tap each time you can usually teach.', error, accent = 'blue' }) {
+  const value = Array.isArray(rawValue) ? rawValue : []
   const has = (day, slot) => value.some(v => v.day === day && v.slot === slot)
   const toggle = (day, slot) => onChange(has(day, slot) ? value.filter(v => !(v.day === day && v.slot === slot)) : [...value, { day, slot }])
   const on = accent === 'purple' ? 'bg-purple-600 text-white border-purple-600' : accent === 'ink' ? 'bg-ink text-white border-ink' : 'bg-blue-600 text-white border-blue-600'

@@ -11,8 +11,7 @@
 //
 // All test phones use the prefix 9900 so they are easy to spot.
 
-const path = require('path')
-require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env.local') })
+require('../src/config/loadEnv').loadEnv()
 
 const { openDatabase } = require('../src/config/database')
 const { createOperationsRepository } = require('../src/repositories/operationsRepository')
@@ -253,11 +252,11 @@ console.log('✅ Tutor 3: Vikram Iyer (9900200003) — verified')
 // ── Lead Events (audit trail) ──────────────────────────────────────
 const events = [
   { id: uuid(), leadId: lead1Id, type: 'created', actor: `parent:${parent1Id}`, details: 'Enquiry received via website', createdAt: now },
-  { id: uuid(), leadId: lead1Id, type: 'status_change', actor: 'admin', details: JSON.stringify({ from: 'new', to: 'contacted' }), createdAt: now },
-  { id: uuid(), leadId: lead1Id, type: 'status_change', actor: 'admin', details: JSON.stringify({ from: 'contacted', to: 'qualified' }), createdAt: now },
+  { id: uuid(), leadId: lead1Id, type: 'status_changed', actor: 'admin', fromStatus: 'new', toStatus: 'contacted', createdAt: now },
+  { id: uuid(), leadId: lead1Id, type: 'status_changed', actor: 'admin', fromStatus: 'contacted', toStatus: 'qualified', createdAt: now },
   { id: uuid(), leadId: lead2Id, type: 'created', actor: `parent:${parent1Id}`, details: 'Enquiry received via website', createdAt: now },
   { id: uuid(), leadId: lead3Id, type: 'created', actor: `parent:${parent2Id}`, details: 'Enquiry received via referral', createdAt: now },
-  { id: uuid(), leadId: lead3Id, type: 'status_change', actor: 'admin', details: JSON.stringify({ from: 'new', to: 'contacted' }), createdAt: now },
+  { id: uuid(), leadId: lead3Id, type: 'status_changed', actor: 'admin', fromStatus: 'new', toStatus: 'contacted', createdAt: now },
 ]
 for (const evt of events) {
   seed('lead_events', evt)
@@ -272,9 +271,9 @@ console.log('🔑 TEST CREDENTIALS')
 console.log('────────────────────────────────────────────')
 console.log('')
 console.log('ADMIN (email + password):')
-console.log('  Email:    admin@hometuitions.com')
-console.log('  Password: Admin@12345678')
-console.log('  Login:    POST /api/admin/auth/login')
+console.log('  Admin sign-in is not stored in the database. Create it once with:')
+console.log('    npm run setup:admin -- admin@hometuitions.com')
+console.log('  then restart the API and sign in at /admin/login with that password.')
 console.log('')
 console.log('PARENTS (OTP login — code printed to server console):')
 console.log('  Rajesh Kumar:  9900100001')

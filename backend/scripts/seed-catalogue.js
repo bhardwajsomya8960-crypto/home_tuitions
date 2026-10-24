@@ -4,7 +4,7 @@
 //   node scripts/seed-catalogue.js --sample
 //
 // Refuses to run without --sample so sample content is never added by accident.
-require('dotenv').config()
+require('../src/config/loadEnv').loadEnv()
 
 const { getDatabase } = require('../src/config/database')
 const { createCatalogueRepository } = require('../src/repositories/catalogueRepository')

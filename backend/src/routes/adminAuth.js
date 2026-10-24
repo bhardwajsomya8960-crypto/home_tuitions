@@ -13,7 +13,10 @@ router.post('/login', async (req, res, next) => {
   try {
     const cfg = readAdminConfig()
     if (!cfg.configured) {
-      return res.status(503).json({ error: 'Admin access is not configured', code: 'ADMIN_NOT_CONFIGURED' })
+      // Outside production, say what is missing so local setup problems are easy to fix.
+      const body = { error: 'Admin access is not configured', code: 'ADMIN_NOT_CONFIGURED' }
+      if (process.env.NODE_ENV !== 'production') body.details = cfg.problems.map(message => ({ field: 'server', message }))
+      return res.status(503).json(body)
     }
 
     const { email, password } = req.body || {}

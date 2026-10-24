@@ -25,7 +25,12 @@ export default function AdminLoginPage() {
       setSession('admin', { token: res.token, user: { name: 'Administrator' } })
       router.replace('/admin/dashboard')
     } catch (err) {
-      setError(err.code === 'ADMIN_NOT_CONFIGURED' ? 'Admin access is not configured on the server. Set ADMIN_EMAIL, ADMIN_PASSWORD_HASH and ADMIN_JWT_SECRET.' : err.message)
+      if (err.code === 'ADMIN_NOT_CONFIGURED') {
+        const reasons = err.details.map(d => d.message)
+        setError(`Admin access is not configured on the server${reasons.length ? `: ${reasons.join('; ')}` : ''}. Run "npm run setup:admin" in backend/ and restart the API.`)
+      } else {
+        setError(err.message)
+      }
     } finally {
       setBusy(false)
     }

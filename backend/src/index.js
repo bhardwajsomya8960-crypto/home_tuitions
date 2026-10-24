@@ -1,5 +1,5 @@
-const dotenv = require('dotenv')
-dotenv.config()
+const { loadEnv } = require('./config/loadEnv')
+const envFiles = loadEnv()
 
 const { createApp } = require('./app')
 const { readAdminConfig } = require('./config/adminConfig')
@@ -10,8 +10,10 @@ const EXPIRY_SWEEP_MS = 30 * 1000
 
 app.listen(PORT, () => {
   console.log(`home tution API running on port ${PORT}`)
-  if (!readAdminConfig().configured) {
-    console.warn('Admin access is disabled: set ADMIN_EMAIL, ADMIN_PASSWORD_HASH and ADMIN_JWT_SECRET to enable it.')
+  console.log(envFiles.length ? `Settings loaded from: ${envFiles.join(', ')}` : 'No .env file found; using environment variables only.')
+  const admin = readAdminConfig()
+  if (!admin.configured) {
+    console.warn(`Admin access is disabled:\n  - ${admin.problems.join('\n  - ')}\nRun "npm run setup:admin" in backend/ to create local admin credentials.`)
   }
 })
 

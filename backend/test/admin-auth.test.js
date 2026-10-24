@@ -148,6 +148,7 @@ describe('admin configuration', () => {
       const res = await server.request('POST', '/api/admin/auth/login', { body: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD } })
       assert.equal(res.status, 503)
       assert.equal(res.body.code, 'ADMIN_NOT_CONFIGURED')
+      assert.ok(res.body.details.some(d => d.message.includes('ADMIN_PASSWORD_HASH')), 'outside production the response names the missing setting')
     } finally {
       process.env.ADMIN_PASSWORD_HASH = saved
     }

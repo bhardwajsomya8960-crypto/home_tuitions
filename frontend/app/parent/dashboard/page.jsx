@@ -1,424 +1,432 @@
 'use client'
 
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { FiBook, FiUser, FiDollarSign, FiAlertCircle, FiCalendar, FiMessageSquare, FiStar, FiTrendingUp, FiBarChart2 } from 'react-icons/fi'
-import Link from 'next/link'
+import { Suspense, useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { FiBarChart2, FiBook, FiCalendar, FiDollarSign, FiFileText, FiUser, FiPlus, FiStar } from 'react-icons/fi'
 import AppShell from '../../../components/shell/AppShell'
-import DataTable, { optionsFrom } from '../../../components/data/DataTable'
+import DataTable from '../../../components/data/DataTable'
 import RecordCard from '../../../components/data/RecordCard'
+import Modal from '../../../components/ui/Modal'
+import { StatusBadge } from '../../../components/ui/Badge'
+import { btn, Card, Details, EmptyState, PageLoader, StatCard } from '../../../components/ui/Card'
+import { ChipGroup, Notice, Select, TextArea, TextInput } from '../../../components/ui/Form'
+import { api } from '../../../lib/api'
+import { usePortal } from '../../../lib/usePortal'
+import { useMasters, optionLabel } from '../../../lib/useMasters'
+import {
+  classLabel, DAY_LABELS, daysText, DEMO_STATUS, formatDate, formatDateTime, INVOICE_STATUS, LEAD_STATUS, MODE_LABELS,
+  rupees, scheduleText, SESSION_STATUS, slotsText, SLOT_SHORT, weekday,
+} from '../../../lib/format'
 
-const NAV_ITEMS = [
+const NAV = [
   { id: 'overview', label: 'Overview', icon: FiBarChart2 },
+  { id: 'requests', label: 'Requests', icon: FiFileText },
+  { id: 'classes', label: 'Classes', icon: FiCalendar },
+  { id: 'fees', label: 'Fees', icon: FiDollarSign },
   { id: 'students', label: 'Students', icon: FiBook },
-  { id: 'tutors', label: 'Tutors', icon: FiUser },
-  { id: 'schedule', label: 'Schedule', icon: FiCalendar },
-  { id: 'invoices', label: 'Invoices', icon: FiDollarSign },
-  { id: 'requests', label: 'Requests', icon: FiMessageSquare },
+  { id: 'profile', label: 'Profile', icon: FiUser },
 ]
 
-export default function ParentDashboard() {
-  const [activeTab, setActiveTab] = useState('overview')
+function Dashboard() {
+  const params = useSearchParams()
+  const [tab, setTab] = useState(params.get('tab') || 'overview')
+  const portal = usePortal('parent', '/api/parents/me/overview')
+  const { masters } = useMasters()
+  const [newRequest, setNewRequest] = useState(false)
+  const [addStudent, setAddStudent] = useState(false)
+  const { data, error, message, busy, run, logout } = portal
 
-  const [parentData, setParentData] = useState({
-    name: 'Raj Kumar',
-    email: 'raj@example.com',
-    phone: '9876543210',
-    studentsCount: 2,
-    activeTutorships: 2,
-    totalSpentThisMonth: 11500,
-    averageProgress: 87,
-  })
+  if (!data) return error ? <div className="p-6"><Notice>{error}</Notice></div> : <PageLoader />
 
-  const [students, setStudents] = useState([
-    {
-      id: 1,
-      name: 'Aarav Singh',
-      class: '8',
-      board: 'CBSE',
-      tutor: 'Rahul Kumar',
-      subject: 'Maths',
-      mode: 'Home',
-      startDate: '2024-09-15',
-      status: 'active',
-      progress: 85,
-      tutorRating: 4.8,
-      nextClass: '2024-10-13 at 4:00 PM'
-    },
-    {
-      id: 2,
-      name: 'Priya Singh',
-      class: '10',
-      board: 'CBSE',
-      tutor: 'Priya Sharma',
-      subject: 'Science',
-      mode: 'Online',
-      startDate: '2024-08-20',
-      status: 'active',
-      progress: 89,
-      tutorRating: 4.6,
-      nextClass: '2024-10-14 at 5:30 PM'
-    },
-  ])
+  // The error is already shown by usePortal; swallow it here so button handlers do not reject.
+  const act = (path, body, success) => run(() => api(path, { method: 'POST', body, role: 'parent' }), success).catch(() => false)
+  const pendingOutcome = data.requests.filter(r => r.status === 'demo_completed' && r.demos.some(d => d.status === 'completed' && !d.outcome))
+  const toRate = data.requests.filter(r => r.demos.some(d => d.status === 'completed') && !r.reviewedStages.includes(r.enrolment ? 'ongoing' : 'demo'))
+  const due = data.invoices.filter(i => i.outstanding > 0)
+  const nav = NAV.map(n => (n.id === 'requests' ? { ...n, count: pendingOutcome.length } : n.id === 'fees' ? { ...n, count: due.length } : n))
 
-  const [tutors, setTutors] = useState([
-    { id: 1, name: 'Rahul Kumar', subject: 'Maths', rating: 4.8, classes: 15, experience: '5 years', phone: '9876543210', email: 'rahul@example.com' },
-    { id: 2, name: 'Priya Sharma', subject: 'Science', rating: 4.6, classes: 22, experience: '3 years', phone: '9876543211', email: 'priya@example.com' },
-  ])
+  return (
+    <AppShell portalLabel="Parent" user={{ name: data.parent.name, subtitle: `+91 ${data.parent.phone}` }} navItems={nav} activeTab={tab} onTabChange={setTab} onLogout={logout}
+      headerActions={<button type="button" onClick={() => setNewRequest(true)} className={btn.primary}><FiPlus aria-hidden="true" /> New request</button>}>
+      <div className="space-y-6">
+        <Notice>{error}</Notice>
+        <Notice tone="success">{message}</Notice>
 
-  const [invoices, setInvoices] = useState([
-    { id: 1, studentName: 'Aarav Singh', tutorName: 'Rahul Kumar', month: 'September 2024', amount: 5750, dueDate: '2024-10-05', status: 'paid', paymentDate: '2024-10-01' },
-    { id: 2, studentName: 'Priya Singh', tutorName: 'Priya Sharma', month: 'September 2024', amount: 5750, dueDate: '2024-10-05', status: 'paid', paymentDate: '2024-10-02' },
-    { id: 3, studentName: 'Aarav Singh', tutorName: 'Rahul Kumar', month: 'October 2024', amount: 5750, dueDate: '2024-11-05', status: 'pending', paymentDate: null },
-  ])
+        {tab === 'overview' && (
+          <>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 md:gap-4">
+              <StatCard label="Students" value={data.stats.students} icon={FiBook} />
+              <StatCard label="Active tuitions" value={data.stats.activeEnrolments} icon={FiUser} tone="green" />
+              <StatCard label="Open requests" value={data.stats.openRequests} icon={FiFileText} tone="purple" />
+              <StatCard label="Amount due" value={rupees(data.stats.amountDue)} icon={FiDollarSign} tone={data.stats.amountDue ? 'orange' : 'green'} />
+            </div>
 
-  const [schedule, setSchedule] = useState([
-    { id: 1, student: 'Aarav Singh', tutor: 'Rahul Kumar', subject: 'Maths', date: '2024-10-13', time: '4:00 PM - 5:00 PM', status: 'scheduled', mode: 'Home' },
-    { id: 2, student: 'Priya Singh', tutor: 'Priya Sharma', subject: 'Science', date: '2024-10-14', time: '5:30 PM - 6:30 PM', status: 'scheduled', mode: 'Online' },
-    { id: 3, student: 'Aarav Singh', tutor: 'Rahul Kumar', subject: 'Maths', date: '2024-10-15', time: '4:00 PM - 5:00 PM', status: 'scheduled', mode: 'Home' },
-  ])
+            <button type="button" onClick={() => setNewRequest(true)} className={`${btn.primary} w-full md:hidden`}><FiPlus aria-hidden="true" /> New tuition request</button>
 
-  const [requests, setRequests] = useState([
-    { id: 1, type: 'Reschedule', student: 'Aarav Singh', date: '2024-10-13', reason: 'Doctor appointment', status: 'pending' },
-    { id: 2, type: 'Doubt Session', student: 'Priya Singh', topic: 'Integration', status: 'approved' },
-  ])
+            {(pendingOutcome.length > 0 || due.length > 0 || toRate.length > 0) && (
+              <Card title="Needs your attention">
+                <ul className="divide-y divide-gray-100">
+                  {pendingOutcome.map(r => (
+                    <li key={`o${r.id}`} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                      <p className="text-sm"><strong>{r.student?.name}</strong>: how did the demo with {r.tutor?.name} go?</p>
+                      <button type="button" className={btn.secondary} onClick={() => setTab('requests')}>Tell us</button>
+                    </li>
+                  ))}
+                  {due.map(i => (
+                    <li key={`i${i.id}`} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                      <p className="text-sm">{i.periodLabel}: <strong>{rupees(i.outstanding)}</strong> due {formatDate(i.dueDate)} {i.overdue && <span className="font-semibold text-red-700">(overdue)</span>}</p>
+                      <button type="button" className={btn.secondary} onClick={() => setTab('fees')}>View</button>
+                    </li>
+                  ))}
+                  {toRate.filter(r => !pendingOutcome.includes(r)).map(r => (
+                    <li key={`r${r.id}`} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                      <p className="text-sm">Rate {r.tutor?.name || 'your tutor'} for {r.student?.name}</p>
+                      <button type="button" className={btn.secondary} onClick={() => setTab('requests')}>Rate</button>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )}
 
-  const handlePayment = (invoiceId) => {
-    setInvoices(invoices.map(inv =>
-      inv.id === invoiceId ? { ...inv, status: 'paid', paymentDate: new Date().toISOString().split('T')[0] } : inv
-    ))
-    alert('Payment recorded successfully!')
+            <Card title="Upcoming classes" actions={<button type="button" className={btn.link} onClick={() => setTab('classes')}>All classes</button>}>
+              {data.upcomingClasses.length === 0
+                ? <EmptyState title="No classes scheduled">Classes appear here once a tuition starts.</EmptyState>
+                : (
+                  <ul className="divide-y divide-gray-100">
+                    {data.upcomingClasses.slice(0, 6).map(c => (
+                      <li key={c.id} className="flex items-center justify-between gap-3 py-3 text-sm">
+                        <div><p className="font-semibold">{c.studentName} · {c.subjects.join(', ')}</p><p className="text-gray-500">with {c.tutorName} · {MODE_LABELS[c.mode]}</p></div>
+                        <p className="text-right font-medium">{weekday(c.scheduledDate)} {formatDate(c.scheduledDate)}<br /><span className="text-gray-500">{SLOT_SHORT[c.slot]}</span></p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+            </Card>
+
+            <Card title="Your requests" actions={<button type="button" className={btn.link} onClick={() => setTab('requests')}>Details</button>}>
+              {data.requests.length === 0
+                ? <EmptyState title="No requests yet" action={<button type="button" className={btn.primary} onClick={() => setNewRequest(true)}>Request a tutor</button>} />
+                : (
+                  <ul className="divide-y divide-gray-100">
+                    {data.requests.map(r => (
+                      <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
+                        <div><p className="font-semibold">{r.student?.name} · {r.subjects.join(', ')}</p><p className="text-gray-500">{r.code} · {MODE_LABELS[r.mode]} · {r.timeline.at(-1)?.text}</p></div>
+                        <StatusBadge map={LEAD_STATUS} value={r.status} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+            </Card>
+          </>
+        )}
+
+        {tab === 'requests' && (
+          <div className="space-y-4">
+            {data.requests.length === 0 && <Card><EmptyState title="No requests yet" action={<button type="button" className={btn.primary} onClick={() => setNewRequest(true)}>Request a tutor</button>} /></Card>}
+            {data.requests.map(r => <RequestCard key={r.id} request={r} masters={masters} busy={busy} act={act} />)}
+          </div>
+        )}
+
+        {tab === 'classes' && <ClassesTab run={run} />}
+
+        {tab === 'fees' && (
+          <>
+            <Notice tone="info">Online payment is not available yet. Pay by UPI or bank transfer using the details our team shares with you; payments appear here once recorded.</Notice>
+            <DataTable
+              title="Invoices" noun="invoices" rows={data.invoices} rowKey={r => r.id}
+              searchText={r => `${r.number} ${r.periodLabel}`}
+              filters={[{ key: 'status', label: 'statuses', get: r => r.status, options: Object.entries(INVOICE_STATUS).map(([value, v]) => ({ value, label: v.label })) }]}
+              columns={[
+                { key: 'number', header: 'Invoice', render: r => <span className="font-medium">{r.number}</span> },
+                { key: 'period', header: 'Period', render: r => r.periodLabel },
+                { key: 'amount', header: 'Amount', align: 'right', sortable: true, sortValue: r => r.amount, render: r => rupees(r.amount) },
+                { key: 'paid', header: 'Paid', align: 'right', render: r => rupees(r.amountPaid) },
+                { key: 'due', header: 'Due date', sortable: true, sortValue: r => r.dueDate, render: r => <span className={r.overdue ? 'font-semibold text-red-700' : ''}>{formatDate(r.dueDate)}</span> },
+                { key: 'status', header: 'Status', render: r => <StatusBadge map={INVOICE_STATUS} value={r.status} /> },
+              ]}
+              renderCard={r => <RecordCard title={r.periodLabel} subtitle={r.number} badge={<StatusBadge map={INVOICE_STATUS} value={r.status} />} fields={[['Amount', rupees(r.amount)], ['Outstanding', rupees(r.outstanding)], ['Due', formatDate(r.dueDate)], ['Payments', r.payments.length]]} />}
+              emptyMessage="No invoices yet. The first invoice is created when tuition starts."
+            />
+          </>
+        )}
+
+        {tab === 'students' && (
+          <Card title="Students" actions={<button type="button" className={btn.primary} onClick={() => setAddStudent(true)}><FiPlus aria-hidden="true" /> Add student</button>}>
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {data.students.map(s => (
+                <li key={s.id} className="rounded-lg border border-gray-200 p-4">
+                  <p className="font-semibold">{s.name}</p>
+                  <p className="text-sm text-gray-600">{classLabel(s.class)} · {s.board}{s.school ? ` · ${s.school}` : ''}</p>
+                  <p className="mt-2 text-xs text-gray-500">{data.requests.filter(r => r.student?.id === s.id).length} request(s)</p>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
+
+        {tab === 'profile' && (
+          <Card title="Your details">
+            <Details items={[['Name', data.parent.name], ['Mobile', `+91 ${data.parent.phone}`], ['Email', data.parent.email], ['Relationship', data.parent.relationship], ['Address', data.parent.address ? `${data.parent.address}, ${data.parent.pincode}` : '']]} />
+            <p className="mt-4 text-sm text-gray-500">To change these details, contact support.</p>
+            <button type="button" onClick={logout} className={`${btn.danger} mt-4`}>Sign out</button>
+          </Card>
+        )}
+      </div>
+
+      {masters && (
+        <NewRequestModal open={newRequest} onClose={() => setNewRequest(false)} masters={masters} students={data.students} parent={data.parent}
+          onSubmit={body => run(() => api('/api/parents/me/requests', { method: 'POST', body, role: 'parent' }), 'Request submitted. We will start looking for tutors.').then(() => { setNewRequest(false); setTab('requests') })} busy={busy} />
+      )}
+      {masters && (
+        <AddStudentModal open={addStudent} onClose={() => setAddStudent(false)} masters={masters} busy={busy}
+          onSubmit={body => run(() => api('/api/parents/me/students', { method: 'POST', body, role: 'parent' }), 'Student added.').then(() => setAddStudent(false))} />
+      )}
+    </AppShell>
+  )
+}
+
+function RequestCard({ request: r, masters, busy, act }) {
+  const [rating, setRating] = useState(0)
+  const [comment, setComment] = useState('')
+  const [reschedule, setReschedule] = useState(null)
+  const [rescheduleText, setRescheduleText] = useState('')
+  const completedDemo = r.demos.find(d => d.status === 'completed')
+  const scheduledDemo = r.demos.find(d => d.status === 'scheduled')
+  const stage = r.enrolment ? 'ongoing' : 'demo'
+  const canRate = completedDemo && !r.reviewedStages.includes(stage)
+
+  return (
+    <Card title={`${r.student?.name} · ${r.subjects.join(', ')}`} subtitle={`${r.code} · ${classLabel(r.class)} ${r.board} · ${MODE_LABELS[r.mode]}`}
+      actions={<StatusBadge map={LEAD_STATUS} value={r.status} />}>
+      <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
+        <div className="space-y-5">
+          <Details items={[
+            ['Days', daysText(r.preferredDays)], ['Times', slotsText(r.preferredSlots)],
+            ['Budget', masters ? optionLabel(masters.budgetRanges, r.budgetRange) : r.budgetRange], ['Start', r.startDate ? formatDate(r.startDate) : ''],
+            ['Location', r.mode === 'online' ? 'Online' : `${r.address || ''}${r.pincode ? `, ${r.pincode}` : ''}`],
+          ]} />
+
+          {r.tutor && (
+            <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-blue-800">{r.tutor.confirmed ? 'Your tutor' : 'Tutor available (awaiting our confirmation)'}</p>
+              <p className="mt-1 text-lg font-semibold">{r.tutor.name}</p>
+              <p className="text-sm text-gray-600">{r.tutor.qualification} · {r.tutor.experienceYears} years · {r.tutor.languages.join(', ')}</p>
+              {r.tutor.ratingCount > 0 && <p className="mt-1 flex items-center gap-1 text-sm"><FiStar className="h-4 w-4 fill-current text-yellow-500" aria-hidden="true" /> {r.tutor.ratingAvg.toFixed(1)} ({r.tutor.ratingCount})</p>}
+              <p className="mt-2 text-sm text-gray-700">{r.tutor.bio}</p>
+              {r.tutor.phone && <p className="mt-2 text-sm"><strong>Contact:</strong> <a className="underline" href={`tel:+91${r.tutor.phone}`}>+91 {r.tutor.phone}</a></p>}
+            </div>
+          )}
+
+          {r.demos.length > 0 && (
+            <div>
+              <h3 className="mb-2 text-sm font-semibold">Demo</h3>
+              <ul className="space-y-2">
+                {r.demos.map(d => (
+                  <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm">
+                    <span>{formatDateTime(d.scheduledAt)} · {MODE_LABELS[d.mode]} · {d.durationMin} min{d.locationNote ? ` · ${d.locationNote}` : ''}</span>
+                    <StatusBadge map={DEMO_STATUS} value={d.status} />
+                  </li>
+                ))}
+              </ul>
+              {scheduledDemo && <button type="button" className={`${btn.link} mt-2`} onClick={() => setReschedule(scheduledDemo.id)}>Ask to reschedule</button>}
+            </div>
+          )}
+
+          {r.status === 'demo_completed' && completedDemo && !completedDemo.outcome && masters && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <p className="font-semibold">How did the demo go?</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {masters.demoOutcomes.map(o => (
+                  <button key={o.value} type="button" disabled={busy} className={o.value === 'interested' ? btn.success : btn.secondary}
+                    onClick={() => act(`/api/parents/me/demos/${completedDemo.id}/outcome`, { outcome: o.value }, 'Thank you. Our team will follow up.')}>{o.label}</button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {r.enrolment && (
+            <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm">
+              <p className="font-semibold text-green-900">Tuition {r.enrolment.status}</p>
+              <p className="text-green-900">{rupees(r.enrolment.feeAmount)} · {r.enrolment.plan.replace('_', ' ')} · from {formatDate(r.enrolment.startDate)}</p>
+              <p className="text-green-900">{scheduleText(r.enrolment.schedule)}</p>
+            </div>
+          )}
+
+          {canRate && (
+            <div className="rounded-lg border border-gray-200 p-4">
+              <p className="font-semibold">Rate {r.tutor?.name || 'the tutor'} {stage === 'demo' ? 'after the demo' : 'so far'}</p>
+              <div className="mt-2 flex gap-1" role="radiogroup" aria-label="Rating">
+                {[1, 2, 3, 4, 5].map(n => (
+                  <button key={n} type="button" role="radio" aria-checked={rating === n} aria-label={`${n} star${n > 1 ? 's' : ''}`} onClick={() => setRating(n)} className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-yellow-50">
+                    <FiStar className={`h-6 w-6 ${n <= rating ? 'fill-current text-yellow-500' : 'text-gray-300'}`} aria-hidden="true" />
+                  </button>
+                ))}
+              </div>
+              <TextArea label="Comment" hint="Optional" rows={2} value={comment} onChange={e => setComment(e.target.value)} className="mt-2" />
+              <button type="button" disabled={!rating || busy} className={`${btn.primary} mt-3`} onClick={() => act(`/api/parents/me/requests/${r.id}/review`, { rating, ...(comment ? { comment } : {}) }, 'Thanks for your feedback.')}>Submit rating</button>
+            </div>
+          )}
+
+          {r.canCancel && (
+            <button type="button" disabled={busy} className={btn.danger} onClick={() => { if (window.confirm('Cancel this request? Tutors will stop receiving it.')) act(`/api/parents/me/requests/${r.id}/cancel`, {}, 'Request cancelled.') }}>Cancel request</button>
+          )}
+        </div>
+
+        <div>
+          <h3 className="mb-3 text-sm font-semibold">Progress</h3>
+          <ol className="relative space-y-4 border-l border-gray-200 pl-5">
+            {r.timeline.map((t, i) => (
+              <li key={i} className="relative">
+                <span className={`absolute -left-[26px] top-1 h-3 w-3 rounded-full ${i === r.timeline.length - 1 ? 'bg-blue-600 ring-4 ring-blue-100' : 'bg-gray-300'}`} aria-hidden="true" />
+                <p className="text-sm font-medium">{t.text}</p>
+                <p className="text-xs text-gray-500">{formatDateTime(t.at)}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </div>
+
+      <Modal open={!!reschedule} title="Ask to reschedule the demo" onClose={() => setReschedule(null)}
+        footer={<><button type="button" className={btn.secondary} onClick={() => setReschedule(null)}>Close</button>
+          <button type="button" className={btn.primary} disabled={busy || rescheduleText.trim().length < 3}
+            onClick={() => act(`/api/parents/me/demos/${reschedule}/reschedule-request`, { message: rescheduleText }, 'Request sent. Our team will confirm a new time.').then(ok => { if (ok !== false) { setReschedule(null); setRescheduleText('') } })}>Send</button></>}>
+        <TextArea label="When would suit you?" required rows={3} value={rescheduleText} onChange={e => setRescheduleText(e.target.value)} hint="For example: Saturday after 11 AM" />
+      </Modal>
+    </Card>
+  )
+}
+
+function ClassesTab({ run }) {
+  const [rows, setRows] = useState(null)
+  const [error, setError] = useState('')
+  const load = () => api('/api/parents/me/classes', { role: 'parent' }).then(r => setRows(r.items)).catch(e => setError(e.message))
+  useEffect(() => { load() }, [])
+  if (error) return <Notice>{error}</Notice>
+  if (!rows) return <PageLoader />
+  const ack = id => run(() => api(`/api/parents/me/classes/${id}/acknowledge`, { method: 'POST', role: 'parent' }), 'Thanks for confirming.').then(load).catch(() => {})
+  return (
+    <DataTable
+      title="Classes" noun="classes" rows={rows} rowKey={r => r.id} defaultPageSize={20}
+      searchText={r => `${r.studentName} ${r.tutorName} ${r.subjects.join(' ')} ${r.notes || ''}`}
+      filters={[{ key: 'status', label: 'statuses', get: r => r.status, options: Object.entries(SESSION_STATUS).map(([value, v]) => ({ value, label: v.label })) }]}
+      columns={[
+        { key: 'date', header: 'Date', sortable: true, sortValue: r => r.scheduledDate, render: r => <span className="font-medium">{weekday(r.scheduledDate)} {formatDate(r.scheduledDate)}<br /><span className="text-xs text-gray-500">{SLOT_SHORT[r.slot]}</span></span> },
+        { key: 'student', header: 'Student', render: r => `${r.studentName} · ${r.subjects.join(', ')}` },
+        { key: 'tutor', header: 'Tutor', render: r => r.tutorName },
+        { key: 'attendance', header: 'Attendance', render: r => (r.status === 'completed' ? (r.studentPresent ? 'Attended' : 'Student absent') : '—') },
+        { key: 'notes', header: 'Notes / homework', render: r => <span className="text-xs">{[r.notes, r.homework && `Homework: ${r.homework}`].filter(Boolean).join(' · ') || '—'}</span> },
+        { key: 'status', header: 'Status', render: r => <StatusBadge map={SESSION_STATUS} value={r.status} /> },
+        { key: 'ack', header: '', render: r => (r.status === 'completed' && !r.parentAckAt ? <button type="button" className={btn.secondary} onClick={() => ack(r.id)}>Confirm</button> : r.parentAckAt ? <span className="text-xs text-green-700">Confirmed</span> : null) },
+      ]}
+      renderCard={r => (
+        <RecordCard title={`${weekday(r.scheduledDate)} ${formatDate(r.scheduledDate)} · ${SLOT_SHORT[r.slot]}`} subtitle={`${r.studentName} with ${r.tutorName}`} badge={<StatusBadge map={SESSION_STATUS} value={r.status} />}
+          fields={[['Subjects', r.subjects.join(', ')], ['Attendance', r.status === 'completed' ? (r.studentPresent ? 'Attended' : 'Absent') : '—'], ['Notes', r.notes || '—'], ['Homework', r.homework || '—']]}
+          actions={r.status === 'completed' && !r.parentAckAt ? <button type="button" className={btn.secondary} onClick={() => ack(r.id)}>Confirm class</button> : null} />
+      )}
+      emptyMessage="No classes yet."
+    />
+  )
+}
+
+function NewRequestModal({ open, onClose, masters, students, parent, onSubmit, busy }) {
+  const blank = { studentId: students[0]?.id || 'new', studentName: '', studentClass: '', board: '', subjects: [], mode: '', address: parent.address || '', pincode: parent.pincode || '', preferredDays: [], preferredSlots: [], budgetRange: '', urgency: '', specialRequirements: '' }
+  const [f, setF] = useState(blank)
+  const [errors, setErrors] = useState({})
+  useEffect(() => { if (open) { setF(blank); setErrors({}) } }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+  const set = (k, v) => setF(p => ({ ...p, [k]: v }))
+
+  const submit = async () => {
+    const e = {}
+    if (f.studentId === 'new') {
+      if (f.studentName.trim().length < 2) e.studentName = 'Enter a name'
+      if (!f.studentClass) e.studentClass = 'Choose a class'
+      if (!f.board) e.board = 'Choose a board'
+    }
+    if (!f.subjects.length) e.subjects = 'Choose at least one subject'
+    if (!f.mode) e.mode = 'Choose a mode'
+    if (f.mode && f.mode !== 'online') {
+      if (f.address.trim().length < 5) e.address = 'Enter the address'
+      if (!/^[1-9]\d{5}$/.test(f.pincode)) e.pincode = 'Enter a 6-digit pincode'
+    }
+    if (!f.preferredDays.length) e.preferredDays = 'Choose at least one day'
+    if (!f.preferredSlots.length) e.preferredSlots = 'Choose at least one time'
+    setErrors(e)
+    if (Object.keys(e).length) return
+    const body = {
+      ...(f.studentId === 'new' ? { studentName: f.studentName.trim(), studentClass: f.studentClass, board: f.board } : { studentId: f.studentId }),
+      subjects: f.subjects, mode: f.mode, preferredDays: f.preferredDays, preferredSlots: f.preferredSlots,
+      ...(f.mode !== 'online' ? { address: f.address, pincode: f.pincode } : {}),
+      ...(f.budgetRange ? { budgetRange: f.budgetRange } : {}), ...(f.urgency ? { urgency: f.urgency } : {}),
+      ...(f.specialRequirements ? { specialRequirements: f.specialRequirements } : {}),
+    }
+    try { await onSubmit(body) } catch (err) { setErrors(err.fieldErrors ? err.fieldErrors() : {}) }
   }
 
   return (
-    <AppShell
-      portalLabel="Parent"
-      user={{ name: parentData.name, subtitle: 'Parent' }}
-      navItems={NAV_ITEMS}
-      activeTab={activeTab}
-      onTabChange={setActiveTab}
-    >
-      <div>
-        {/* Stats Cards */}
-        <motion.div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="bg-white rounded-lg p-6 card-shadow">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-gray-600 text-sm">Students</p>
-                <p className="text-3xl font-bold mt-2">{parentData.studentsCount}</p>
-              </div>
-              <FiBook className="w-8 h-8 text-blue-600" />
-            </div>
+    <Modal open={open} title="New tuition request" onClose={onClose} wide
+      footer={<><button type="button" className={btn.secondary} onClick={onClose}>Cancel</button><button type="button" className={btn.primary} disabled={busy} onClick={submit}>{busy ? 'Submitting…' : 'Submit request'}</button></>}>
+      <div className="space-y-4">
+        <Select label="For which student?" required value={f.studentId} onChange={e => set('studentId', e.target.value)}
+          options={[...students.map(s => ({ value: s.id, label: `${s.name} (${classLabel(s.class)})` })), { value: 'new', label: '+ A new student' }]} placeholder="Choose…" />
+        {f.studentId === 'new' && (
+          <div className="grid gap-4 sm:grid-cols-3">
+            <TextInput label="Student name" required value={f.studentName} onChange={e => set('studentName', e.target.value)} error={errors.studentName} />
+            <Select label="Class" required options={masters.classes.map(c => ({ value: c, label: classLabel(c) }))} value={f.studentClass} onChange={e => set('studentClass', e.target.value)} error={errors.studentClass} />
+            <Select label="Board" required options={masters.boards} value={f.board} onChange={e => set('board', e.target.value)} error={errors.board} />
           </div>
-
-          <div className="bg-white rounded-lg p-6 card-shadow">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-gray-600 text-sm">Active Tutorships</p>
-                <p className="text-3xl font-bold mt-2">{parentData.activeTutorships}</p>
-              </div>
-              <FiUser className="w-8 h-8 text-green-600" />
-            </div>
+        )}
+        <ChipGroup label="Subjects" required options={masters.subjects} value={f.subjects} onChange={v => set('subjects', v)} error={errors.subjects} />
+        <ChipGroup label="Mode" required single options={masters.leadModes.map(m => ({ value: m, label: MODE_LABELS[m] }))} value={f.mode} onChange={v => set('mode', v)} error={errors.mode} />
+        {f.mode && f.mode !== 'online' && (
+          <div className="grid gap-4 sm:grid-cols-[1fr_160px]">
+            <TextInput label="Address" required value={f.address} onChange={e => set('address', e.target.value)} error={errors.address} />
+            <TextInput label="Pincode" required inputMode="numeric" maxLength={6} value={f.pincode} onChange={e => set('pincode', e.target.value.replace(/\D/g, ''))} error={errors.pincode} />
           </div>
-
-          <div className="bg-white rounded-lg p-6 card-shadow">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-gray-600 text-sm">Spent This Month</p>
-                <p className="text-3xl font-bold mt-2">₹{parentData.totalSpentThisMonth}</p>
-              </div>
-              <FiDollarSign className="w-8 h-8 text-purple-600" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-6 card-shadow">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-gray-600 text-sm">Avg Progress</p>
-                <p className="text-3xl font-bold mt-2">{parentData.averageProgress}%</p>
-              </div>
-              <FiTrendingUp className="w-8 h-8 text-orange-600" />
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Tab Content */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-          {/* Overview Tab */}
-          {activeTab === 'overview' && (
-            <div className="space-y-8">
-              {/* Students Summary */}
-              <div>
-                <h3 className="text-xl font-bold mb-4">Your Students</h3>
-                <div className="space-y-4">
-                  {students.map(student => (
-                    <motion.div key={student.id} className="border rounded-lg p-4 hover:shadow-md transition-all" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h4 className="font-bold text-lg">{student.name}</h4>
-                          <p className="text-sm text-gray-600">Class {student.class} • {student.board}</p>
-                        </div>
-                        <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs">{student.status}</span>
-                      </div>
-                      <div className="grid md:grid-cols-3 gap-4 mb-3 text-sm">
-                        <div>
-                          <p className="text-gray-600">Subject</p>
-                          <p className="font-semibold">{student.subject}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Tutor</p>
-                          <p className="font-semibold">{student.tutor}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Mode</p>
-                          <p className="font-semibold">{student.mode}</p>
-                        </div>
-                      </div>
-                      <div className="bg-gray-50 p-3 rounded mb-3">
-                        <div className="flex justify-between items-center mb-2">
-                          <p className="text-sm font-semibold">Progress</p>
-                          <p className="text-sm text-gray-600">{student.progress}%</p>
-                        </div>
-                        <div className="w-full h-2 bg-gray-300 rounded-full overflow-hidden">
-                          <div className="h-full bg-green-600" style={{ width: `${student.progress}%` }} />
-                        </div>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          <FiStar className="w-4 h-4 text-yellow-500 fill-current" />
-                          <span className="text-sm">{student.tutorRating}</span>
-                        </div>
-                        <p className="text-sm text-gray-600">Next: {student.nextClass}</p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Pending Payments */}
-              <div>
-                <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                  <FiAlertCircle className="text-orange-500" />
-                  Pending Payments
-                </h3>
-                {invoices.filter(inv => inv.status === 'pending').length > 0 ? (
-                  <div className="space-y-3">
-                    {invoices.filter(inv => inv.status === 'pending').map(invoice => (
-                      <div key={invoice.id} className="border rounded-lg p-4 flex justify-between items-center">
-                        <div>
-                          <p className="font-semibold">{invoice.studentName} • {invoice.month}</p>
-                          <p className="text-sm text-gray-600">Due: {invoice.dueDate}</p>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <p className="font-bold text-lg">₹{invoice.amount}</p>
-                          <button onClick={() => handlePayment(invoice.id)} className="btn-primary py-2 px-6">Pay Now</button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-600 py-4 text-center">No pending payments</p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Students Tab */}
-          {/* Students Tab */}
-          {activeTab === 'students' && (
-            <DataTable
-              title="All Students"
-              noun="students"
-              rows={students}
-              rowKey={s => s.id}
-              searchPlaceholder="Search student, subject or tutor"
-              searchText={s => `${s.name} ${s.subject} ${s.tutor}`}
-              filters={[{ key: 'subject', label: 'Subject', get: s => s.subject, options: optionsFrom(students, s => s.subject) }]}
-              columns={[
-                { key: 'name', header: 'Student', sortable: true, render: s => (
-                  <div>
-                    <p className="font-semibold text-gray-900">{s.name}</p>
-                    <p className="text-xs text-gray-600">Class {s.class} • {s.board}</p>
-                  </div>
-                ) },
-                { key: 'tutor', header: 'Tutor', sortable: true, render: s => s.tutor },
-                { key: 'subject', header: 'Subject', sortable: true, render: s => s.subject },
-                { key: 'mode', header: 'Mode', render: s => s.mode },
-                { key: 'progress', header: 'Progress', sortable: true, render: s => (
-                  <div className="flex items-center gap-2 min-w-[120px]">
-                    <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden" aria-hidden="true">
-                      <div className="h-full bg-green-500" style={{ width: `${s.progress}%` }} />
-                    </div>
-                    <span className="text-xs font-semibold w-10 text-right">{s.progress}%</span>
-                  </div>
-                ) },
-                { key: 'tutorRating', header: 'Tutor Rating', sortable: true, align: 'right', render: s => (
-                  <span className="inline-flex items-center gap-1 font-semibold">
-                    <FiStar className="w-4 h-4 text-yellow-500 fill-current" aria-hidden="true" />
-                    {s.tutorRating}
-                  </span>
-                ) },
-              ]}
-              renderCard={s => (
-                <RecordCard
-                  title={s.name}
-                  subtitle={`Class ${s.class} • ${s.board}`}
-                  fields={[['Tutor', s.tutor], ['Subject', s.subject], ['Mode', s.mode], ['Progress', `${s.progress}%`]]}
-                />
-              )}
-              emptyMessage="No students yet."
-            />
-          )}
-          {/* Tutors Tab */}
-          {/* Tutors Tab */}
-          {activeTab === 'tutors' && (
-            <DataTable
-              title="Your Tutors"
-              noun="tutors"
-              rows={tutors}
-              rowKey={t => t.id}
-              searchPlaceholder="Search name, subject or email"
-              searchText={t => `${t.name} ${t.subject} ${t.email}`}
-              columns={[
-                { key: 'name', header: 'Tutor', sortable: true, render: t => (
-                  <div>
-                    <p className="font-semibold text-gray-900">{t.name}</p>
-                    <p className="text-xs text-gray-600">{t.subject} • {t.experience}</p>
-                  </div>
-                ) },
-                { key: 'rating', header: 'Rating', sortable: true, render: t => (
-                  <span className="inline-flex items-center gap-1 font-semibold">
-                    <FiStar className="w-4 h-4 text-yellow-500 fill-current" aria-hidden="true" />
-                    {t.rating}
-                  </span>
-                ) },
-                { key: 'classes', header: 'Classes Completed', sortable: true, render: t => t.classes },
-                { key: 'phone', header: 'Phone', render: t => t.phone },
-                { key: 'email', header: 'Email', render: t => <span className="text-gray-600">{t.email}</span> },
-              ]}
-              renderCard={t => (
-                <RecordCard
-                  title={t.name}
-                  subtitle={`${t.subject} • ${t.experience}`}
-                  badge={<span className="inline-flex items-center gap-1 text-sm font-semibold"><FiStar className="w-4 h-4 text-yellow-500 fill-current" aria-hidden="true" />{t.rating}</span>}
-                  fields={[['Classes completed', t.classes], ['Phone', t.phone], ['Email', t.email]]}
-                />
-              )}
-              emptyMessage="No tutors assigned yet."
-            />
-          )}
-          {/* Schedule Tab */}
-          {/* Schedule Tab */}
-          {activeTab === 'schedule' && (
-            <DataTable
-              title="Class Schedule"
-              noun="classes"
-              rows={schedule}
-              rowKey={i => i.id}
-              searchPlaceholder="Search student, tutor or subject"
-              searchText={i => `${i.student} ${i.tutor} ${i.subject}`}
-              filters={[{ key: 'mode', label: 'Mode', get: i => i.mode, options: optionsFrom(schedule, i => i.mode) }]}
-              columns={[
-                { key: 'student', header: 'Student', sortable: true, render: i => <span className="font-semibold text-gray-900">{i.student}</span> },
-                { key: 'tutor', header: 'Tutor', sortable: true, render: i => i.tutor },
-                { key: 'subject', header: 'Subject', sortable: true, render: i => i.subject },
-                { key: 'date', header: 'Date', sortable: true, render: i => <span className="font-medium">{i.date}</span> },
-                { key: 'time', header: 'Time', render: i => <span className="text-gray-600">{i.time}</span> },
-                { key: 'mode', header: 'Mode', render: i => (
-                  <span className="bg-green-100 text-green-800 px-2.5 py-1 rounded-full text-xs whitespace-nowrap">{i.mode}</span>
-                ) },
-              ]}
-              renderCard={i => (
-                <RecordCard
-                  title={i.student}
-                  subtitle={`${i.tutor} • ${i.subject}`}
-                  badge={<span className="bg-green-100 text-green-800 px-2.5 py-1 rounded-full text-xs">{i.mode}</span>}
-                  fields={[['Date', i.date], ['Time', i.time]]}
-                />
-              )}
-              emptyMessage="No classes scheduled."
-            />
-          )}
-          {/* Invoices Tab */}
-          {/* Invoices Tab */}
-          {activeTab === 'invoices' && (
-            <DataTable
-              title="Payment History & Invoices"
-              noun="invoices"
-              rows={invoices}
-              rowKey={inv => inv.id}
-              searchPlaceholder="Search student or period"
-              searchText={inv => `${inv.studentName} ${inv.month}`}
-              filters={[{ key: 'status', label: 'Status', get: inv => inv.status, options: optionsFrom(invoices, inv => inv.status) }]}
-              columns={[
-                { key: 'studentName', header: 'Student', sortable: true, render: inv => <span className="font-medium">{inv.studentName}</span> },
-                { key: 'month', header: 'Period', render: inv => inv.month },
-                { key: 'amount', header: 'Amount', sortable: true, render: inv => <span className="font-bold">₹{inv.amount}</span> },
-                { key: 'status', header: 'Status', sortable: true, render: inv => (
-                  <span className={`px-2.5 py-1 rounded-full text-xs whitespace-nowrap ${
-                    inv.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {inv.status}
-                  </span>
-                ) },
-                { key: 'action', header: 'Action', align: 'right', render: inv => (
-                  inv.status === 'pending'
-                    ? <button onClick={() => handlePayment(inv.id)} className="text-blue-600 font-semibold hover:underline">Pay</button>
-                    : <button className="text-gray-600 font-semibold hover:underline">View</button>
-                ) },
-              ]}
-              renderCard={inv => (
-                <RecordCard
-                  title={inv.studentName}
-                  subtitle={inv.month}
-                  badge={<span className={`px-2.5 py-1 rounded-full text-xs ${inv.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{inv.status}</span>}
-                  fields={[['Amount', `₹${inv.amount}`]]}
-                  actions={inv.status === 'pending'
-                    ? <button onClick={() => handlePayment(inv.id)} className="btn-primary text-sm py-2 px-4">Pay</button>
-                    : <button className="btn-secondary text-sm py-2 px-4">View</button>}
-                />
-              )}
-              emptyMessage="No invoices yet."
-            />
-          )}
-          {/* Requests Tab */}
-          {/* Requests Tab */}
-          {activeTab === 'requests' && (
-            <DataTable
-              title="Requests & Approvals"
-              noun="requests"
-              rows={requests}
-              rowKey={r => r.id}
-              searchPlaceholder="Search type, student or reason"
-              searchText={r => `${r.type} ${r.student} ${r.reason || ''} ${r.topic || ''}`}
-              filters={[{ key: 'status', label: 'Status', get: r => r.status, options: optionsFrom(requests, r => r.status) }]}
-              columns={[
-                { key: 'type', header: 'Request', sortable: true, render: r => <span className="font-semibold text-gray-900">{r.type}</span> },
-                { key: 'student', header: 'Student', sortable: true, render: r => r.student },
-                { key: 'details', header: 'Details', render: r => (
-                  <span className="text-gray-600">{r.reason ? `Reason: ${r.reason}` : r.topic ? `Topic: ${r.topic}` : '–'}</span>
-                ) },
-                { key: 'status', header: 'Status', sortable: true, render: r => (
-                  <span className={`px-2.5 py-1 rounded-full text-xs whitespace-nowrap ${
-                    r.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {r.status}
-                  </span>
-                ) },
-              ]}
-              renderCard={r => (
-                <RecordCard
-                  title={r.type}
-                  subtitle={r.student}
-                  badge={<span className={`px-2.5 py-1 rounded-full text-xs ${r.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{r.status}</span>}
-                  fields={[[r.reason ? 'Reason' : 'Topic', r.reason || r.topic || '–']]}
-                />
-              )}
-              emptyMessage="No requests yet."
-            />
-          )}
-        </motion.div>
+        )}
+        <ChipGroup label="Days" required options={masters.days.map(d => ({ value: d, label: DAY_LABELS[d] }))} value={f.preferredDays} onChange={v => set('preferredDays', v)} error={errors.preferredDays} />
+        <ChipGroup label="Times" required options={masters.slots} value={f.preferredSlots} onChange={v => set('preferredSlots', v)} error={errors.preferredSlots} />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Select label="Monthly budget" options={masters.budgetRanges} value={f.budgetRange} onChange={e => set('budgetRange', e.target.value)} placeholder="Not sure yet" />
+          <Select label="How soon?" options={masters.urgency} value={f.urgency} onChange={e => set('urgency', e.target.value)} placeholder="No rush" />
+        </div>
+        <TextArea label="Notes for the tutor" hint="Optional" value={f.specialRequirements} onChange={e => set('specialRequirements', e.target.value)} />
       </div>
-    </AppShell>
+    </Modal>
+  )
+}
+
+function AddStudentModal({ open, onClose, masters, onSubmit, busy }) {
+  const [f, setF] = useState({ studentName: '', studentClass: '', board: '', school: '' })
+  const [errors, setErrors] = useState({})
+  useEffect(() => { if (open) { setF({ studentName: '', studentClass: '', board: '', school: '' }); setErrors({}) } }, [open])
+  const submit = async () => {
+    const e = {}
+    if (f.studentName.trim().length < 2) e.studentName = 'Enter a name'
+    if (!f.studentClass) e.studentClass = 'Choose a class'
+    if (!f.board) e.board = 'Choose a board'
+    setErrors(e)
+    if (Object.keys(e).length) return
+    try { await onSubmit({ studentName: f.studentName.trim(), studentClass: f.studentClass, board: f.board, ...(f.school ? { school: f.school } : {}) }) } catch (err) { setErrors(err.fieldErrors ? err.fieldErrors() : {}) }
+  }
+  return (
+    <Modal open={open} title="Add a student" onClose={onClose}
+      footer={<><button type="button" className={btn.secondary} onClick={onClose}>Cancel</button><button type="button" className={btn.primary} disabled={busy} onClick={submit}>Add student</button></>}>
+      <div className="space-y-4">
+        <TextInput label="Name" required value={f.studentName} onChange={e => setF({ ...f, studentName: e.target.value })} error={errors.studentName} />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Select label="Class" required options={masters.classes.map(c => ({ value: c, label: classLabel(c) }))} value={f.studentClass} onChange={e => setF({ ...f, studentClass: e.target.value })} error={errors.studentClass} />
+          <Select label="Board" required options={masters.boards} value={f.board} onChange={e => setF({ ...f, board: e.target.value })} error={errors.board} />
+        </div>
+        <TextInput label="School" hint="Optional" value={f.school} onChange={e => setF({ ...f, school: e.target.value })} />
+      </div>
+    </Modal>
+  )
+}
+
+export default function ParentDashboardPage() {
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <Dashboard />
+    </Suspense>
   )
 }

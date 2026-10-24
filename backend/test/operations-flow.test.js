@@ -363,6 +363,22 @@ describe('concurrency and the no-tutor queue', () => {
     assert.ok(lead.body.events.some(e => e.type === 'no_tutor_available'))
   })
 
+  test('slots taken by a tutor\'s active students are not offered again (rule 3)', async () => {
+    // The converted lead above booked Far Tutor for Tue and Thu evenings.
+    const far = server.ops.ctx.repo.findOne('tutors', { name: 'Far Tutor' })
+    server.ops.ctx.repo.update('tutors', far.id, { status: 'active' })
+    for (const t of server.ops.ctx.repo.find('tutors', { status: 'active' })) {
+      if (t.id !== far.id) server.ops.ctx.repo.update('tutors', t.id, { status: 'suspended' })
+    }
+    const p = await h.registerParent(server, { ...h.PLACES.kukatpally, preferredDays: ['tue', 'thu'], preferredSlots: ['evening'] })
+    const busy = await req('POST', `/api/admin/leads/${p.lead.id}/match`, { token: admin })
+    assert.equal(busy.body.latestMatch.results.length, 0, 'fully booked at the requested times')
+
+    const q = await h.registerParent(server, { ...h.PLACES.kukatpally, preferredDays: ['sat'], preferredSlots: ['morning'] })
+    const free = await req('POST', `/api/admin/leads/${q.lead.id}/match`, { token: admin })
+    assert.deepEqual(free.body.latestMatch.results.map(r => r.tutorName), ['Far Tutor'])
+  })
+
   test('a lead with no eligible tutors is flagged straight away', async () => {
     const p = await h.registerParent(server, { studentClass: 'Nursery' })
     const res = await req('POST', `/api/admin/leads/${p.lead.id}/match`, { token: admin })

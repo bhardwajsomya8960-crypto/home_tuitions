@@ -82,7 +82,7 @@ export default async function CoursePage({ params }) {
         {course.shortDescription && <p className="mt-4 max-w-[60ch] text-lg leading-relaxed text-ink/85">{course.shortDescription}</p>}
         <div className="mt-6">
           <Link
-            href="/parent/register"
+            href={`/parent/register?course=${encodeURIComponent(course.slug)}${course.learningModes.length === 1 ? `&mode=${course.learningModes[0]}` : ''}`}
             className="inline-flex min-h-[52px] items-center rounded-full border border-ink bg-lemon px-7 text-base font-semibold text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-ivory"
           >
             Enquire About This Course

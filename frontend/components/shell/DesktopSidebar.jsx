@@ -1,9 +1,9 @@
 'use client'
 
-import { FiChevronsLeft, FiChevronsRight } from 'react-icons/fi'
+import { FiChevronsLeft, FiChevronsRight, FiLogOut } from 'react-icons/fi'
 
 // collapsed: null = responsive (icons on tablet, full on desktop), true = icons only, false = full
-export default function DesktopSidebar({ brandLabel, user, navItems, activeTab, onNavigate, collapsed, onToggleCollapsed }) {
+export default function DesktopSidebar({ brandLabel, user, navItems, activeTab, onNavigate, collapsed, onToggleCollapsed, onLogout }) {
   const widthClass = collapsed === null ? 'md:w-16 lg:w-60' : collapsed ? 'md:w-16' : 'md:w-60'
   const labelClass = collapsed === null ? 'hidden lg:inline' : collapsed ? 'hidden' : 'inline'
   const brandClass = collapsed === null ? 'hidden lg:block' : collapsed ? 'hidden' : 'block'
@@ -41,6 +41,7 @@ export default function DesktopSidebar({ brandLabel, user, navItems, activeTab, 
             >
               <Icon className="w-5 h-5 shrink-0" aria-hidden="true" />
               <span className={labelClass}>{item.label}</span>
+              {item.count > 0 && <span className={`ml-auto rounded-full bg-red-600 px-1.5 text-[11px] font-bold text-white ${labelClass}`}>{item.count}</span>}
             </button>
           )
         })}
@@ -56,6 +57,17 @@ export default function DesktopSidebar({ brandLabel, user, navItems, activeTab, 
             <p className="text-xs text-gray-500 truncate">{user.subtitle}</p>
           </div>
         </div>
+        {onLogout && (
+          <button
+            type="button"
+            onClick={onLogout}
+            title="Sign out"
+            className={`w-full flex items-center gap-3 px-3 py-2.5 min-h-[44px] rounded-lg text-sm text-red-700 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${centerClass}`}
+          >
+            <FiLogOut className="w-5 h-5" aria-hidden="true" />
+            <span className={labelClass}>Sign out</span>
+          </button>
+        )}
         <button
           type="button"
           onClick={onToggleCollapsed}

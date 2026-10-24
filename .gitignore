@@ -60,3 +60,6 @@ backend/data/
 *.sqlite
 *.sqlite-wal
 *.sqlite-shm
+
+# End-to-end walkthrough screenshots
+e2e/output/

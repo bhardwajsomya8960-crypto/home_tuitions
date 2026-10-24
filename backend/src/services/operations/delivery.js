@@ -8,6 +8,7 @@ const addDays = (date, n) => {
   d.setUTCDate(d.getUTCDate() + n)
   return d.toISOString().slice(0, 10)
 }
+const istLabel = iso => new Date(iso).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })
 const monthLabel = date => new Date(`${date}T00:00:00Z`).toLocaleDateString('en-IN', { month: 'short', year: 'numeric', timeZone: 'UTC' })
 
 function createDelivery(ctx, { assignments }) {
@@ -41,7 +42,7 @@ function createDelivery(ctx, { assignments }) {
           durationMin: v.durationMinutes || ctx.settings().demoDurationMinutes, mode: v.mode, locationNote: v.locationNote || null,
           status: 'scheduled', rescheduleCount: 0, createdAt: stamp, updatedAt: stamp,
         })
-        ctx.moveLead(lead, 'demo_scheduled', actor, { type: 'demo_scheduled', note: `Demo on ${demo.scheduledAt}` })
+        ctx.moveLead(lead, 'demo_scheduled', actor, { type: 'demo_scheduled', note: `Demo on ${istLabel(demo.scheduledAt)} IST` })
         ctx.audit(actor, 'demo.schedule', 'demo', demo.id)
         return demo
       })
@@ -53,7 +54,7 @@ function createDelivery(ctx, { assignments }) {
       const v = ctx.validate({ scheduledAt }, { scheduledAt: specs.demoSpec.scheduledAt })
       if (Date.parse(v.scheduledAt) < ctx.now().getTime()) throw ctx.invalid([{ field: 'scheduledAt', message: 'must be in the future' }])
       repo.update('demos', demo.id, { scheduledAt: new Date(v.scheduledAt).toISOString(), rescheduleCount: demo.rescheduleCount + 1, updatedAt: ctx.iso() })
-      ctx.event(demo.leadId, 'demo_rescheduled', actor, { note: `Moved to ${new Date(v.scheduledAt).toISOString()}` })
+      ctx.event(demo.leadId, 'demo_rescheduled', actor, { note: `Moved to ${istLabel(v.scheduledAt)} IST` })
       ctx.audit(actor, 'demo.reschedule', 'demo', demo.id)
       return requireDemo(demo.id)
     },

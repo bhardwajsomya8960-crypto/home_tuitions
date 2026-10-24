@@ -8,7 +8,7 @@ import ConnectionStatus from './ConnectionStatus'
 
 // Breakpoints: <768 mobile (app header + bottom tabs), 768-1023 tablet (icon sidebar),
 // >=1024 desktop (full sidebar). `collapsed` is null while the user has not toggled.
-export default function AppShell({ portalLabel, user, navItems, activeTab, onTabChange, children }) {
+export default function AppShell({ portalLabel, user, navItems, activeTab, onTabChange, onLogout, headerActions, children }) {
   const [collapsed, setCollapsed] = useState(null)
   const active = navItems.find(item => item.id === activeTab) || navItems[0]
 
@@ -31,10 +31,11 @@ export default function AppShell({ portalLabel, user, navItems, activeTab, onTab
         onNavigate={handleNavigate}
         collapsed={collapsed}
         onToggleCollapsed={() => setCollapsed(prev => (prev === null ? true : !prev))}
+        onLogout={onLogout}
       />
 
       <div className={`${contentOffset} min-h-screen flex flex-col`}>
-        <MobileAppHeader portalLabel={portalLabel} title={active.label} />
+        <MobileAppHeader portalLabel={portalLabel} title={active.label} onLogout={onLogout} />
 
         {/* Desktop top navbar */}
         <header className="hidden md:flex h-[68px] items-center justify-between gap-4 bg-white border-b border-gray-200 px-6 lg:px-8 sticky top-0 z-30">
@@ -47,6 +48,7 @@ export default function AppShell({ portalLabel, user, navItems, activeTab, onTab
             <h1 className="text-lg font-semibold text-gray-900 truncate">{active.label}</h1>
           </div>
           <div className="flex items-center gap-3 shrink-0">
+            {headerActions}
             <div className="text-right leading-tight">
               <p className="text-sm font-semibold text-gray-900 truncate max-w-[200px]">{user.name}</p>
               <p className="text-xs text-gray-500 truncate max-w-[200px]">{user.subtitle}</p>

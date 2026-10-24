@@ -1,8 +1,8 @@
 # home tution: Project Overview
 
-home tution is a platform that connects parents with tutors for home and online tuition. It covers three audiences: parents who need tuition, tutors who teach, and internal administrators who run the business.
+home tution is a platform that connects parents with tutors for home and online tuition. It covers three audiences: parents who need tuition, tutors who teach, and internal staff who run the business.
 
-This document describes the project as it is in the repository today. Where something is planned but not built, it says so.
+This document describes the project as it is in the repository today. The full product specification is `docs/UI.md`; `docs/IMPLEMENTATION_STATUS.md` maps each part of it to what is built.
 
 ---
 
@@ -10,195 +10,113 @@ This document describes the project as it is in the repository today. Where some
 
 | Area | State |
 |------|-------|
-| Landing page | Built |
-| Parent registration (multi-step form) | Built, calls the backend |
-| Tutor registration (multi-step form) | Built, calls the backend |
-| Parent dashboard | Built with sample data, no API calls |
-| Tutor dashboard | Built with sample data, no API calls |
-| Admin dashboard | Built with sample data, no API calls |
-| Offline page and installable PWA (frontend) | Built |
-| Backend API routes | Built as scaffolding |
-| Backend data storage | In memory only, not connected to Zoho Catalyst |
-| Authentication | OTP and token logic built, no login UI |
-| Matching engine | Built, not connected to the database |
-| Google Calendar, email, KYC upload, payments | Partly built or not started |
-| Automated tests | None written |
-
-The "Currently not connected" items are the most important limitation: the dashboards show fixed sample data, and the backend loses all data when it restarts.
+| Landing page, course catalogue pages | Built |
+| Parent and tutor sign-in by one-time code | Built (codes are logged, not sent: no SMS provider yet) |
+| Parent registration and new requests | Built, stored, with consent and duplicate detection |
+| Tutor registration, availability, KYC uploads | Built |
+| Admin sign-in and console | Built: leads, matching, offers, demos, conversion, tutors, finance, settings, audit log |
+| Matching engine | Built on stored tutors, with admin-editable rules |
+| Timed tutor offers with automatic hand-over | Built |
+| Demos, enrolments, classes, attendance | Built |
+| Invoices and manual payments | Built; no payment gateway |
+| Parent and tutor dashboards | Built on real data |
+| Data storage | SQLite (development only) |
+| WhatsApp, SMS, email sending | Not built |
+| Online classes (video, LMS), support tickets, payouts, reports | Not built |
+| Automated tests | 117 backend tests, plus a browser walkthrough in `e2e/` |
 
 ---
 
 ## 2. Repository layout
 
 ```
-home/
-├── frontend/              Next.js 14 web app (landing page, portals, admin, PWA)
+├── frontend/                  Next.js 14 web app
 │   ├── app/
-│   │   ├── page.jsx                  Landing page
-│   │   ├── layout.jsx                Root layout, manifest and theme metadata
-│   │   ├── offline/                  Offline fallback page
-│   │   ├── parent/register/          Parent registration form
-│   │   ├── parent/dashboard/         Parent portal
-│   │   ├── tutor/register/           Tutor registration form
-│   │   ├── tutor/dashboard/          Tutor portal
-│   │   └── admin/dashboard/          Internal admin dashboard
+│   │   ├── page.jsx                     Landing page
+│   │   ├── courses/, categories/        Public catalogue
+│   │   ├── login/                       Parent and tutor sign-in
+│   │   ├── parent/register, dashboard   Parent enquiry form and portal
+│   │   ├── tutor/register, dashboard    Tutor sign-up and portal
+│   │   └── admin/login, dashboard       Staff console
 │   ├── components/
-│   │   ├── shell/                    App shell: sidebar, navbar, mobile header, bottom tabs, update/offline banners
-│   │   └── data/                     Shared DataTable, Pagination, RecordCard
-│   ├── middleware.js                 Sends / to each portal based on the port (dev setup)
-│   ├── next.config.js                Next.js config and PWA caching rules
-│   └── public/                       Manifest, icons, generated service worker (build output)
-├── backend/               Node.js + Express API
-│   └── src/
-│       ├── index.js                  App entry point, mounts all routes under /api
-│       ├── config/catalyst.js        In-memory data store standing in for Zoho Catalyst
-│       ├── routes/                   One file per area (auth, parents, tutors, leads, demos, classes, enrolments, payments, admin)
-│       └── services/                 authService, geoService, matchingService, emailService
-├── docs/                  (empty)
-├── docker-compose.yml     Single-stack Docker setup
-├── docker-compose.multi.yml  Five services on separate ports
-├── start-multi-local.sh   Starts backend and three frontend ports locally
-├── start-multi-docker.sh  Starts the multi-port Docker setup
-├── .env.example / .env.ports  Configuration templates
-└── README.md, SETUP.md, DOCKER.md, RUN_MULTI_PORT.md, PROGRESS.md  Older guides
+│   │   ├── shell/                       Sidebar, headers, bottom tabs, offline/update banners
+│   │   ├── data/                        DataTable, Pagination, RecordCard
+│   │   ├── ui/                          Form fields, chips, availability grid, modal, countdown, phone verification
+│   │   ├── admin/                       Lead workspace, tutor review, settings form
+│   │   └── landing/, catalogue/
+│   └── lib/                             API client and sessions, master data hook, formatting
+├── backend/                   Node.js + Express API
+│   ├── src/
+│   │   ├── app.js                       App factory: middleware and routes
+│   │   ├── db/migrations/               001 catalogue, 002 operations
+│   │   ├── repositories/                Catalogue and operations storage
+│   │   ├── services/
+│   │   │   ├── operations/              People, assignments (matching/offers), delivery (demos, classes, billing), views, admin, portals
+│   │   │   ├── matchingService.js       Scoring and settings validation
+│   │   │   ├── authService.js           One-time codes and tokens
+│   │   │   ├── masters.js               Classes, subjects, slots, reasons…
+│   │   │   └── operationsSpecs.js       Input specs for every write
+│   │   └── routes/                      auth, parents, tutors, admin, masters, catalogue
+│   └── test/                            node:test suites
+├── e2e/                       Browser walkthrough (Playwright)
+└── docs/                      UI.md (specification), status, guides
 ```
 
 ---
 
-## 3. Users and what they can do
+## 3. What each user can do
 
 ### Parent
-- Registers and submits a tuition enquiry: parent details, student details, tuition requirements (location, mode, days, time, budget), then a review step.
-- The dashboard shows students, tutors, schedule, invoices and requests. Today this is sample data.
+- Start an enquiry in four steps: their details (mobile verified by code), student, tuition needs (mode, address and optional device location, days, times, budget, start, urgency, tutor preferences, notes) and a review with consent.
+- Sign in later with a code. The dashboard shows what needs attention, each request's progress, the tutor's profile once a tutor accepts and their contact once confirmed, demo details, a choice of outcome after the demo, ratings, classes with the tutor's notes (and a button to confirm each class), invoices, and students. Parents can raise more requests, add students, cancel a request and ask to move a demo.
 
 ### Tutor
-- Registers in two steps: personal and academic details, then location and availability.
-- The dashboard shows lead offers (accept or reject), students, schedule and earnings. Today this is sample data.
+- Register in four steps, including a weekly availability grid, fees and a profile, then upload a photo, identity document and qualification certificate.
+- Receive lead offers with a countdown. An offer shows class, board, subjects, mode, pincode, distance, schedule, budget and notes, but not the parent's name, number or address. The tutor can accept, decline with a reason, say they are not available, or ask a question.
+- See confirmed students with parent contact, demos, classes (record attendance, notes and homework), and edit availability, subjects, fees and whether they want new leads.
 
-### Internal admin
-- Dashboard with KPIs (total leads, conversions, tutors, revenue), a lead table, a tutor list with verification, a finance view, and a matching configuration view. Today this is sample data.
-
----
-
-## 4. Frontend
-
-**Stack:** Next.js 14 (App Router), React 18, Tailwind CSS 3, Framer Motion, react-icons, axios.
-
-### Layout by screen size
-- **Desktop (1024px and up):** a 240px sidebar (icons only between 768px and 1023px), a 68px navbar with breadcrumb and user, and a fluid content area.
-- **Phone (below 768px):** a compact header with the screen title, and bottom tabs with a "More" sheet when there are more than five sections.
-- **Tables:** on desktop they render as tables with search, filters, sortable columns and pagination (10, 20 or 50 rows per page). On phones the same rows render as cards.
-
-### PWA
-- Installable as a standalone app (`manifest.webmanifest`), with placeholder "ht" icons.
-- Built with `@ducanh2912/next-pwa` in production only. The dev server is not cached.
-- Caching rules:
-  - API calls and page navigations are never cached.
-  - Next.js static JS and CSS, fonts and images are cached.
-- Offline: a precached `/offline` page is shown when a navigation fails.
-- Updates: a new version waits, and the user accepts it through an "Update" banner.
-
-### Local multi-port setup (development)
-- `middleware.js` reads the port in the Host header. On ports 3001, 3002 and 3003 the root path redirects to the tutor, parent and admin dashboards. Port 3000 shows the landing page.
-- Each dev server uses its own build folder (`.next-<port>`), set through `NEXT_DIST_DIR`. Sharing one `.next` folder caused intermittent 404s.
+### Staff (admin)
+- Overview of leads by stage, conversion, tutors, enrolments and money collected or outstanding.
+- Leads: search and filter, add a lead for a caller, change status (with reasons for lost leads), add notes, fix a location, run matching and see each tutor's score breakdown and reasons, send offers (next in line or a chosen tutor), confirm or release a tutor, schedule, move, complete or cancel demos, record no-shows and outcomes, and convert to an enrolment.
+- Operations queues: accepted offers awaiting confirmation, leads with no tutor, open offers with countdowns, tutor questions, escalations and upcoming demos.
+- Tutors: review each document, then verify, activate, suspend or reject.
+- Finance: invoices (record payments, void), enrolments (pause, resume, end, new invoice).
+- Matching rules and the audit log.
 
 ---
 
-## 5. Backend
+## 4. How a lead moves
 
-**Stack:** Node.js 16+, Express 4, helmet, cors, dotenv, axios, nodemailer, googleapis, bcryptjs, jsonwebtoken, uuid. Dev tooling: nodemon, jest (no tests yet).
+`new → contacted → qualified → matching → tutor_offered → tutor_accepted → demo_scheduled → demo_completed → converted`, with `on_hold`, `lost` and `cancelled` as exits.
 
-### Entry point
-`backend/src/index.js` applies helmet, cors and JSON parsing, mounts the routers below, and has a general error handler.
-
-### API areas
-
-| Mount path | File | Endpoints (method and path) |
-|---|---|---|
-| `/api/auth` | `auth.js` | `POST /send-otp`, `POST /verify-otp`, `POST /verify-token` |
-| `/api/parents` | `parents.js` | `POST /register`, `GET /:parentId`, `GET /:parentId/students`, `GET /:parentId/leads` |
-| `/api/tutors` | `tutors.js` | `POST /register`, `GET /:tutorId`, `POST /:tutorId/availability`, `GET /:tutorId/leads`, `POST /:tutorId/leads/:leadId/accept`, `POST /:tutorId/leads/:leadId/reject`, `GET /:tutorId/classes`, `POST /:tutorId/kyc` |
-| `/api/leads` | `leads.js` | `GET /`, `GET /:leadId`, `POST /:leadId/match`, `GET /:leadId/tutors` |
-| `/api/demos` | `demos.js` | `POST /`, `GET /:demoId`, `PATCH /:demoId`, `POST /:demoId/reschedule` |
-| `/api/classes` | `classes.js` | `POST /`, `POST /:classId/attendance`, `GET /:classId`, `GET /enrolment/:enrolmentId` |
-| `/api/enrolments` | `enrolments.js` | `POST /`, `GET /:enrolmentId`, `GET /student/:studentId`, `PATCH /:enrolmentId` |
-| `/api/payments` | `payments.js` | `POST /invoices`, `GET /invoices/:invoiceId`, `POST /payments`, `GET /payments/:paymentId`, `GET /parent/:parentId/invoices`, `GET /history/:studentId` |
-| `/api/admin` | `admin.js` | `GET /dashboard`, `GET /users`, `GET /tutors`, `POST /tutors/:tutorId/verify`, `GET /config/matching`, `POST /config/matching/weights`, `GET /leads/pipeline`, `GET /finance`, `GET /masters` |
-
-### Data
-- `config/catalyst.js` holds all records in JavaScript arrays (parents, students, tutors, leads, demos, enrolments, classes, invoices, payments). The file is named for Zoho Catalyst, but nothing is sent there yet.
-- OTPs are kept in a `Map` and are printed to the console instead of being sent by SMS or email.
-- Session tokens are kept in a `Map`.
-
-### Matching
-- `services/geoService.js` calculates distance with the Haversine formula.
-- `services/matchingService.js` ranks tutors using weighted scores. The README lists the default weights as: distance 30, subject fit 25, availability 15, experience 10, quality 10, acceptance reliability 5, fee fit 5.
-- Hard filters: verification, subject, and distance.
-
-### Lead lifecycle (as described in README)
-New → Contacted → Qualified → Matching → Offered → Accepted → Demo → Converted.
-Tutors have a 10-minute window to accept an offer (README).
+- Matching filters tutors first (active, taking leads, teaches the class and at least one subject, offers the mode, free at a requested time that is not already booked, within their own travel radius and the maximum radius), then ranks them by distance band, subject/board fit, availability, experience, rating, acceptance history and fee fit. Weights and bands are set by staff and must total 100%.
+- An offer stays open for the configured time (10 minutes by default). When it expires or is declined, the next tutor is offered automatically. If nobody is left, the lead goes to the "no tutor" queue.
+- The first tutor to accept wins. Staff then confirm (or turn on automatic confirmation), which shares contact details both ways.
+- A demo must be completed before conversion. Converting creates the enrolment, the first invoice and two weeks of classes.
 
 ---
 
-## 6. Running the project
+## 5. Running the project
 
-### Requirements
-- Node.js 16 or later (Node 18 is used by the frontend Docker image).
-- npm.
-
-### Local, single stack
 ```bash
 cd backend && npm install && npm run dev      # API on port 5000
 cd frontend && npm install && npm run dev     # web app on port 3000
 ```
 
-### Local, all portals
-```bash
-./start-multi-local.sh
-```
-This starts the backend on 5000 and the frontend on 3000, 3001, 3002 and 3003.
+Set at least `JWT_SECRET`, and `ADMIN_EMAIL`, `ADMIN_PASSWORD_HASH`, `ADMIN_JWT_SECRET` for the staff console (see `.env.example`). For local testing without SMS, set `OTP_DEV_ECHO=true` so the sign-in code is shown on screen. Never enable it in production.
 
-### Production build (frontend)
-```bash
-cd frontend && npm run build && npm start
-```
+Optional: `GOOGLE_MAPS_API_KEY` geocodes addresses. Without it, parents can share their device location, staff can enter coordinates, and matching falls back to tutors in the same pincode.
 
-### Docker
-```bash
-docker-compose up                                  # single stack
-docker-compose -f docker-compose.multi.yml up      # multi-port
-```
-
-### Environment variables
-Templates are in `.env.example` and `.env.ports`. Variables named in the templates include `JWT_SECRET`, `CATALYST_PROJECT_ID`, `CATALYST_API_KEY`, `ZOHO_MAIL_*`, `GOOGLE_MAPS_API_KEY`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`, and the port variables (`BACKEND_PORT`, `FRONTEND_PORT`, `TUTOR_PORTAL_PORT`, `PARENT_PORTAL_PORT`, `ADMIN_PORTAL_PORT`).
+Tests: `cd backend && npm test`. Browser walkthrough: see `e2e/README.md`.
 
 ---
 
-## 7. Known gaps and risks
+## 6. Known gaps and risks
 
-1. **No real data.** The three dashboards use hard-coded sample data. The registration forms are the only screens that call the API.
-2. **No persistence.** Backend data is lost on restart. Catalyst is not connected.
-3. **No login UI.** The OTP and token code exists, but no screen uses it, and the dashboards have no access control.
-4. **OTP is logged, not sent.** Codes appear in the server console.
-5. **Sensitive data and the offline cache.** The PWA is designed not to cache account data. The dashboards show sample data only, so this has not been tested against real records.
-6. **Email, Google Calendar, KYC upload and payments** are incomplete or planned.
-7. **No automated tests.** The Jest setup exists but there are no tests.
-8. **Lint is not configured.** `next lint` prompts for setup.
-9. **Dependency audit.** `npm audit` reports vulnerabilities in the frontend and backend dependency trees. They have not been reviewed.
-10. **Older docs are out of date.** `PROGRESS.md` marks the dashboards as "0%" and the README lists the admin as a future module, both of which no longer match the code.
-
----
-
-## 8. Planned next steps (from PROGRESS.md and README)
-
-- Connect the dashboards and registration forms to the real API.
-- Replace the in-memory store with Zoho Catalyst datastore tables, and add migrations.
-- Add login screens for parents and tutors, and access control for admin routes.
-- Send OTPs by SMS or email.
-- Add validation, error handling, audit logging and rate limiting to the API.
-- Add KYC document upload and Google Calendar integration for demos.
-- Add tests at unit, API and end-to-end levels.
-- Move table pagination and filtering to the server once the list endpoints are in use.
-
-Phase 2 items listed in PROGRESS.md include WhatsApp integration, a payment gateway (Razorpay or PayU), analytics, a React Native app, and an LMS.
+1. **Development storage.** SQLite and local file uploads are for development only. Production needs a shared, backed-up database and private object storage.
+2. **No messages are sent.** Codes, offers, reminders and receipts are not delivered by SMS, WhatsApp or email.
+3. **One staff role.** Every staff member uses the single admin account; there are no BDA, operations or finance roles yet.
+4. **In-memory limits.** One-time codes and login rate limits reset on restart and are per process.
+5. **No payment gateway, payouts, tickets, LMS or reports** (see `docs/IMPLEMENTATION_STATUS.md`).
+6. **Brand name** differs between the specification ("homeTuitions"), the landing page ("Home Tuition") and the app shell ("home tution").
+7. **Older guides** (`README.md`, `docs/SETUP.md`, `docs/PROGRESS.md`) predate this work and describe the earlier scaffolding.

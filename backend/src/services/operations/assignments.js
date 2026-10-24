@@ -24,9 +24,16 @@ function createAssignments(ctx) {
     return stats
   }
 
+  // Business rule 3: slots a tutor already teaches in (active enrolments) are not free.
+  function withoutBookedSlots(tutor) {
+    const booked = new Set(repo.find('enrolments', { tutorId: tutor.id, status: 'active' })
+      .flatMap(e => e.schedule.map(s => `${s.day}:${s.slot}`)))
+    return booked.size ? { ...tutor, availability: tutor.availability.filter(a => !booked.has(`${a.day}:${a.slot}`)) } : tutor
+  }
+
   function rank(lead) {
     const settings = ctx.settings()
-    const tutors = repo.find('tutors', { status: 'active' })
+    const tutors = repo.find('tutors', { status: 'active' }).map(withoutBookedSlots)
     return { settings, ...rankTutors(lead, tutors, settings, { budget: budgetFor(lead), statsByTutor: offerStats() }) }
   }
 

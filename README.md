@@ -274,3 +274,4 @@ For issues or questions, contact: support@hometution.com
 
 **Version:** 1.0.0 (MVP)  
 **Last Updated:** October 2024
+# edTech

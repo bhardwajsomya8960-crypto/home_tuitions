@@ -48,7 +48,7 @@ export default function TutorRegisterPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 flex items-center justify-center p-4 pt-20">
+      <div className="min-h-screen bg-ivory flex items-center justify-center p-4 pt-20">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -61,7 +61,7 @@ export default function TutorRegisterPage() {
           </div>
           <h2 className="text-2xl font-bold mb-2">Registration Successful!</h2>
           <p className="text-gray-600 mb-6">Please upload your KYC documents for verification</p>
-          <Link href="/tutor/dashboard" className="btn-primary block">
+          <Link href="/tutor/dashboard" className="btn-brand block">
             Go to Dashboard
           </Link>
         </motion.div>
@@ -70,14 +70,14 @@ export default function TutorRegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 pt-20 pb-12 px-4">
+    <div className="min-h-screen bg-ivory pt-20 pb-12 px-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="max-w-2xl mx-auto"
       >
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-2 gradient-text">Become a Tutor</h1>
+          <h1 className="text-4xl font-bold mb-2 text-ink">Become a Tutor</h1>
           <p className="text-gray-600">Start earning by helping students learn</p>
         </div>
 
@@ -86,7 +86,7 @@ export default function TutorRegisterPage() {
             <div
               key={s}
               className={`h-2 flex-1 rounded-full transition-all ${
-                s <= step ? 'bg-purple-600' : 'bg-gray-300'
+                s <= step ? 'bg-ink' : 'bg-ink/15'
               }`}
             />
           ))}
@@ -109,7 +109,7 @@ export default function TutorRegisterPage() {
                   <input
                     type="text"
                     {...register('name', { required: true })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                     placeholder="Rahul Kumar"
                   />
                 </div>
@@ -119,7 +119,7 @@ export default function TutorRegisterPage() {
                   <input
                     type="tel"
                     {...register('phone', { required: true })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                   />
                 </div>
 
@@ -128,7 +128,7 @@ export default function TutorRegisterPage() {
                   <input
                     type="email"
                     {...register('email', { required: true })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                   />
                 </div>
 
@@ -136,7 +136,7 @@ export default function TutorRegisterPage() {
                   <label className="block text-sm font-medium mb-2">Gender *</label>
                   <select
                     {...register('gender', { required: true })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                   >
                     <option value="">Select...</option>
                     <option value="Male">Male</option>
@@ -149,7 +149,7 @@ export default function TutorRegisterPage() {
                     <label className="block text-sm font-medium mb-2">Qualification *</label>
                     <select
                       {...register('qualification', { required: true })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                     >
                       <option value="">Select...</option>
                       <option value="Bachelor">Bachelor</option>
@@ -163,7 +163,7 @@ export default function TutorRegisterPage() {
                     <input
                       type="number"
                       {...register('experience', { required: true })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                       min="0"
                       max="50"
                     />
@@ -175,7 +175,7 @@ export default function TutorRegisterPage() {
                   <input
                     type="text"
                     {...register('subjects', { required: true })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                     placeholder="Maths, Science, English"
                   />
                 </div>
@@ -185,7 +185,7 @@ export default function TutorRegisterPage() {
                   <input
                     type="text"
                     {...register('classes', { required: true })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                     placeholder="6, 7, 8, 9, 10"
                   />
                 </div>
@@ -194,7 +194,7 @@ export default function TutorRegisterPage() {
               <button
                 type="button"
                 onClick={() => setStep(2)}
-                className="w-full btn-primary bg-purple-600 hover:bg-purple-700"
+                className="w-full btn-brand"
               >
                 Next
               </button>
@@ -211,7 +211,7 @@ export default function TutorRegisterPage() {
                   <input
                     type="text"
                     {...register('boards', { required: true })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                     placeholder="CBSE, ICSE, State"
                   />
                 </div>
@@ -221,7 +221,7 @@ export default function TutorRegisterPage() {
                   <input
                     type="text"
                     {...register('languages', { required: true })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                     placeholder="English, Hindi, Marathi"
                   />
                 </div>
@@ -231,7 +231,7 @@ export default function TutorRegisterPage() {
                   <input
                     type="text"
                     {...register('mode', { required: true })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                     placeholder="Home, Online, Both"
                   />
                 </div>
@@ -242,7 +242,7 @@ export default function TutorRegisterPage() {
                     <input
                       type="text"
                       {...register('pincode', { required: true })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                     />
                   </div>
 
@@ -252,7 +252,7 @@ export default function TutorRegisterPage() {
                       type="number"
                       {...register('radius')}
                       defaultValue="8"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                       min="1"
                       max="50"
                     />
@@ -264,7 +264,7 @@ export default function TutorRegisterPage() {
                   <input
                     type="text"
                     {...register('address', { required: true })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                     placeholder="123 Main St"
                   />
                 </div>
@@ -274,14 +274,14 @@ export default function TutorRegisterPage() {
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="flex-1 btn-secondary"
+                  className="flex-1 btn-soft"
                 >
                   Back
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 btn-primary bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
+                  className="flex-1 btn-brand disabled:opacity-50"
                 >
                   {loading ? 'Registering...' : 'Complete Registration'}
                 </button>
@@ -289,10 +289,6 @@ export default function TutorRegisterPage() {
             </motion.div>
           )}
         </form>
-
-        <p className="text-center text-gray-600 mt-6">
-          Already registered? <Link href="/tutor/login" className="text-purple-600 font-semibold hover:underline">Login here</Link>
-        </p>
       </motion.div>
     </div>
   )

@@ -9,6 +9,20 @@ module.exports = {
       colors: {
         primary: '#3b82f6',
         secondary: '#8b5cf6',
+        // Landing page palette
+        lemon: '#F7E96B',
+        ivory: '#FFFCF4',
+        ink: '#26352F',
+        mint: '#CDEDD8',
+        lavender: '#E7DEFF',
+        coral: '#FFAB91',
+        sage: {
+          DEFAULT: '#5E7163', // text-safe muted green (5.1:1 on ivory)
+          soft: '#75877A',    // decorative only (3.7:1 on ivory)
+        },
+      },
+      fontFamily: {
+        landing: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'sans-serif'],
       },
       animation: {
         'fadeInUp': 'fadeInUp 0.6s ease-out',

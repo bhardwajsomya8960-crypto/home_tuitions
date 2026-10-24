@@ -1,33 +1,57 @@
 const express = require('express');
+const catalyst = require('../config/catalyst');
 const matchingService = require('../services/matchingService');
 
 const router = express.Router();
 
+const VERIFICATION_DECISIONS = ['verified', 'rejected'];
+const LEAD_STAGES = ['new', 'contacted', 'qualified', 'matching', 'offered', 'accepted', 'converted', 'lost'];
+
+function parsePage(query) {
+  const limit = Math.min(Math.max(parseInt(query.limit, 10) || 20, 1), 100);
+  const offset = Math.max(parseInt(query.offset, 10) || 0, 0);
+  return { limit, offset };
+}
+
+function sumWhere(records, status) {
+  return records
+    .filter(r => r.status === status)
+    .reduce((total, r) => total + (Number(r.amount) || 0), 0);
+}
+
 // Dashboard stats
 router.get('/dashboard', async (req, res) => {
   try {
-    // TODO: Fetch from Catalyst
+    const { leads, tutors, payments, invoices } = catalyst.data;
     res.json({
-      totalLeads: 0,
-      newLeads: 0,
-      convertedLeads: 0,
-      totalTutors: 0,
-      activeTutors: 0,
-      pendingVerification: 0,
-      totalRevenue: 0,
-      pendingPayments: 0
+      totalLeads: leads.length,
+      newLeads: leads.filter(l => l.status === 'new').length,
+      convertedLeads: leads.filter(l => l.status === 'converted').length,
+      totalTutors: tutors.length,
+      activeTutors: tutors.filter(t => t.verification_status === 'verified').length,
+      pendingVerification: tutors.filter(t => t.verification_status === 'pending').length,
+      totalRevenue: sumWhere(payments, 'paid'),
+      pendingPayments: sumWhere(invoices, 'pending')
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Get all users
+// Get all users (parents and tutors), optionally filtered by role and status
 router.get('/users', async (req, res) => {
   try {
-    const { role, status, limit = 20, offset = 0 } = req.query;
-    // TODO: Fetch from Catalyst with filters
-    res.json({ users: [], total: 0 });
+    const { role, status } = req.query;
+    const { limit, offset } = parsePage(req.query);
+
+    const parents = catalyst.data.parents.map(p => ({ ...p, role: 'parent', status: p.verification_status }));
+    const tutors = catalyst.data.tutors.map(t => ({ ...t, role: 'tutor', status: t.verification_status }));
+    let users = [...parents, ...tutors];
+    if (role) users = users.filter(u => u.role === role);
+    if (status) users = users.filter(u => u.status === status);
+
+    const total = users.length;
+    res.json({ users: users.slice(offset, offset + limit), total, limit, offset });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -36,9 +60,14 @@ router.get('/users', async (req, res) => {
 // Get all tutors with verification status
 router.get('/tutors', async (req, res) => {
   try {
-    const { status, limit = 20, offset = 0 } = req.query;
-    // TODO: Fetch from Catalyst
-    res.json({ tutors: [], total: 0 });
+    const { status } = req.query;
+    const { limit, offset } = parsePage(req.query);
+
+    let tutors = catalyst.data.tutors;
+    if (status) tutors = tutors.filter(t => t.verification_status === status);
+
+    const total = tutors.length;
+    res.json({ tutors: tutors.slice(offset, offset + limit), total, limit, offset });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -48,14 +77,30 @@ router.get('/tutors', async (req, res) => {
 router.post('/tutors/:tutorId/verify', async (req, res) => {
   try {
     const { tutorId } = req.params;
-    const { status, notes } = req.body;
-    // status: 'verified', 'rejected'
+    const { status, notes } = req.body || {};
 
-    // TODO: Update tutor in Catalyst
-    // TODO: Send email to tutor
+    if (!VERIFICATION_DECISIONS.includes(status)) {
+      return res.status(400).json({ error: `status must be one of: ${VERIFICATION_DECISIONS.join(', ')}` });
+    }
+    if (notes !== undefined && typeof notes !== 'string') {
+      return res.status(400).json({ error: 'notes must be a string' });
+    }
 
+    const tutor = await catalyst.getTutorById(tutorId);
+    if (!tutor) {
+      return res.status(404).json({ error: 'Tutor not found' });
+    }
+
+    const updated = await catalyst.updateRecord('tutors', tutorId, {
+      verification_status: status,
+      verification_notes: notes || null,
+      verified_at: new Date()
+    });
+
+    // TODO: Send email to tutor (emailService) once templates are approved
     res.json({
       success: true,
+      tutor: updated,
       message: `Tutor ${status}`
     });
   } catch (error) {
@@ -98,17 +143,11 @@ router.post('/config/matching/weights', async (req, res) => {
 // Get lead pipeline
 router.get('/leads/pipeline', async (req, res) => {
   try {
-    // TODO: Group leads by status from Catalyst
-    res.json({
-      new: 0,
-      contacted: 0,
-      qualified: 0,
-      matching: 0,
-      offered: 0,
-      accepted: 0,
-      converted: 0,
-      lost: 0
-    });
+    const pipeline = Object.fromEntries(LEAD_STAGES.map(stage => [stage, 0]));
+    for (const lead of catalyst.data.leads) {
+      if (lead.status in pipeline) pipeline[lead.status] += 1;
+    }
+    res.json(pipeline);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

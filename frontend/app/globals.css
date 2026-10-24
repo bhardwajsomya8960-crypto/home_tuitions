@@ -98,6 +98,14 @@ body {
   @apply btn bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg;
 }
 
+.btn-brand {
+  @apply btn rounded-full bg-lemon text-ink border border-ink hover:bg-[#f2e04f] hover:shadow-lg;
+}
+
+.btn-soft {
+  @apply btn rounded-full bg-white text-ink border border-ink/25 hover:bg-mint/50;
+}
+
 .btn-secondary {
   @apply btn bg-gray-200 text-gray-900 hover:bg-gray-300;
 }

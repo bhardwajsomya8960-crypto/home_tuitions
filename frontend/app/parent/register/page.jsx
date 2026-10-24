@@ -1,17 +1,28 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import axios from 'axios'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 
-export default function ParentRegisterPage() {
+const MODE_OPTIONS = ['Home', 'Online', 'Hybrid']
+
+function ParentRegisterForm() {
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
-  const { register, handleSubmit, watch, formState: { errors } } = useForm()
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm()
+  const searchParams = useSearchParams()
+
+  // Pre-selects Mode when the landing page passes ?mode=Home or ?mode=Online.
+  // Unknown values are ignored so the field stays empty.
+  useEffect(() => {
+    const mode = searchParams.get('mode')
+    if (MODE_OPTIONS.includes(mode)) setValue('mode', mode)
+  }, [searchParams, setValue])
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
 
@@ -54,7 +65,7 @@ export default function ParentRegisterPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-ivory flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -67,7 +78,7 @@ export default function ParentRegisterPage() {
           </div>
           <h2 className="text-2xl font-bold mb-2">Registration Successful!</h2>
           <p className="text-gray-600 mb-6">We've received your details. Our team will match you with suitable tutors shortly.</p>
-          <Link href="/parent/dashboard" className="btn-primary block">
+          <Link href="/parent/dashboard" className="btn-brand block">
             Go to Dashboard
           </Link>
         </motion.div>
@@ -76,7 +87,7 @@ export default function ParentRegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 pt-20 pb-12 px-4">
+    <div className="min-h-screen bg-ivory pt-20 pb-12 px-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -84,7 +95,7 @@ export default function ParentRegisterPage() {
       >
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-2 gradient-text">Join as Parent</h1>
+          <h1 className="text-4xl font-bold mb-2 text-ink">Join as Parent</h1>
           <p className="text-gray-600">Find the perfect tutor for your child in just a few steps</p>
         </div>
 
@@ -94,7 +105,7 @@ export default function ParentRegisterPage() {
             <div
               key={s}
               className={`h-2 flex-1 rounded-full transition-all ${
-                s <= step ? 'bg-blue-600' : 'bg-gray-300'
+                s <= step ? 'bg-ink' : 'bg-ink/15'
               }`}
             />
           ))}
@@ -119,7 +130,7 @@ export default function ParentRegisterPage() {
                   <input
                     type="text"
                     {...register('parentName', { required: true })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                     placeholder="John Doe"
                   />
                 </div>
@@ -129,7 +140,7 @@ export default function ParentRegisterPage() {
                   <input
                     type="tel"
                     {...register('phone', { required: true })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                     placeholder="9876543210"
                   />
                 </div>
@@ -139,7 +150,7 @@ export default function ParentRegisterPage() {
                   <input
                     type="email"
                     {...register('email')}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                     placeholder="you@example.com"
                   />
                 </div>
@@ -148,7 +159,7 @@ export default function ParentRegisterPage() {
                   <label className="block text-sm font-medium mb-2">Relationship to Student *</label>
                   <select
                     {...register('relationship', { required: true })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                   >
                     <option value="">Select...</option>
                     <option value="parent">Parent</option>
@@ -161,7 +172,7 @@ export default function ParentRegisterPage() {
               <button
                 type="button"
                 onClick={() => setStep(2)}
-                className="w-full btn-primary"
+                className="w-full btn-brand"
               >
                 Next
               </button>
@@ -179,7 +190,7 @@ export default function ParentRegisterPage() {
                   <input
                     type="text"
                     {...register('studentName', { required: true })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                   />
                 </div>
 
@@ -188,7 +199,7 @@ export default function ParentRegisterPage() {
                     <label className="block text-sm font-medium mb-2">Class *</label>
                     <select
                       {...register('class', { required: true })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                     >
                       <option value="">Select...</option>
                       {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(c => (
@@ -201,7 +212,7 @@ export default function ParentRegisterPage() {
                     <label className="block text-sm font-medium mb-2">Board *</label>
                     <select
                       {...register('board', { required: true })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                     >
                       <option value="">Select...</option>
                       <option value="CBSE">CBSE</option>
@@ -217,7 +228,7 @@ export default function ParentRegisterPage() {
                   <input
                     type="text"
                     {...register('subjects', { required: true })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                     placeholder="Maths, Science, English"
                   />
                 </div>
@@ -227,14 +238,14 @@ export default function ParentRegisterPage() {
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="flex-1 btn-secondary"
+                  className="flex-1 btn-soft"
                 >
                   Back
                 </button>
                 <button
                   type="button"
                   onClick={() => setStep(3)}
-                  className="flex-1 btn-primary"
+                  className="flex-1 btn-brand"
                 >
                   Next
                 </button>
@@ -254,7 +265,7 @@ export default function ParentRegisterPage() {
                     <input
                       type="text"
                       {...register('pincode', { required: true })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                       placeholder="400001"
                     />
                   </div>
@@ -263,7 +274,7 @@ export default function ParentRegisterPage() {
                     <label className="block text-sm font-medium mb-2">Mode *</label>
                     <select
                       {...register('mode', { required: true })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                     >
                       <option value="">Select...</option>
                       <option value="Home">Home</option>
@@ -278,7 +289,7 @@ export default function ParentRegisterPage() {
                   <input
                     type="text"
                     {...register('address', { required: true })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                     placeholder="123 Main St"
                   />
                 </div>
@@ -288,7 +299,7 @@ export default function ParentRegisterPage() {
                   <input
                     type="text"
                     {...register('preferredDays', { required: true })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                     placeholder="Monday, Wednesday, Friday"
                   />
                 </div>
@@ -298,7 +309,7 @@ export default function ParentRegisterPage() {
                     <label className="block text-sm font-medium mb-2">Preferred Time *</label>
                     <select
                       {...register('preferredTimes', { required: true })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                     >
                       <option value="">Select...</option>
                       <option value="Morning">Morning (6-9 AM)</option>
@@ -311,7 +322,7 @@ export default function ParentRegisterPage() {
                     <label className="block text-sm font-medium mb-2">Budget (₹/month) *</label>
                     <select
                       {...register('budget', { required: true })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ink focus:border-transparent outline-none"
                     >
                       <option value="">Select...</option>
                       <option value="500">₹500</option>
@@ -327,14 +338,14 @@ export default function ParentRegisterPage() {
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="flex-1 btn-secondary"
+                  className="flex-1 btn-soft"
                 >
                   Back
                 </button>
                 <button
                   type="button"
                   onClick={() => setStep(4)}
-                  className="flex-1 btn-primary"
+                  className="flex-1 btn-brand"
                 >
                   Review
                 </button>
@@ -355,14 +366,14 @@ export default function ParentRegisterPage() {
                 <button
                   type="button"
                   onClick={() => setStep(3)}
-                  className="flex-1 btn-secondary"
+                  className="flex-1 btn-soft"
                 >
                   Back
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 btn-brand disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Registering...' : 'Complete Registration'}
                 </button>
@@ -372,10 +383,15 @@ export default function ParentRegisterPage() {
         </form>
 
         {/* Footer */}
-        <p className="text-center text-gray-600 mt-6">
-          Already registered? <Link href="/parent/login" className="text-blue-600 font-semibold hover:underline">Login here</Link>
-        </p>
       </motion.div>
     </div>
+  )
+}
+
+export default function ParentRegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <ParentRegisterForm />
+    </Suspense>
   )
 }

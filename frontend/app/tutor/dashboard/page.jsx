@@ -2,12 +2,22 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { FiMenu, FiLogOut, FiStar, FiClock, FiDollarSign, FiUsers, FiCheckCircle, FiAlertCircle, FiCalendar, FiMessageSquare } from 'react-icons/fi'
+import { FiStar, FiDollarSign, FiUsers, FiAlertCircle, FiCalendar, FiBarChart2, FiBook } from 'react-icons/fi'
 import Link from 'next/link'
+import AppShell from '../../../components/shell/AppShell'
+import DataTable, { optionsFrom } from '../../../components/data/DataTable'
+import RecordCard from '../../../components/data/RecordCard'
+
+const NAV_ITEMS = [
+  { id: 'overview', label: 'Overview', icon: FiBarChart2 },
+  { id: 'leads', label: 'Leads', icon: FiUsers },
+  { id: 'students', label: 'Students', icon: FiBook },
+  { id: 'schedule', label: 'Schedule', icon: FiCalendar },
+  { id: 'earnings', label: 'Earnings', icon: FiDollarSign },
+]
 
 export default function TutorDashboard() {
   const [activeTab, setActiveTab] = useState('overview')
-  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [tutorData, setTutorData] = useState({
     name: 'Rahul Kumar',
     rating: 4.8,
@@ -59,29 +69,14 @@ export default function TutorDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden">
-              <FiMenu className="w-6 h-6" />
-            </button>
-            <h1 className="text-2xl font-bold gradient-text">home tution</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right hidden sm:block">
-              <p className="font-semibold">{tutorData.name}</p>
-              <p className="text-sm text-gray-600">{tutorData.verificationStatus}</p>
-            </div>
-            <button className="p-2 hover:bg-gray-100 rounded-lg">
-              <FiLogOut className="w-6 h-6 text-red-600" />
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <AppShell
+      portalLabel="Tutor"
+      user={{ name: tutorData.name, subtitle: tutorData.verificationStatus }}
+      navItems={NAV_ITEMS}
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+    >
+      <div>
         {/* Stats Cards */}
         <motion.div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <div className="bg-white rounded-lg p-6 card-shadow">
@@ -125,27 +120,8 @@ export default function TutorDashboard() {
           </div>
         </motion.div>
 
-        {/* Tabs */}
-        <div className="mb-8">
-          <div className="flex gap-4 border-b bg-white rounded-t-lg px-6">
-            {['overview', 'leads', 'students', 'schedule', 'earnings'].map(tab => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`py-4 px-4 font-semibold capitalize transition-all ${
-                  activeTab === tab
-                    ? 'border-b-2 border-blue-600 text-blue-600'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Tab Content */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-b-lg p-6 card-shadow">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
           {/* Overview Tab */}
           {activeTab === 'overview' && (
             <div className="space-y-8">
@@ -219,125 +195,161 @@ export default function TutorDashboard() {
           )}
 
           {/* Leads Tab */}
+          {/* Leads Tab */}
           {activeTab === 'leads' && (
-            <div>
-              <h3 className="text-xl font-bold mb-6">Lead Offers</h3>
-              {leads.length > 0 ? (
-                <div className="space-y-4">
-                  {leads.map(lead => (
-                    <div key={lead.id} className="border rounded-lg p-4">
-                      <div className="grid md:grid-cols-5 gap-4 items-center">
-                        <div>
-                          <p className="font-bold">{lead.studentName}</p>
-                          <p className="text-sm text-gray-600">Class {lead.class}</p>
-                        </div>
-                        <p className="text-sm">{lead.subject}</p>
-                        <p className="text-sm text-gray-600">{lead.distance}</p>
-                        <p className="text-sm font-semibold">{lead.budget}</p>
-                        <div className="flex gap-2">
-                          <button onClick={() => handleAcceptLead(lead.id)} className="btn-primary py-2 px-4 text-sm">Accept</button>
-                          <button onClick={() => handleRejectLead(lead.id)} className="btn-secondary py-2 px-4 text-sm">Reject</button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-center text-gray-600 py-8">No leads available</p>
+            <DataTable
+              title="Lead Offers"
+              noun="offers"
+              rows={leads}
+              rowKey={l => l.id}
+              searchPlaceholder="Search student or subject"
+              searchText={l => `${l.studentName} ${l.subject}`}
+              columns={[
+                { key: 'studentName', header: 'Student', sortable: true, render: l => (
+                  <div>
+                    <p className="font-semibold text-gray-900">{l.studentName}</p>
+                    <p className="text-xs text-gray-600">Class {l.class}</p>
+                  </div>
+                ) },
+                { key: 'subject', header: 'Subject', sortable: true, render: l => l.subject },
+                { key: 'distance', header: 'Distance', render: l => <span className="text-gray-600">{l.distance}</span> },
+                { key: 'budget', header: 'Budget', render: l => <span className="font-semibold">{l.budget}</span> },
+                { key: 'actions', header: 'Actions', align: 'right', render: l => (
+                  <div className="inline-flex gap-2">
+                    <button onClick={() => handleAcceptLead(l.id)} className="btn-primary py-1.5 px-3 text-sm">Accept</button>
+                    <button onClick={() => handleRejectLead(l.id)} className="btn-secondary py-1.5 px-3 text-sm">Reject</button>
+                  </div>
+                ) },
+              ]}
+              renderCard={l => (
+                <RecordCard
+                  title={l.studentName}
+                  subtitle={`Class ${l.class}`}
+                  fields={[['Subject', l.subject], ['Distance', l.distance], ['Budget', l.budget]]}
+                  actions={(
+                    <>
+                      <button onClick={() => handleAcceptLead(l.id)} className="btn-primary py-2 px-4 text-sm">Accept</button>
+                      <button onClick={() => handleRejectLead(l.id)} className="btn-secondary py-2 px-4 text-sm">Reject</button>
+                    </>
+                  )}
+                />
               )}
-            </div>
+              emptyMessage="No lead offers right now."
+            />
           )}
-
+          {/* Students Tab */}
           {/* Students Tab */}
           {activeTab === 'students' && (
-            <div>
-              <h3 className="text-xl font-bold mb-6">My Students</h3>
-              <div className="space-y-4">
-                {students.map(student => (
-                  <div key={student.id} className="border rounded-lg p-4 hover:shadow-md transition-all">
-                    <div className="grid md:grid-cols-5 gap-4 items-center">
-                      <div>
-                        <p className="font-bold">{student.name}</p>
-                        <p className="text-sm text-gray-600">Class {student.class}</p>
-                      </div>
-                      <p className="text-sm">{student.subject}</p>
-                      <p className="text-sm text-gray-600">Joined {student.joinDate}</p>
-                      <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs w-fit">{student.status}</span>
-                      <div className="flex items-center gap-2 justify-end">
-                        <FiStar className="w-4 h-4 text-yellow-500 fill-current" />
-                        <span className="font-semibold">{student.rating}</span>
-                      </div>
-                    </div>
+            <DataTable
+              title="My Students"
+              noun="students"
+              rows={students}
+              rowKey={s => s.id}
+              searchPlaceholder="Search student or subject"
+              searchText={s => `${s.name} ${s.subject}`}
+              filters={[{ key: 'status', label: 'Status', get: s => s.status, options: optionsFrom(students, s => s.status) }]}
+              columns={[
+                { key: 'name', header: 'Student', sortable: true, render: s => (
+                  <div>
+                    <p className="font-semibold text-gray-900">{s.name}</p>
+                    <p className="text-xs text-gray-600">Class {s.class}</p>
                   </div>
-                ))}
-              </div>
-            </div>
+                ) },
+                { key: 'subject', header: 'Subject', sortable: true, render: s => s.subject },
+                { key: 'joinDate', header: 'Joined', sortable: true, render: s => <span className="text-gray-600">{s.joinDate}</span> },
+                { key: 'status', header: 'Status', sortable: true, render: s => (
+                  <span className="bg-blue-100 text-blue-800 px-2.5 py-1 rounded-full text-xs whitespace-nowrap">{s.status}</span>
+                ) },
+                { key: 'rating', header: 'Rating', sortable: true, align: 'right', render: s => (
+                  <span className="inline-flex items-center gap-1 font-semibold">
+                    <FiStar className="w-4 h-4 text-yellow-500 fill-current" aria-hidden="true" />
+                    {s.rating}
+                  </span>
+                ) },
+              ]}
+              renderCard={s => (
+                <RecordCard
+                  title={s.name}
+                  subtitle={`Class ${s.class}`}
+                  badge={<span className="bg-blue-100 text-blue-800 px-2.5 py-1 rounded-full text-xs">{s.status}</span>}
+                  fields={[['Subject', s.subject], ['Joined', s.joinDate], ['Rating', s.rating]]}
+                />
+              )}
+              emptyMessage="No students yet."
+            />
           )}
-
+          {/* Schedule Tab */}
           {/* Schedule Tab */}
           {activeTab === 'schedule' && (
-            <div>
-              <h3 className="text-xl font-bold mb-6">Class Schedule</h3>
-              <div className="space-y-4">
-                {schedule.map(item => (
-                  <div key={item.id} className="border rounded-lg p-4 flex items-center justify-between hover:shadow-md transition-all">
-                    <div>
-                      <p className="font-bold">{item.student}</p>
-                      <p className="text-sm text-gray-600">{item.subject}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold">{item.date}</p>
-                      <p className="text-sm text-gray-600">{item.time}</p>
-                    </div>
-                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs">{item.status}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <DataTable
+              title="Class Schedule"
+              noun="classes"
+              rows={schedule}
+              rowKey={i => i.id}
+              searchPlaceholder="Search student or subject"
+              searchText={i => `${i.student} ${i.subject}`}
+              columns={[
+                { key: 'student', header: 'Student', sortable: true, render: i => <span className="font-semibold text-gray-900">{i.student}</span> },
+                { key: 'subject', header: 'Subject', sortable: true, render: i => i.subject },
+                { key: 'date', header: 'Date', sortable: true, render: i => <span className="font-medium">{i.date}</span> },
+                { key: 'time', header: 'Time', render: i => <span className="text-gray-600">{i.time}</span> },
+                { key: 'status', header: 'Status', sortable: true, render: i => (
+                  <span className="bg-green-100 text-green-800 px-2.5 py-1 rounded-full text-xs whitespace-nowrap">{i.status}</span>
+                ) },
+              ]}
+              renderCard={i => (
+                <RecordCard
+                  title={i.student}
+                  subtitle={i.subject}
+                  badge={<span className="bg-green-100 text-green-800 px-2.5 py-1 rounded-full text-xs">{i.status}</span>}
+                  fields={[['Date', i.date], ['Time', i.time]]}
+                />
+              )}
+              emptyMessage="No classes scheduled."
+            />
           )}
-
+          {/* Earnings Tab */}
           {/* Earnings Tab */}
           {activeTab === 'earnings' && (
-            <div>
-              <h3 className="text-xl font-bold mb-6">Earnings</h3>
-              <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+            <div className="space-y-6">
+              <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
                 <p className="text-sm text-gray-600">Total Earnings</p>
                 <p className="text-3xl font-bold text-green-600">₹{tutorData.totalEarned}</p>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead>
-                    <tr className="border-b bg-gray-50">
-                      <th className="py-3 px-4">Student</th>
-                      <th className="py-3 px-4">Period</th>
-                      <th className="py-3 px-4">Amount</th>
-                      <th className="py-3 px-4">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {earnings.map(item => (
-                      <tr key={item.id} className="border-b hover:bg-gray-50">
-                        <td className="py-4 px-4 font-medium">{item.student}</td>
-                        <td className="py-4 px-4">{item.month}</td>
-                        <td className="py-4 px-4 font-bold">₹{item.amount}</td>
-                        <td className="py-4 px-4">
-                          <span className={`px-3 py-1 rounded-full text-xs ${
-                            item.status === 'paid'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {item.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable
+                title="Payouts"
+                noun="entries"
+                rows={earnings}
+                rowKey={e => e.id}
+                searchPlaceholder="Search student or period"
+                searchText={e => `${e.student} ${e.month}`}
+                filters={[{ key: 'status', label: 'Status', get: e => e.status, options: optionsFrom(earnings, e => e.status) }]}
+                columns={[
+                  { key: 'student', header: 'Student', sortable: true, render: e => <span className="font-medium">{e.student}</span> },
+                  { key: 'month', header: 'Period', render: e => e.month },
+                  { key: 'amount', header: 'Amount', sortable: true, render: e => <span className="font-bold">₹{e.amount}</span> },
+                  { key: 'status', header: 'Status', sortable: true, render: e => (
+                    <span className={`px-2.5 py-1 rounded-full text-xs whitespace-nowrap ${
+                      e.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {e.status}
+                    </span>
+                  ) },
+                ]}
+                renderCard={e => (
+                  <RecordCard
+                    title={e.student}
+                    subtitle={e.month}
+                    badge={<span className={`px-2.5 py-1 rounded-full text-xs ${e.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{e.status}</span>}
+                    fields={[['Amount', `₹${e.amount}`]]}
+                  />
+                )}
+                emptyMessage="No earnings recorded yet."
+              />
             </div>
           )}
         </motion.div>
       </div>
-    </div>
+    </AppShell>
   )
 }

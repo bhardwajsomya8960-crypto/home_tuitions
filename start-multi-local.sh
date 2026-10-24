@@ -35,9 +35,9 @@ start_service() {
   fi
 
   if [ "$cmd" == "npm run dev" ]; then
-    PORT=$port npm run dev &
+    PORT=$port NEXT_DIST_DIR=".next-$port" npm run dev &
   elif [ "$cmd" == "npm install && npm run dev" ]; then
-    npm install > /dev/null 2>&1 && PORT=$port npm run dev &
+    npm install > /dev/null 2>&1 && PORT=$port NEXT_DIST_DIR=".next-$port" npm run dev &
   fi
 
   echo -e "${GREEN}✓ $name started (PID: $!)${NC}"

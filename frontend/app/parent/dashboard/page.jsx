@@ -2,12 +2,23 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { FiMenu, FiLogOut, FiBook, FiUser, FiDollarSign, FiCheckCircle, FiAlertCircle, FiCalendar, FiMessageSquare, FiStar, FiTrendingUp } from 'react-icons/fi'
+import { FiBook, FiUser, FiDollarSign, FiAlertCircle, FiCalendar, FiMessageSquare, FiStar, FiTrendingUp, FiBarChart2 } from 'react-icons/fi'
 import Link from 'next/link'
+import AppShell from '../../../components/shell/AppShell'
+import DataTable, { optionsFrom } from '../../../components/data/DataTable'
+import RecordCard from '../../../components/data/RecordCard'
+
+const NAV_ITEMS = [
+  { id: 'overview', label: 'Overview', icon: FiBarChart2 },
+  { id: 'students', label: 'Students', icon: FiBook },
+  { id: 'tutors', label: 'Tutors', icon: FiUser },
+  { id: 'schedule', label: 'Schedule', icon: FiCalendar },
+  { id: 'invoices', label: 'Invoices', icon: FiDollarSign },
+  { id: 'requests', label: 'Requests', icon: FiMessageSquare },
+]
 
 export default function ParentDashboard() {
   const [activeTab, setActiveTab] = useState('overview')
-  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const [parentData, setParentData] = useState({
     name: 'Raj Kumar',
@@ -80,29 +91,14 @@ export default function ParentDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden">
-              <FiMenu className="w-6 h-6" />
-            </button>
-            <h1 className="text-2xl font-bold gradient-text">home tution</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right hidden sm:block">
-              <p className="font-semibold">{parentData.name}</p>
-              <p className="text-sm text-gray-600">Parent</p>
-            </div>
-            <button className="p-2 hover:bg-gray-100 rounded-lg">
-              <FiLogOut className="w-6 h-6 text-red-600" />
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <AppShell
+      portalLabel="Parent"
+      user={{ name: parentData.name, subtitle: 'Parent' }}
+      navItems={NAV_ITEMS}
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+    >
+      <div>
         {/* Stats Cards */}
         <motion.div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <div className="bg-white rounded-lg p-6 card-shadow">
@@ -146,27 +142,8 @@ export default function ParentDashboard() {
           </div>
         </motion.div>
 
-        {/* Tabs */}
-        <div className="mb-8">
-          <div className="flex gap-4 border-b bg-white rounded-t-lg px-6 overflow-x-auto">
-            {['overview', 'students', 'tutors', 'schedule', 'invoices', 'requests'].map(tab => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`py-4 px-4 font-semibold capitalize transition-all whitespace-nowrap ${
-                  activeTab === tab
-                    ? 'border-b-2 border-blue-600 text-blue-600'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Tab Content */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-b-lg p-6 card-shadow">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
           {/* Overview Tab */}
           {activeTab === 'overview' && (
             <div className="space-y-8">
@@ -247,175 +224,201 @@ export default function ParentDashboard() {
           )}
 
           {/* Students Tab */}
+          {/* Students Tab */}
           {activeTab === 'students' && (
-            <div>
-              <h3 className="text-xl font-bold mb-6">All Students</h3>
-              <div className="space-y-4">
-                {students.map(student => (
-                  <div key={student.id} className="border rounded-lg p-4 hover:shadow-md transition-all">
-                    <div className="grid md:grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <p className="text-sm text-gray-600">Student Name</p>
-                        <p className="font-bold text-lg">{student.name}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Class & Board</p>
-                        <p className="font-semibold">Class {student.class} • {student.board}</p>
-                      </div>
-                    </div>
-                    <div className="grid md:grid-cols-4 gap-4">
-                      <div>
-                        <p className="text-xs text-gray-600">Subject</p>
-                        <p className="font-semibold">{student.subject}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-600">Mode</p>
-                        <p className="font-semibold">{student.mode}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-600">Progress</p>
-                        <p className="font-semibold">{student.progress}%</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-600">Tutor Rating</p>
-                        <div className="flex items-center gap-1">
-                          <FiStar className="w-4 h-4 text-yellow-500 fill-current" />
-                          <p className="font-semibold">{student.tutorRating}</p>
-                        </div>
-                      </div>
-                    </div>
+            <DataTable
+              title="All Students"
+              noun="students"
+              rows={students}
+              rowKey={s => s.id}
+              searchPlaceholder="Search student, subject or tutor"
+              searchText={s => `${s.name} ${s.subject} ${s.tutor}`}
+              filters={[{ key: 'subject', label: 'Subject', get: s => s.subject, options: optionsFrom(students, s => s.subject) }]}
+              columns={[
+                { key: 'name', header: 'Student', sortable: true, render: s => (
+                  <div>
+                    <p className="font-semibold text-gray-900">{s.name}</p>
+                    <p className="text-xs text-gray-600">Class {s.class} • {s.board}</p>
                   </div>
-                ))}
-              </div>
-            </div>
+                ) },
+                { key: 'tutor', header: 'Tutor', sortable: true, render: s => s.tutor },
+                { key: 'subject', header: 'Subject', sortable: true, render: s => s.subject },
+                { key: 'mode', header: 'Mode', render: s => s.mode },
+                { key: 'progress', header: 'Progress', sortable: true, render: s => (
+                  <div className="flex items-center gap-2 min-w-[120px]">
+                    <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden" aria-hidden="true">
+                      <div className="h-full bg-green-500" style={{ width: `${s.progress}%` }} />
+                    </div>
+                    <span className="text-xs font-semibold w-10 text-right">{s.progress}%</span>
+                  </div>
+                ) },
+                { key: 'tutorRating', header: 'Tutor Rating', sortable: true, align: 'right', render: s => (
+                  <span className="inline-flex items-center gap-1 font-semibold">
+                    <FiStar className="w-4 h-4 text-yellow-500 fill-current" aria-hidden="true" />
+                    {s.tutorRating}
+                  </span>
+                ) },
+              ]}
+              renderCard={s => (
+                <RecordCard
+                  title={s.name}
+                  subtitle={`Class ${s.class} • ${s.board}`}
+                  fields={[['Tutor', s.tutor], ['Subject', s.subject], ['Mode', s.mode], ['Progress', `${s.progress}%`]]}
+                />
+              )}
+              emptyMessage="No students yet."
+            />
           )}
-
+          {/* Tutors Tab */}
           {/* Tutors Tab */}
           {activeTab === 'tutors' && (
-            <div>
-              <h3 className="text-xl font-bold mb-6">Your Tutors</h3>
-              <div className="space-y-4">
-                {tutors.map(tutor => (
-                  <div key={tutor.id} className="border rounded-lg p-4 hover:shadow-md transition-all">
-                    <div className="grid md:grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <p className="font-bold text-lg">{tutor.name}</p>
-                        <p className="text-sm text-gray-600">{tutor.subject} • {tutor.experience}</p>
-                      </div>
-                      <div className="text-right">
-                        <div className="flex items-center gap-1 justify-end mb-2">
-                          <FiStar className="w-5 h-5 text-yellow-500 fill-current" />
-                          <span className="font-bold">{tutor.rating}</span>
-                        </div>
-                        <p className="text-sm text-gray-600">{tutor.classes} classes completed</p>
-                      </div>
-                    </div>
-                    <div className="bg-gray-50 p-3 rounded">
-                      <p className="text-sm"><strong>Phone:</strong> {tutor.phone}</p>
-                      <p className="text-sm"><strong>Email:</strong> {tutor.email}</p>
-                    </div>
+            <DataTable
+              title="Your Tutors"
+              noun="tutors"
+              rows={tutors}
+              rowKey={t => t.id}
+              searchPlaceholder="Search name, subject or email"
+              searchText={t => `${t.name} ${t.subject} ${t.email}`}
+              columns={[
+                { key: 'name', header: 'Tutor', sortable: true, render: t => (
+                  <div>
+                    <p className="font-semibold text-gray-900">{t.name}</p>
+                    <p className="text-xs text-gray-600">{t.subject} • {t.experience}</p>
                   </div>
-                ))}
-              </div>
-            </div>
+                ) },
+                { key: 'rating', header: 'Rating', sortable: true, render: t => (
+                  <span className="inline-flex items-center gap-1 font-semibold">
+                    <FiStar className="w-4 h-4 text-yellow-500 fill-current" aria-hidden="true" />
+                    {t.rating}
+                  </span>
+                ) },
+                { key: 'classes', header: 'Classes Completed', sortable: true, render: t => t.classes },
+                { key: 'phone', header: 'Phone', render: t => t.phone },
+                { key: 'email', header: 'Email', render: t => <span className="text-gray-600">{t.email}</span> },
+              ]}
+              renderCard={t => (
+                <RecordCard
+                  title={t.name}
+                  subtitle={`${t.subject} • ${t.experience}`}
+                  badge={<span className="inline-flex items-center gap-1 text-sm font-semibold"><FiStar className="w-4 h-4 text-yellow-500 fill-current" aria-hidden="true" />{t.rating}</span>}
+                  fields={[['Classes completed', t.classes], ['Phone', t.phone], ['Email', t.email]]}
+                />
+              )}
+              emptyMessage="No tutors assigned yet."
+            />
           )}
-
+          {/* Schedule Tab */}
           {/* Schedule Tab */}
           {activeTab === 'schedule' && (
-            <div>
-              <h3 className="text-xl font-bold mb-6">Class Schedule</h3>
-              <div className="space-y-3">
-                {schedule.map(item => (
-                  <div key={item.id} className="border rounded-lg p-4 flex items-center justify-between hover:shadow-md transition-all">
-                    <div>
-                      <p className="font-bold">{item.student}</p>
-                      <p className="text-sm text-gray-600">{item.tutor} • {item.subject}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold">{item.date}</p>
-                      <p className="text-sm text-gray-600">{item.time}</p>
-                    </div>
-                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs">{item.mode}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <DataTable
+              title="Class Schedule"
+              noun="classes"
+              rows={schedule}
+              rowKey={i => i.id}
+              searchPlaceholder="Search student, tutor or subject"
+              searchText={i => `${i.student} ${i.tutor} ${i.subject}`}
+              filters={[{ key: 'mode', label: 'Mode', get: i => i.mode, options: optionsFrom(schedule, i => i.mode) }]}
+              columns={[
+                { key: 'student', header: 'Student', sortable: true, render: i => <span className="font-semibold text-gray-900">{i.student}</span> },
+                { key: 'tutor', header: 'Tutor', sortable: true, render: i => i.tutor },
+                { key: 'subject', header: 'Subject', sortable: true, render: i => i.subject },
+                { key: 'date', header: 'Date', sortable: true, render: i => <span className="font-medium">{i.date}</span> },
+                { key: 'time', header: 'Time', render: i => <span className="text-gray-600">{i.time}</span> },
+                { key: 'mode', header: 'Mode', render: i => (
+                  <span className="bg-green-100 text-green-800 px-2.5 py-1 rounded-full text-xs whitespace-nowrap">{i.mode}</span>
+                ) },
+              ]}
+              renderCard={i => (
+                <RecordCard
+                  title={i.student}
+                  subtitle={`${i.tutor} • ${i.subject}`}
+                  badge={<span className="bg-green-100 text-green-800 px-2.5 py-1 rounded-full text-xs">{i.mode}</span>}
+                  fields={[['Date', i.date], ['Time', i.time]]}
+                />
+              )}
+              emptyMessage="No classes scheduled."
+            />
           )}
-
+          {/* Invoices Tab */}
           {/* Invoices Tab */}
           {activeTab === 'invoices' && (
-            <div>
-              <h3 className="text-xl font-bold mb-6">Payment History & Invoices</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead>
-                    <tr className="border-b bg-gray-50">
-                      <th className="py-3 px-4">Student</th>
-                      <th className="py-3 px-4">Period</th>
-                      <th className="py-3 px-4">Amount</th>
-                      <th className="py-3 px-4">Status</th>
-                      <th className="py-3 px-4">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {invoices.map(invoice => (
-                      <tr key={invoice.id} className="border-b hover:bg-gray-50">
-                        <td className="py-4 px-4 font-medium">{invoice.studentName}</td>
-                        <td className="py-4 px-4">{invoice.month}</td>
-                        <td className="py-4 px-4 font-bold">₹{invoice.amount}</td>
-                        <td className="py-4 px-4">
-                          <span className={`px-3 py-1 rounded-full text-xs ${
-                            invoice.status === 'paid'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {invoice.status}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4">
-                          {invoice.status === 'pending' ? (
-                            <button onClick={() => handlePayment(invoice.id)} className="text-blue-600 font-semibold hover:underline">Pay</button>
-                          ) : (
-                            <button className="text-gray-600 font-semibold">View</button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <DataTable
+              title="Payment History & Invoices"
+              noun="invoices"
+              rows={invoices}
+              rowKey={inv => inv.id}
+              searchPlaceholder="Search student or period"
+              searchText={inv => `${inv.studentName} ${inv.month}`}
+              filters={[{ key: 'status', label: 'Status', get: inv => inv.status, options: optionsFrom(invoices, inv => inv.status) }]}
+              columns={[
+                { key: 'studentName', header: 'Student', sortable: true, render: inv => <span className="font-medium">{inv.studentName}</span> },
+                { key: 'month', header: 'Period', render: inv => inv.month },
+                { key: 'amount', header: 'Amount', sortable: true, render: inv => <span className="font-bold">₹{inv.amount}</span> },
+                { key: 'status', header: 'Status', sortable: true, render: inv => (
+                  <span className={`px-2.5 py-1 rounded-full text-xs whitespace-nowrap ${
+                    inv.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {inv.status}
+                  </span>
+                ) },
+                { key: 'action', header: 'Action', align: 'right', render: inv => (
+                  inv.status === 'pending'
+                    ? <button onClick={() => handlePayment(inv.id)} className="text-blue-600 font-semibold hover:underline">Pay</button>
+                    : <button className="text-gray-600 font-semibold hover:underline">View</button>
+                ) },
+              ]}
+              renderCard={inv => (
+                <RecordCard
+                  title={inv.studentName}
+                  subtitle={inv.month}
+                  badge={<span className={`px-2.5 py-1 rounded-full text-xs ${inv.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{inv.status}</span>}
+                  fields={[['Amount', `₹${inv.amount}`]]}
+                  actions={inv.status === 'pending'
+                    ? <button onClick={() => handlePayment(inv.id)} className="btn-primary text-sm py-2 px-4">Pay</button>
+                    : <button className="btn-secondary text-sm py-2 px-4">View</button>}
+                />
+              )}
+              emptyMessage="No invoices yet."
+            />
           )}
-
+          {/* Requests Tab */}
           {/* Requests Tab */}
           {activeTab === 'requests' && (
-            <div>
-              <h3 className="text-xl font-bold mb-6">Requests & Approvals</h3>
-              <div className="space-y-4">
-                {requests.map(request => (
-                  <div key={request.id} className="border rounded-lg p-4 hover:shadow-md transition-all">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-bold">{request.type}</p>
-                        <p className="text-sm text-gray-600">{request.student}</p>
-                        {request.reason && <p className="text-sm text-gray-600 mt-1">Reason: {request.reason}</p>}
-                        {request.topic && <p className="text-sm text-gray-600 mt-1">Topic: {request.topic}</p>}
-                      </div>
-                      <span className={`px-3 py-1 rounded-full text-xs ${
-                        request.status === 'approved'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {request.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <DataTable
+              title="Requests & Approvals"
+              noun="requests"
+              rows={requests}
+              rowKey={r => r.id}
+              searchPlaceholder="Search type, student or reason"
+              searchText={r => `${r.type} ${r.student} ${r.reason || ''} ${r.topic || ''}`}
+              filters={[{ key: 'status', label: 'Status', get: r => r.status, options: optionsFrom(requests, r => r.status) }]}
+              columns={[
+                { key: 'type', header: 'Request', sortable: true, render: r => <span className="font-semibold text-gray-900">{r.type}</span> },
+                { key: 'student', header: 'Student', sortable: true, render: r => r.student },
+                { key: 'details', header: 'Details', render: r => (
+                  <span className="text-gray-600">{r.reason ? `Reason: ${r.reason}` : r.topic ? `Topic: ${r.topic}` : '–'}</span>
+                ) },
+                { key: 'status', header: 'Status', sortable: true, render: r => (
+                  <span className={`px-2.5 py-1 rounded-full text-xs whitespace-nowrap ${
+                    r.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {r.status}
+                  </span>
+                ) },
+              ]}
+              renderCard={r => (
+                <RecordCard
+                  title={r.type}
+                  subtitle={r.student}
+                  badge={<span className={`px-2.5 py-1 rounded-full text-xs ${r.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{r.status}</span>}
+                  fields={[[r.reason ? 'Reason' : 'Topic', r.reason || r.topic || '–']]}
+                />
+              )}
+              emptyMessage="No requests yet."
+            />
           )}
         </motion.div>
       </div>
-    </div>
+    </AppShell>
   )
 }

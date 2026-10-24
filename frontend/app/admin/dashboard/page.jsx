@@ -3,11 +3,21 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import axios from 'axios'
-import { FiUsers, FiTrendingUp, FiCheck, FiAlertCircle, FiMenu, FiLogOut, FiBarChart2, FiSettings, FiDollarSign } from 'react-icons/fi'
+import AppShell from '../../../components/shell/AppShell'
+import DataTable, { optionsFrom } from '../../../components/data/DataTable'
+import RecordCard from '../../../components/data/RecordCard'
+import { FiUsers, FiCheck, FiBarChart2, FiSettings, FiDollarSign } from 'react-icons/fi'
+
+const NAV_ITEMS = [
+  { id: 'overview', label: 'Overview', icon: FiBarChart2 },
+  { id: 'leads', label: 'Leads', icon: FiUsers },
+  { id: 'tutors', label: 'Tutors', icon: FiUsers },
+  { id: 'finance', label: 'Finance', icon: FiDollarSign },
+  { id: 'config', label: 'Configuration', icon: FiSettings },
+]
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview')
-  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const [stats, setStats] = useState({
     totalLeads: 156,
@@ -75,30 +85,14 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden">
-              <FiMenu className="w-6 h-6" />
-            </button>
-            <h1 className="text-2xl font-bold gradient-text">home tution</h1>
-            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-semibold ml-4">Admin</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right hidden sm:block">
-              <p className="font-semibold">Admin Panel</p>
-              <p className="text-sm text-gray-600">System Administrator</p>
-            </div>
-            <button className="p-2 hover:bg-gray-100 rounded-lg">
-              <FiLogOut className="w-6 h-6 text-red-600" />
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <AppShell
+      portalLabel="Admin"
+      user={{ name: 'Admin Panel', subtitle: 'System Administrator' }}
+      navItems={NAV_ITEMS}
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+    >
+      <div>
         {/* Stats Cards */}
         <motion.div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <div className="bg-white rounded-lg p-6 card-shadow hover:shadow-lg transition-all">
@@ -146,34 +140,8 @@ export default function AdminDashboard() {
           </div>
         </motion.div>
 
-        {/* Tabs */}
-        <div className="mb-8">
-          <div className="flex gap-2 border-b bg-white rounded-t-lg px-6 overflow-x-auto">
-            {[
-              { id: 'overview', label: 'Overview', icon: FiBarChart2 },
-              { id: 'leads', label: 'Leads', icon: FiUsers },
-              { id: 'tutors', label: 'Tutors', icon: FiUsers },
-              { id: 'finance', label: 'Finance', icon: FiDollarSign },
-              { id: 'config', label: 'Configuration', icon: FiSettings },
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`py-4 px-4 font-semibold transition-all whitespace-nowrap flex items-center gap-2 ${
-                  activeTab === tab.id
-                    ? 'border-b-2 border-blue-600 text-blue-600'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <tab.icon className="w-4 h-4" />
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Tab Content */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-b-lg p-6 card-shadow">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
           {/* Overview Tab */}
           {activeTab === 'overview' && (
             <div className="space-y-8">
@@ -225,90 +193,95 @@ export default function AdminDashboard() {
           )}
 
           {/* Leads Tab */}
+          {/* Leads Tab */}
           {activeTab === 'leads' && (
-            <div>
-              <h3 className="text-xl font-bold mb-6">All Leads</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead>
-                    <tr className="border-b bg-gray-50">
-                      <th className="py-3 px-4">Parent / Student</th>
-                      <th className="py-3 px-4">Class</th>
-                      <th className="py-3 px-4">Subject</th>
-                      <th className="py-3 px-4">Status</th>
-                      <th className="py-3 px-4">Tutor Assigned</th>
-                      <th className="py-3 px-4">Created</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {leads.map(lead => (
-                      <tr key={lead.id} className="border-b hover:bg-gray-50">
-                        <td className="py-4 px-4">
-                          <p className="font-semibold">{lead.parent}</p>
-                          <p className="text-xs text-gray-600">{lead.student}</p>
-                        </td>
-                        <td className="py-4 px-4">{lead.class}</td>
-                        <td className="py-4 px-4 font-medium">{lead.subject}</td>
-                        <td className="py-4 px-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(lead.status)}`}>
-                            {lead.status.replace(/_/g, ' ')}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4">{lead.tutorAssigned}</td>
-                        <td className="py-4 px-4 text-xs text-gray-600">{lead.createdAt}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <DataTable
+              title="All Leads"
+              noun="leads"
+              rows={leads}
+              rowKey={lead => lead.id}
+              searchPlaceholder="Search parent, student or subject"
+              searchText={lead => `${lead.parent} ${lead.student} ${lead.subject} ${lead.tutorAssigned}`}
+              filters={[{ key: 'status', label: 'Status', get: lead => lead.status, options: optionsFrom(leads, lead => lead.status, v => v.replace(/_/g, ' ')) }]}
+              columns={[
+                { key: 'parent', header: 'Parent / Student', sortable: true, sortValue: l => l.parent, render: l => (
+                  <div>
+                    <p className="font-semibold text-gray-900">{l.parent}</p>
+                    <p className="text-xs text-gray-600">{l.student}</p>
+                  </div>
+                ) },
+                { key: 'class', header: 'Class', sortable: true, render: l => l.class },
+                { key: 'subject', header: 'Subject', sortable: true, render: l => <span className="font-medium">{l.subject}</span> },
+                { key: 'status', header: 'Status', sortable: true, render: l => (
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${getStatusColor(l.status)}`}>
+                    {l.status.replace(/_/g, ' ')}
+                  </span>
+                ) },
+                { key: 'tutorAssigned', header: 'Tutor Assigned', sortable: true, render: l => (
+                  l.tutorAssigned === 'Pending'
+                    ? <span className="text-orange-700 font-medium">Unassigned</span>
+                    : l.tutorAssigned
+                ) },
+                { key: 'createdAt', header: 'Created', sortable: true, render: l => <span className="text-gray-600">{l.createdAt}</span> },
+              ]}
+              renderCard={l => (
+                <RecordCard
+                  title={l.parent}
+                  subtitle={l.student}
+                  badge={<span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusColor(l.status)}`}>{l.status.replace(/_/g, ' ')}</span>}
+                  fields={[['Class', l.class], ['Subject', l.subject], ['Tutor', l.tutorAssigned === 'Pending' ? 'Unassigned' : l.tutorAssigned], ['Created', l.createdAt]]}
+                />
+              )}
+              emptyMessage="No leads yet."
+            />
           )}
-
+          {/* Tutors Tab */}
           {/* Tutors Tab */}
           {activeTab === 'tutors' && (
-            <div>
-              <h3 className="text-xl font-bold mb-6">Tutor Management</h3>
-              <div className="space-y-4">
-                {tutors.map(tutor => (
-                  <div key={tutor.id} className="border rounded-lg p-4 hover:shadow-md transition-all">
-                    <div className="grid md:grid-cols-6 gap-4 items-center">
-                      <div>
-                        <p className="font-bold">{tutor.name}</p>
-                        <p className="text-sm text-gray-600">{tutor.email}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Subjects</p>
-                        <p className="font-semibold text-sm">{tutor.subjects}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Classes</p>
-                        <p className="font-semibold text-sm">{tutor.classes.join(', ')}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Rating</p>
-                        <p className="font-bold">{tutor.rating > 0 ? tutor.rating : '-'}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Students</p>
-                        <p className="font-bold">{tutor.activeStudents}</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <span className={`px-2 py-1 rounded text-xs font-semibold ${getStatusColor(tutor.status)}`}>
-                          {tutor.status.replace(/_/g, ' ')}
-                        </span>
-                        {tutor.status === 'pending_verification' && (
-                          <button onClick={() => handleVerifyTutor(tutor.id)} className="btn-primary text-xs py-1 px-3">
-                            Verify
-                          </button>
-                        )}
-                      </div>
-                    </div>
+            <DataTable
+              title="Tutor Management"
+              noun="tutors"
+              rows={tutors}
+              rowKey={t => t.id}
+              searchPlaceholder="Search name, email or subject"
+              searchText={t => `${t.name} ${t.email} ${t.subjects}`}
+              filters={[{ key: 'status', label: 'Status', get: t => t.status, options: optionsFrom(tutors, t => t.status, v => v.replace(/_/g, ' ')) }]}
+              columns={[
+                { key: 'name', header: 'Tutor', sortable: true, render: t => (
+                  <div>
+                    <p className="font-semibold text-gray-900">{t.name}</p>
+                    <p className="text-xs text-gray-600">{t.email}</p>
                   </div>
-                ))}
-              </div>
-            </div>
+                ) },
+                { key: 'subjects', header: 'Subjects', render: t => t.subjects },
+                { key: 'classes', header: 'Classes', render: t => t.classes.join(', ') },
+                { key: 'rating', header: 'Rating', sortable: true, render: t => (t.rating > 0 ? t.rating : '–') },
+                { key: 'activeStudents', header: 'Students', sortable: true, render: t => t.activeStudents },
+                { key: 'status', header: 'Status', sortable: true, render: t => (
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${getStatusColor(t.status)}`}>
+                    {t.status.replace(/_/g, ' ')}
+                  </span>
+                ) },
+                { key: 'actions', header: 'Actions', align: 'right', render: t => (
+                  t.status === 'pending_verification'
+                    ? <button onClick={() => handleVerifyTutor(t.id)} className="btn-primary text-xs py-1 px-3">Verify</button>
+                    : null
+                ) },
+              ]}
+              renderCard={t => (
+                <RecordCard
+                  title={t.name}
+                  subtitle={t.email}
+                  badge={<span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusColor(t.status)}`}>{t.status.replace(/_/g, ' ')}</span>}
+                  fields={[['Subjects', t.subjects], ['Classes', t.classes.join(', ')], ['Rating', t.rating > 0 ? t.rating : '–'], ['Students', t.activeStudents]]}
+                  actions={t.status === 'pending_verification' && (
+                    <button onClick={() => handleVerifyTutor(t.id)} className="btn-primary text-xs py-1 px-3">Verify</button>
+                  )}
+                />
+              )}
+              emptyMessage="No tutors yet."
+            />
           )}
-
           {/* Finance Tab */}
           {activeTab === 'finance' && (
             <div>
@@ -469,6 +442,6 @@ export default function AdminDashboard() {
           )}
         </motion.div>
       </div>
-    </div>
+    </AppShell>
   )
 }

@@ -5,6 +5,8 @@ const catalyst = require('../config/catalyst');
 
 const router = express.Router();
 
+const ALLOWED_OTP_ROLES = ['parent', 'tutor'];
+
 // Send OTP to phone/email
 router.post('/send-otp', async (req, res) => {
   try {
@@ -43,18 +45,25 @@ router.post('/verify-otp', async (req, res) => {
       return res.status(400).json({ error: 'OTP required' });
     }
 
+    // Only parent and tutor sessions can be created here. Admin access is never granted by
+    // request input; it comes only from /api/admin/auth/login.
+    const requestedRole = role || userType || 'parent';
+    if (!ALLOWED_OTP_ROLES.includes(requestedRole)) {
+      return res.status(400).json({ error: 'Invalid role', code: 'INVALID_ROLE' });
+    }
+
     const contact = phone || email;
     await authService.verifyOTP(contact, otp);
 
     // Generate token
-    const token = authService.generateToken(contact, role || userType);
+    const token = authService.generateToken(contact, requestedRole);
 
     res.json({
       success: true,
       token,
       user: {
         contact,
-        role: role || userType
+        role: requestedRole
       }
     });
   } catch (error) {

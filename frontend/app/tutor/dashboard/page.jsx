@@ -5,12 +5,12 @@ import { useSearchParams } from 'next/navigation'
 import { FiBarChart2, FiBell, FiCalendar, FiUsers, FiClock, FiShield, FiCheck, FiX, FiHelpCircle, FiUpload, FiEye, FiMapPin, FiStar } from 'react-icons/fi'
 import AppShell from '../../../components/shell/AppShell'
 import DataTable from '../../../components/data/DataTable'
-import RecordCard from '../../../components/data/RecordCard'
 import Modal from '../../../components/ui/Modal'
+import SimpleTable from '../../../components/ui/SimpleTable'
 import Countdown from '../../../components/ui/Countdown'
 import SlotGrid from '../../../components/ui/SlotGrid'
 import { StatusBadge } from '../../../components/ui/Badge'
-import { btn, Card, Details, EmptyState, PageLoader, StatCard } from '../../../components/ui/Card'
+import { btn, Card, PageLoader, StatCard } from '../../../components/ui/Card'
 import { Checkbox, ChipGroup, Notice, TextArea, TextInput } from '../../../components/ui/Form'
 import { api, openProtectedFile } from '../../../lib/api'
 import { usePortal } from '../../../lib/usePortal'
@@ -19,6 +19,8 @@ import {
   classLabel, daysText, DEMO_STATUS, DOC_STATUS, formatDate, formatDateTime, MODE_LABELS, OFFER_STATUS,
   scheduleText, SESSION_STATUS, slotsText, SLOT_SHORT, TUTOR_STATUS, weekday,
 } from '../../../lib/format'
+
+const ENROLMENT_STATUS = { active: { label: 'Active', tone: 'green' }, paused: { label: 'Paused', tone: 'amber' }, completed: { label: 'Completed', tone: 'slate' }, cancelled: { label: 'Cancelled', tone: 'slate' } }
 
 const NAV = [
   { id: 'overview', label: 'Overview', icon: FiBarChart2 },
@@ -52,6 +54,30 @@ function Dashboard() {
   const isActive = tutor.status === 'active'
   const today = new Date(Date.now() + 330 * 60000).toISOString().slice(0, 10)
   const dueAttendance = data.classes.filter(c => c.status === 'scheduled' && c.scheduledDate <= today)
+  const requirement = o => <span><span className="font-medium">{classLabel(o.lead.class)} {o.lead.board}</span><br /><span className="text-xs text-gray-600">{o.lead.subjects.join(', ')}</span></span>
+  const offerColumns = [
+    { key: 'code', header: 'Lead', render: o => <span className="whitespace-nowrap font-medium">{o.lead.code}</span> },
+    { key: 'need', header: 'Requirement', render: requirement },
+    { key: 'where', header: 'Mode / area', render: o => <span>{MODE_LABELS[o.lead.mode]}<br /><span className="inline-flex items-center gap-1 text-xs text-gray-600"><FiMapPin className="h-3 w-3" aria-hidden="true" />{o.lead.locality}</span></span> },
+    { key: 'distance', header: 'Distance', render: o => (o.lead.mode === 'online' ? '—' : o.distanceKm != null ? `${o.distanceKm} km` : 'Same area') },
+    { key: 'when', header: 'Days / times', render: o => <span className="text-xs">{daysText(o.lead.preferredDays)}<br />{slotsText(o.lead.preferredSlots)}</span> },
+    { key: 'budget', header: 'Budget / start', render: o => <span className="text-xs">{o.lead.budget || '—'}<br />{o.lead.startDate ? formatDate(o.lead.startDate) : o.lead.urgency || ''}</span> },
+    { key: 'notes', header: 'Notes', render: o => <span className="text-xs">{[o.lead.specialRequirements, o.lead.prefLanguages?.length ? `Languages: ${o.lead.prefLanguages.join(', ')}` : '', o.infoRequest ? `Your question: ${o.infoRequest}` : ''].filter(Boolean).join(' · ') || '—'}</span> },
+  ]
+  // Narrower layout for the respond table: lead + requirement, place + distance, when, budget + notes.
+  const offerRespondColumns = [
+    { key: 'need', header: 'Lead', render: o => <span><span className="whitespace-nowrap font-medium">{classLabel(o.lead.class)} {o.lead.board}</span><br /><span className="text-xs text-gray-600">{o.lead.subjects.join(', ')}</span><br /><span className="text-xs text-gray-400">{o.lead.code}</span></span> },
+    { key: 'where', header: 'Where', render: o => <span>{MODE_LABELS[o.lead.mode]}{o.lead.mode !== 'online' && <><br /><span className="text-xs text-gray-600">{o.lead.locality}</span><br /><span className="text-xs text-gray-600">{o.distanceKm != null ? `${o.distanceKm} km away` : 'Same area'}</span></>}</span> },
+    offerColumns[4],
+    { key: 'details', header: 'Budget / notes', render: o => <span className="text-xs">{o.lead.budget || 'Budget not given'}<br /><span className="text-gray-600">{[o.lead.startDate ? `Start ${formatDate(o.lead.startDate)}` : o.lead.urgency, o.lead.specialRequirements, o.infoRequest && `Your question: ${o.infoRequest}`].filter(Boolean).join(' · ')}</span></span> },
+  ]
+  const upcomingDemos = data.demos.filter(d => d.status === 'scheduled')
+  const upcomingClasses = data.classes.filter(c => c.scheduledDate >= today && c.status === 'scheduled')
+  const comingUp = [
+    ...upcomingDemos.map(d => ({ id: `d${d.id}`, sort: d.scheduledAt, type: 'Demo', when: formatDateTime(d.scheduledAt), who: d.leadCode, subjects: `${classLabel(d.class)} · ${d.subjects.join(', ')}`, mode: MODE_LABELS[d.mode] })),
+    ...upcomingClasses.slice(0, 8).map(c => ({ id: `c${c.id}`, sort: c.scheduledDate, type: 'Class', when: `${weekday(c.scheduledDate)} ${formatDate(c.scheduledDate)} · ${SLOT_SHORT[c.slot]}`, who: c.studentName, subjects: c.subjects.join(', '), mode: MODE_LABELS[c.mode] })),
+  ].sort((a, b) => a.sort.localeCompare(b.sort))
+
   const nav = NAV.map(n => (n.id === 'offers' ? { ...n, count: data.offers.length } : n.id === 'classes' ? { ...n, count: dueAttendance.length } : n.id === 'verification' && !isActive ? { ...n, count: 1 } : n))
 
   return (
@@ -71,55 +97,59 @@ function Dashboard() {
               <StatCard label="Rating" value={data.stats.ratingCount ? data.stats.ratingAvg.toFixed(1) : '—'} hint={data.stats.ratingCount ? `${data.stats.ratingCount} review(s)` : 'No reviews yet'} icon={FiStar} />
             </div>
             {data.offers.length > 0 && (
-              <Card title="Offers waiting for you" actions={<button type="button" className={btn.link} onClick={() => setTab('offers')}>Open offers</button>}>
-                <ul className="divide-y divide-gray-100">
-                  {data.offers.map(o => (
-                    <li key={o.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
-                      <span><strong>{classLabel(o.lead.class)} {o.lead.board}</strong> · {o.lead.subjects.join(', ')} · {MODE_LABELS[o.lead.mode]}{o.distanceKm != null ? ` · ${o.distanceKm} km` : ''}</span>
-                      <Countdown expiresAt={o.expiresAt} onExpire={reload} />
-                    </li>
-                  ))}
-                </ul>
+              <Card title="Offers waiting for you" actions={<button type="button" className={btn.link} onClick={() => setTab('offers')}>Respond</button>}>
+                <SimpleTable rows={data.offers} minWidth={720} columns={[
+                  ...offerColumns.slice(0, 4),
+                  { key: 'left', header: 'Time left', render: o => <Countdown expiresAt={o.expiresAt} onExpire={reload} /> },
+                ]} />
               </Card>
             )}
             {dueAttendance.length > 0 && (
               <Notice tone="warning">{dueAttendance.length} class(es) need attendance. <button type="button" className="font-semibold underline" onClick={() => setTab('classes')}>Record now</button></Notice>
             )}
             <Card title="Coming up">
-              {data.classes.filter(c => c.scheduledDate >= today && c.status === 'scheduled').length === 0 && data.demos.filter(d => d.status === 'scheduled').length === 0
-                ? <EmptyState title="Nothing scheduled">Accepted leads, demos and classes will appear here.</EmptyState>
-                : (
-                  <ul className="divide-y divide-gray-100">
-                    {data.demos.filter(d => d.status === 'scheduled').map(d => (
-                      <li key={d.id} className="flex items-center justify-between gap-3 py-3 text-sm">
-                        <span><strong>Demo</strong> · {d.leadCode} · {classLabel(d.class)} {d.subjects.join(', ')}</span>
-                        <span className="font-medium">{formatDateTime(d.scheduledAt)}</span>
-                      </li>
-                    ))}
-                    {data.classes.filter(c => c.scheduledDate >= today && c.status === 'scheduled').slice(0, 6).map(c => (
-                      <li key={c.id} className="flex items-center justify-between gap-3 py-3 text-sm">
-                        <span><strong>{c.studentName}</strong> · {c.subjects.join(', ')} · {MODE_LABELS[c.mode]}</span>
-                        <span className="font-medium">{weekday(c.scheduledDate)} {formatDate(c.scheduledDate)} · {SLOT_SHORT[c.slot]}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+              <SimpleTable rows={comingUp} empty="Nothing scheduled yet" minWidth={600} columns={[
+                { key: 'type', header: 'Type', render: r => <span className="font-medium">{r.type}</span> },
+                { key: 'when', header: 'When', render: r => <span className="whitespace-nowrap">{r.when}</span> },
+                { key: 'who', header: 'Student / lead', render: r => r.who },
+                { key: 'subjects', header: 'Subjects', render: r => r.subjects },
+                { key: 'mode', header: 'Mode', render: r => r.mode },
+              ]} />
             </Card>
           </>
         )}
 
         {tab === 'offers' && (
           <>
-            {data.offers.length === 0 && data.assignments.length === 0 && (
-              <Card><EmptyState title="No offers right now">{isActive ? 'When a parent near you needs your subjects at a time you are free, the offer appears here. You have a limited time to respond.' : 'You will receive offers once your account is verified and active.'}</EmptyState></Card>
+            <Card title={`Open offers (${data.offers.length})`} subtitle="Respond before the timer runs out, or the lead moves to the next tutor.">
+              <SimpleTable rows={data.offers} minWidth={860}
+                empty={isActive ? 'No offers right now. They appear here when a parent near you needs your subjects at a time you are free.' : 'You will receive offers once your account is verified and active.'}
+                columns={[
+                  ...offerRespondColumns,
+                  { key: 'left', header: 'Time left', render: o => <Countdown expiresAt={o.expiresAt} onExpire={reload} /> },
+                  { key: 'act', header: 'Respond', sticky: true, render: o => (
+                    <div className="flex flex-col gap-1.5">
+                      <button type="button" className={btn.success} disabled={busy} onClick={() => act(`/api/tutors/me/offers/${o.id}/accept`, {}, 'Accepted. Our team will confirm and share the parent’s details.')}><FiCheck aria-hidden="true" /> Accept</button>
+                      <button type="button" className={btn.danger} disabled={busy} onClick={() => setDeclining(o)}><FiX aria-hidden="true" /> Decline</button>
+                      <span className="flex gap-1.5">
+                        <button type="button" className={`${btn.secondary} flex-1 px-2`} disabled={busy} onClick={() => act(`/api/tutors/me/offers/${o.id}/unavailable`, {}, 'Noted. The lead has moved on.')}>Not now</button>
+                        <button type="button" className={`${btn.secondary} px-2`} disabled={busy} onClick={() => setAsking(o)} aria-label="Ask a question"><FiHelpCircle aria-hidden="true" /></button>
+                      </span>
+                    </div>
+                  ) },
+                ]} />
+            </Card>
+            {data.assignments.length > 0 && (
+              <Card title="Accepted leads" subtitle="Parent details appear once our team confirms.">
+                <SimpleTable rows={data.assignments} minWidth={900} columns={[
+                  offerColumns[0], offerColumns[1], offerColumns[2],
+                  { key: 'status', header: 'Status', render: o => <StatusBadge map={OFFER_STATUS} value={o.status} /> },
+                  { key: 'parent', header: 'Parent / student', render: o => (o.contact ? <span>{o.contact.parentName}<br /><span className="text-xs text-gray-600">{o.contact.studentName}</span></span> : <span className="text-xs text-gray-500">After confirmation</span>) },
+                  { key: 'phone', header: 'Phone', render: o => (o.contact ? <a className="whitespace-nowrap underline" href={`tel:+91${o.contact.phone}`}>+91 {o.contact.phone}</a> : '—') },
+                  { key: 'address', header: 'Address', render: o => (o.contact ? <span className="text-xs">{o.contact.address || 'Online'}</span> : '—') },
+                ]} />
+              </Card>
             )}
-            {data.offers.map(o => (
-              <OfferCard key={o.id} offer={o} busy={busy} onExpire={reload}
-                onAccept={() => act(`/api/tutors/me/offers/${o.id}/accept`, {}, 'Accepted. Our team will confirm and share the parent’s details.')}
-                onDecline={() => setDeclining(o)} onAsk={() => setAsking(o)}
-                onUnavailable={() => act(`/api/tutors/me/offers/${o.id}/unavailable`, {}, 'Noted. The lead has moved on.')} />
-            ))}
-            {data.assignments.map(o => <OfferCard key={o.id} offer={o} />)}
             {data.history.length > 0 && (
               <DataTable title="Offer history" noun="offers" rows={data.history} rowKey={r => r.id} searchText={r => `${r.lead.code} ${r.lead.subjects.join(' ')}`}
                 columns={[
@@ -128,8 +158,7 @@ function Dashboard() {
                   { key: 'mode', header: 'Mode', render: r => MODE_LABELS[r.lead.mode] },
                   { key: 'offered', header: 'Offered', sortable: true, sortValue: r => r.offeredAt, render: r => formatDateTime(r.offeredAt) },
                   { key: 'status', header: 'Outcome', render: r => <StatusBadge map={OFFER_STATUS} value={r.status} /> },
-                ]}
-                renderCard={r => <RecordCard title={r.lead.code} subtitle={`${classLabel(r.lead.class)} · ${r.lead.subjects.join(', ')}`} badge={<StatusBadge map={OFFER_STATUS} value={r.status} />} fields={[['Offered', formatDateTime(r.offeredAt)], ['Mode', MODE_LABELS[r.lead.mode]]]} />} />
+                ]} />
             )}
           </>
         )}
@@ -138,14 +167,14 @@ function Dashboard() {
           <>
             {data.demos.length > 0 && (
               <Card title="Demos">
-                <ul className="divide-y divide-gray-100">
-                  {data.demos.map(d => (
-                    <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
-                      <span><strong>{d.leadCode}</strong> · {classLabel(d.class)} {d.subjects.join(', ')} · {formatDateTime(d.scheduledAt)} · {MODE_LABELS[d.mode]}{d.locationNote ? ` · ${d.locationNote}` : ''}</span>
-                      <StatusBadge map={DEMO_STATUS} value={d.status} />
-                    </li>
-                  ))}
-                </ul>
+                <SimpleTable rows={data.demos} minWidth={720} columns={[
+                  { key: 'when', header: 'When', render: d => <span className="whitespace-nowrap font-medium">{formatDateTime(d.scheduledAt)}</span> },
+                  { key: 'lead', header: 'Lead', render: d => d.leadCode },
+                  { key: 'need', header: 'Requirement', render: d => `${classLabel(d.class)} · ${d.subjects.join(', ')}` },
+                  { key: 'mode', header: 'Mode', render: d => MODE_LABELS[d.mode] },
+                  { key: 'where', header: 'Place / link', render: d => <span className="text-xs">{d.locationNote || '—'}</span> },
+                  { key: 'status', header: 'Status', render: d => <StatusBadge map={DEMO_STATUS} value={d.status} /> },
+                ]} />
               </Card>
             )}
             <DataTable title="Classes" noun="classes" rows={data.classes} rowKey={r => r.id} defaultPageSize={20}
@@ -157,27 +186,28 @@ function Dashboard() {
                 { key: 'attendance', header: 'Attendance', render: r => (r.status === 'completed' ? `${r.tutorPresent ? 'You ✓' : 'You ✗'} · ${r.studentPresent ? 'Student ✓' : 'Student ✗'}` : '—') },
                 { key: 'notes', header: 'Notes', render: r => <span className="text-xs">{r.notes || '—'}</span> },
                 { key: 'status', header: 'Status', render: r => <StatusBadge map={SESSION_STATUS} value={r.status} /> },
-                { key: 'act', header: '', render: r => (r.status === 'scheduled' && r.scheduledDate <= today ? <button type="button" className={btn.primary} onClick={() => setAttendance(r)}>Record</button> : null) },
+                { key: 'act', header: '', sticky: true, render: r => (r.status === 'scheduled' && r.scheduledDate <= today ? <button type="button" className={btn.primary} onClick={() => setAttendance(r)}>Record</button> : null) },
               ]}
-              renderCard={r => (
-                <RecordCard title={`${weekday(r.scheduledDate)} ${formatDate(r.scheduledDate)} · ${SLOT_SHORT[r.slot]}`} subtitle={`${r.studentName} · ${r.subjects.join(', ')}`} badge={<StatusBadge map={SESSION_STATUS} value={r.status} />}
-                  fields={[['Mode', MODE_LABELS[r.mode]], ['Notes', r.notes || '—']]}
-                  actions={r.status === 'scheduled' && r.scheduledDate <= today ? <button type="button" className={btn.primary} onClick={() => setAttendance(r)}>Record attendance</button> : null} />
-              )}
               emptyMessage="Classes appear here once a parent enrols." />
           </>
         )}
 
         {tab === 'students' && (
-          <div className="grid gap-4 lg:grid-cols-2">
-            {data.students.length === 0 && <Card className="lg:col-span-2"><EmptyState title="No students yet">Students appear here after a demo converts into tuition.</EmptyState></Card>}
-            {data.students.map(s => (
-              <Card key={s.enrolmentId} title={s.studentName} subtitle={`${classLabel(s.class)} ${s.board} · ${s.subjects.join(', ')}`} actions={<StatusBadge map={{ active: { label: 'Active', tone: 'green' }, paused: { label: 'Paused', tone: 'amber' }, completed: { label: 'Completed', tone: 'slate' }, cancelled: { label: 'Cancelled', tone: 'slate' } }} value={s.status} />}>
-                <Details items={[['Schedule', scheduleText(s.schedule)], ['Mode', MODE_LABELS[s.mode]], ['Started', formatDate(s.startDate)], ['Classes taught', s.classesCompleted],
-                  ['Attendance', s.attendanceRate === null ? '—' : `${s.attendanceRate}%`], ['Parent', `${s.parentName} · +91 ${s.parentPhone}`]]} />
-              </Card>
-            ))}
-          </div>
+          <DataTable title="Students" noun="students" rows={data.students} rowKey={r => r.enrolmentId}
+            searchText={r => `${r.studentName} ${r.parentName} ${r.subjects.join(' ')}`}
+            filters={[{ key: 'status', label: 'statuses', get: r => r.status, options: Object.entries(ENROLMENT_STATUS).map(([value, v]) => ({ value, label: v.label })) }]}
+            columns={[
+              { key: 'student', header: 'Student', sortable: true, sortValue: r => r.studentName, render: r => <span><span className="font-medium">{r.studentName}</span><br /><span className="text-xs text-gray-500">{classLabel(r.class)} · {r.board}</span></span> },
+              { key: 'subjects', header: 'Subjects', render: r => r.subjects.join(', ') },
+              { key: 'schedule', header: 'Schedule', render: r => <span className="text-xs">{scheduleText(r.schedule)}</span> },
+              { key: 'mode', header: 'Mode', render: r => MODE_LABELS[r.mode] },
+              { key: 'start', header: 'Started', sortable: true, sortValue: r => r.startDate, render: r => formatDate(r.startDate) },
+              { key: 'classes', header: 'Classes', align: 'right', sortable: true, sortValue: r => r.classesCompleted, render: r => r.classesCompleted },
+              { key: 'attendance', header: 'Attendance', align: 'right', render: r => (r.attendanceRate === null ? '—' : `${r.attendanceRate}%`) },
+              { key: 'parent', header: 'Parent', render: r => <span>{r.parentName}<br /><a className="text-xs underline" href={`tel:+91${r.parentPhone}`}>+91 {r.parentPhone}</a></span> },
+              { key: 'status', header: 'Status', render: r => <StatusBadge map={ENROLMENT_STATUS} value={r.status} /> },
+            ]}
+            emptyMessage="Students appear here after a demo converts into tuition." />
         )}
 
         {tab === 'availability' && masters && <AvailabilityForm tutor={tutor} masters={masters} busy={busy}
@@ -217,40 +247,6 @@ function VerificationBanner({ tutor, onOpen }) {
     <Notice tone={['suspended', 'rejected'].includes(tutor.status) ? 'error' : 'warning'}>
       {text} {tutor.status === 'pending' && <button type="button" className="font-semibold underline" onClick={onOpen}>Upload documents</button>}
     </Notice>
-  )
-}
-
-// Lead acceptance screen (blueprint §8). Parent identity and address appear only after confirmation.
-function OfferCard({ offer: o, busy, onAccept, onDecline, onAsk, onUnavailable, onExpire }) {
-  const open = o.status === 'offered'
-  return (
-    <Card title={`${classLabel(o.lead.class)} ${o.lead.board} · ${o.lead.subjects.join(', ')}`} subtitle={`Lead ${o.lead.code} · ${MODE_LABELS[o.lead.mode]}`}
-      actions={open ? <Countdown expiresAt={o.expiresAt} onExpire={onExpire} /> : <StatusBadge map={OFFER_STATUS} value={o.status} />}>
-      <Details items={[
-        ['Area', <span key="a" className="inline-flex items-center gap-1"><FiMapPin className="h-4 w-4" aria-hidden="true" />{o.lead.locality}</span>],
-        ['Distance', o.lead.mode === 'online' ? 'Online' : o.distanceKm != null ? `About ${o.distanceKm} km` : 'Same area'],
-        ['Days', daysText(o.lead.preferredDays)], ['Times', slotsText(o.lead.preferredSlots)],
-        ['Budget', o.lead.budget], ['Start', o.lead.startDate ? formatDate(o.lead.startDate) : o.lead.urgency],
-        o.lead.prefLanguages?.length ? ['Languages', o.lead.prefLanguages.join(', ')] : null,
-        o.lead.specialRequirements ? ['Notes from parent', o.lead.specialRequirements] : null,
-      ]} />
-      {o.infoRequest && <p className="mt-3 text-sm text-gray-600"><strong>Your question:</strong> {o.infoRequest}</p>}
-      {o.contact && (
-        <div className="mt-4 rounded-lg border border-green-200 bg-green-50 p-4 text-sm">
-          <p className="font-semibold text-green-900">Confirmed. Contact details</p>
-          <Details items={[['Parent', o.contact.parentName], ['Student', o.contact.studentName], ['Phone', <a key="p" className="underline" href={`tel:+91${o.contact.phone}`}>+91 {o.contact.phone}</a>], ['Address', o.contact.address || 'Online']]} />
-        </div>
-      )}
-      {o.status === 'accepted' && <p className="mt-4 text-sm text-gray-600">You accepted this lead. Our team will confirm and arrange the demo.</p>}
-      {open && (
-        <div className="mt-5 flex flex-wrap gap-2">
-          <button type="button" className={btn.success} disabled={busy} onClick={onAccept}><FiCheck aria-hidden="true" /> Accept</button>
-          <button type="button" className={btn.danger} disabled={busy} onClick={onDecline}><FiX aria-hidden="true" /> Decline</button>
-          <button type="button" className={btn.secondary} disabled={busy} onClick={onUnavailable}>Not available now</button>
-          <button type="button" className={btn.secondary} disabled={busy} onClick={onAsk}><FiHelpCircle aria-hidden="true" /> Ask a question</button>
-        </div>
-      )}
-    </Card>
   )
 }
 
@@ -367,29 +363,22 @@ function VerificationTab({ tutor, masters, busy, onUpload }) {
         {tutor.statusNotes && <p className="mt-3 text-sm text-gray-600">Note from our team: {tutor.statusNotes}</p>}
       </Card>
       <Card title="Documents" subtitle="PDF, JPG or PNG up to 5 MB. Photos must be JPG or PNG.">
-        <ul className="divide-y divide-gray-100">
-          {masters.documentTypes.map(t => {
-            const doc = latest(t.value)
-            return (
-              <li key={t.value} className="flex flex-wrap items-center justify-between gap-3 py-4">
-                <div className="min-w-0">
-                  <p className="font-medium">{t.label}{t.required && <span className="text-red-600"> *</span>}</p>
-                  {doc ? (
-                    <p className="text-sm text-gray-600">{doc.originalName} · {formatDate(doc.createdAt)} <StatusBadge map={DOC_STATUS} value={doc.status} />{doc.rejectReason && <span className="block text-red-700">Reason: {doc.rejectReason}</span>}</p>
-                  ) : <p className="text-sm text-gray-500">Not uploaded</p>}
-                </div>
-                <div className="flex gap-2">
-                  {doc && <button type="button" className={btn.secondary} onClick={() => openProtectedFile(`/api/tutors/me/documents/${doc.id}/file`, 'tutor').catch(() => {})}><FiEye aria-hidden="true" /> View</button>}
-                  <label className={`${btn.primary} cursor-pointer ${busy ? 'pointer-events-none opacity-50' : ''}`}>
-                    <FiUpload aria-hidden="true" /> {doc ? 'Replace' : 'Upload'}
-                    <input type="file" className="sr-only" accept={t.value === 'photo' ? 'image/jpeg,image/png' : 'application/pdf,image/jpeg,image/png'}
-                      onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; if (file) onUpload(t.value, file) }} />
-                  </label>
-                </div>
-              </li>
-            )
-          })}
-        </ul>
+        <SimpleTable rows={masters.documentTypes.map(t => ({ ...t, id: t.value, doc: latest(t.value) }))} minWidth={720} columns={[
+          { key: 'type', header: 'Document', render: t => <span className="font-medium">{t.label}{t.required && <span className="text-red-600"> *</span>}</span> },
+          { key: 'file', header: 'File', render: t => (t.doc ? <span className="text-xs">{t.doc.originalName}</span> : <span className="text-xs text-gray-500">Not uploaded</span>) },
+          { key: 'date', header: 'Uploaded', render: t => (t.doc ? formatDate(t.doc.createdAt) : '—') },
+          { key: 'status', header: 'Status', render: t => (t.doc ? <span className="flex flex-col items-start gap-1"><StatusBadge map={DOC_STATUS} value={t.doc.status} />{t.doc.rejectReason && <span className="text-xs text-red-700">{t.doc.rejectReason}</span>}</span> : '—') },
+          { key: 'act', header: '', align: 'right', render: t => (
+            <span className="inline-flex gap-2">
+              {t.doc && <button type="button" className={btn.secondary} onClick={() => openProtectedFile(`/api/tutors/me/documents/${t.doc.id}/file`, 'tutor').catch(() => {})}><FiEye aria-hidden="true" /> View</button>}
+              <label className={`${btn.primary} cursor-pointer ${busy ? 'pointer-events-none opacity-50' : ''}`}>
+                <FiUpload aria-hidden="true" /> {t.doc ? 'Replace' : 'Upload'}
+                <input type="file" className="sr-only" accept={t.value === 'photo' ? 'image/jpeg,image/png' : 'application/pdf,image/jpeg,image/png'}
+                  onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; if (file) onUpload(t.value, file) }} />
+              </label>
+            </span>
+          ) },
+        ]} />
       </Card>
     </div>
   )

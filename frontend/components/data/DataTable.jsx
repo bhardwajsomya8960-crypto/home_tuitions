@@ -4,13 +4,15 @@ import { useMemo, useState } from 'react'
 import { FiSearch, FiChevronUp, FiChevronDown, FiInbox } from 'react-icons/fi'
 import Pagination from './Pagination'
 
-// Shared table for all dashboards. Desktop (md+) renders a table; phones render
-// `renderCard` for each row. Paging, search, filters and sorting run on the same
-// filtered list, so both layouts always agree.
+// Shared table for all dashboards. Every screen size shows the same table; on phones it
+// scrolls sideways. Paging, search, filters and sorting run on the same filtered list.
 //
-// columns:  [{ key, header, render(row), sortValue?(row), sortable?, align? }]
+// columns:  [{ key, header, render(row), sortValue?(row), sortable?, align?, sticky? }]
+//           sticky: true pins the column (usually actions) to the right edge while scrolling
 // filters:  [{ key, label, get(row), options: [{ value, label }] }]
 // searchText(row): string used by the search box
+const PIN = 'sticky right-0 z-[1] shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.15)]'
+
 export default function DataTable({
   title,
   noun = 'records',
@@ -20,7 +22,6 @@ export default function DataTable({
   searchText,
   searchPlaceholder = 'Search',
   filters = [],
-  renderCard,
   emptyMessage = 'No records yet.',
   noMatchMessage = 'No records match your search or filters.',
   pageSizes = [10, 20, 50],
@@ -116,9 +117,8 @@ export default function DataTable({
         </div>
       ) : (
         <>
-          {/* Desktop table */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] text-left text-sm">
               <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
                 <tr className="border-b border-gray-200">
                   {columns.map(col => {
@@ -129,7 +129,7 @@ export default function DataTable({
                         key={col.key}
                         scope="col"
                         aria-sort={col.sortable ? ariaSort || 'none' : undefined}
-                        className={`px-4 py-3 ${col.align === 'right' ? 'text-right' : ''} ${col.className || ''}`}
+                        className={`whitespace-nowrap px-4 py-3 ${col.align === 'right' ? 'text-right' : ''} ${col.className || ''} ${col.sticky ? `${PIN} bg-gray-50` : ''}`}
                       >
                         {col.sortable ? (
                           <button
@@ -152,7 +152,7 @@ export default function DataTable({
                 {pageRows.map(row => (
                   <tr key={rowKey(row)} className="hover:bg-gray-50">
                     {columns.map(col => (
-                      <td key={col.key} className={`px-4 py-3.5 align-middle ${col.align === 'right' ? 'text-right' : ''} ${col.cellClassName || ''}`}>
+                      <td key={col.key} className={`px-4 py-3.5 align-middle ${col.align === 'right' ? 'text-right' : ''} ${col.cellClassName || ''} ${col.sticky ? `${PIN} bg-white` : ''}`}>
                         {col.render(row)}
                       </td>
                     ))}
@@ -162,12 +162,6 @@ export default function DataTable({
             </table>
           </div>
 
-          {/* Phone cards */}
-          <div className="md:hidden space-y-3 p-3">
-            {pageRows.map(row => (
-              <div key={rowKey(row)}>{renderCard ? renderCard(row) : null}</div>
-            ))}
-          </div>
         </>
       )}
 

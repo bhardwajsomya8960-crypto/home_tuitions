@@ -5,11 +5,11 @@ import { useSearchParams } from 'next/navigation'
 import { FiBarChart2, FiUsers, FiActivity, FiUserCheck, FiDollarSign, FiSettings, FiList, FiPlus, FiRefreshCw, FiAlertTriangle } from 'react-icons/fi'
 import AppShell from '../../../components/shell/AppShell'
 import DataTable from '../../../components/data/DataTable'
-import RecordCard from '../../../components/data/RecordCard'
 import Modal from '../../../components/ui/Modal'
+import SimpleTable from '../../../components/ui/SimpleTable'
 import Countdown from '../../../components/ui/Countdown'
 import { StatusBadge } from '../../../components/ui/Badge'
-import { btn, Card, EmptyState, PageLoader, StatCard } from '../../../components/ui/Card'
+import { btn, Card, PageLoader, StatCard } from '../../../components/ui/Card'
 import { ChipGroup, Notice, Select, TextArea, TextInput } from '../../../components/ui/Form'
 import LeadWorkspace from '../../../components/admin/LeadWorkspace'
 import TutorReview from '../../../components/admin/TutorReview'
@@ -102,15 +102,16 @@ function Overview({ dash, goto }) {
         <StatCard label="No tutor found" value={dash.operations.noTutorQueue} hint={`${dash.operations.upcomingDemos} demos in the next 7 days`} icon={FiAlertTriangle} tone={dash.operations.noTutorQueue ? 'red' : 'blue'} />
       </div>
       <Card title="Lead pipeline" actions={<button type="button" className={btn.link} onClick={() => goto('leads')}>View leads</button>}>
-        <ul className="space-y-2">
-          {pipeline.map(s => (
-            <li key={s} className="grid grid-cols-[140px_1fr_40px] items-center gap-3 text-sm">
-              <span>{LEAD_STATUS[s].label}</span>
-              <span className="h-2.5 overflow-hidden rounded-full bg-gray-100"><span className="block h-full rounded-full bg-blue-600" style={{ width: `${(dash.leads.byStatus[s] / max) * 100}%` }} /></span>
-              <span className="text-right font-semibold tabular-nums">{dash.leads.byStatus[s]}</span>
-            </li>
-          ))}
-        </ul>
+        <SimpleTable rows={pipeline.map(st => ({ id: st, count: dash.leads.byStatus[st] }))} minWidth={480} columns={[
+          { key: 'stage', header: 'Stage', render: r => <StatusBadge map={LEAD_STATUS} value={r.id} /> },
+          { key: 'count', header: 'Leads', align: 'right', render: r => <span className="font-semibold tabular-nums">{r.count}</span> },
+          { key: 'share', header: 'Share of all leads', render: r => (
+            <span className="flex items-center gap-3">
+              <span className="h-2 w-40 overflow-hidden rounded-full bg-gray-100"><span className="block h-full rounded-full bg-blue-600" style={{ width: `${(r.count / max) * 100}%` }} /></span>
+              <span className="text-xs tabular-nums text-gray-600">{dash.leads.total ? Math.round((r.count / dash.leads.total) * 100) : 0}%</span>
+            </span>
+          ) },
+        ]} />
       </Card>
     </>
   )
@@ -139,10 +140,8 @@ function LeadsTab({ version, masters, onOpen, onNew }) {
           { key: 'where', header: 'Mode / area', render: r => `${MODE_LABELS[r.mode]}${r.pincode ? ` · ${r.pincode}` : ''}` },
           { key: 'status', header: 'Status', render: r => <span className="flex flex-col items-start gap-1"><StatusBadge map={LEAD_STATUS} value={r.status} />{r.noTutorFound && <span className="text-xs font-semibold text-red-700">No tutor</span>}</span> },
           { key: 'created', header: 'Created', sortable: true, sortValue: r => r.createdAt, render: r => <span className="text-xs">{formatDateTime(r.createdAt)}</span> },
-          { key: 'open', header: '', render: r => <button type="button" className={btn.secondary} onClick={() => onOpen(r.id)}>Open</button> },
+          { key: 'open', header: '', sticky: true, render: r => <button type="button" className={btn.secondary} onClick={() => onOpen(r.id)}>Open</button> },
         ]}
-        renderCard={r => <RecordCard title={`${r.code} · ${r.parentName}`} subtitle={`${r.studentName} · ${classLabel(r.class)} · ${r.subjects.join(', ')}`} badge={<StatusBadge map={LEAD_STATUS} value={r.status} />}
-          fields={[['Mode', MODE_LABELS[r.mode]], ['Pincode', r.pincode || '—'], ['Source', r.source], ['Created', formatDate(r.createdAt)]]} actions={<button type="button" className={btn.primary} onClick={() => onOpen(r.id)}>Open lead</button>} />}
         emptyMessage="No leads yet. Leads arrive from the parent enquiry form, or add one with New lead." />
     </>
   )
@@ -152,53 +151,67 @@ function OperationsTab({ version, onOpenLead, onConfirm, busy, onExpire }) {
   const { data, error } = useAdminData('/api/admin/operations', version)
   if (error) return <Notice>{error}</Notice>
   if (!data) return <PageLoader />
-  const Row = ({ children, leadIdToOpen }) => (
-    <li className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">{children}{leadIdToOpen && <button type="button" className={btn.link} onClick={() => onOpenLead(leadIdToOpen)}>Open lead</button>}</li>
-  )
+  const open = id => <button type="button" className={btn.secondary} onClick={() => onOpenLead(id)}>Open lead</button>
+  const leadCol = { key: 'lead', header: 'Lead', render: r => <span className="whitespace-nowrap font-medium">{r.leadCode || r.code}</span> }
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="space-y-4">
       <Card title={`Awaiting confirmation (${data.awaitingConfirmation.length})`} subtitle="Tutor accepted; confirm to share contact details">
-        {data.awaitingConfirmation.length === 0 ? <EmptyState title="Nothing to confirm" /> : (
-          <ul className="divide-y divide-gray-100">
-            {data.awaitingConfirmation.map(a => (
-              <Row key={a.id} leadIdToOpen={a.leadId}>
-                <span><strong>{a.leadCode}</strong> · {a.tutorName} · score {a.score}</span>
-                <button type="button" className={btn.success} disabled={busy} onClick={() => onConfirm(a.id)}>Confirm</button>
-              </Row>
-            ))}
-          </ul>
-        )}
+        <SimpleTable rows={data.awaitingConfirmation} empty="Nothing to confirm" columns={[
+          leadCol,
+          { key: 'tutor', header: 'Tutor', render: a => a.tutorName },
+          { key: 'score', header: 'Score', align: 'right', render: a => a.score },
+          { key: 'distance', header: 'Distance', render: a => (a.distanceKm != null ? `${a.distanceKm} km` : 'Online') },
+          { key: 'accepted', header: 'Accepted', render: a => <span className="whitespace-nowrap">{formatDateTime(a.respondedAt)}</span> },
+          { key: 'act', header: '', align: 'right', render: a => <span className="inline-flex gap-2"><button type="button" className={btn.success} disabled={busy} onClick={() => onConfirm(a.id)}>Confirm</button>{open(a.leadId)}</span> },
+        ]} />
       </Card>
       <Card title={`No tutor found (${data.noTutor.length})`} subtitle="Expand the search, switch to online or recruit">
-        {data.noTutor.length === 0 ? <EmptyState title="Every lead has candidates" /> : (
-          <ul className="divide-y divide-gray-100">
-            {data.noTutor.map(l => <Row key={l.id} leadIdToOpen={l.id}><span><strong>{l.code}</strong> · {classLabel(l.class)} {l.subjects.join(', ')} · {MODE_LABELS[l.mode]}{l.pincode ? ` · ${l.pincode}` : ''}</span></Row>)}
-          </ul>
-        )}
+        <SimpleTable rows={data.noTutor} empty="Every lead has candidates" columns={[
+          leadCol,
+          { key: 'parent', header: 'Parent / student', render: l => <span>{l.parentName}<br /><span className="text-xs text-gray-500">{l.studentName}</span></span> },
+          { key: 'need', header: 'Requirement', render: l => `${classLabel(l.class)} ${l.board} · ${l.subjects.join(', ')}` },
+          { key: 'where', header: 'Mode / area', render: l => `${MODE_LABELS[l.mode]}${l.pincode ? ` · ${l.pincode}` : ''}` },
+          { key: 'status', header: 'Status', render: l => <StatusBadge map={LEAD_STATUS} value={l.status} /> },
+          { key: 'act', header: '', align: 'right', render: l => open(l.id) },
+        ]} />
       </Card>
       <Card title={`Open offers (${data.openOffers.length})`}>
-        {data.openOffers.length === 0 ? <EmptyState title="No offers waiting" /> : (
-          <ul className="divide-y divide-gray-100">
-            {data.openOffers.map(a => <Row key={a.id} leadIdToOpen={a.leadId}><span><strong>{a.leadCode}</strong> → {a.tutorName}</span><Countdown expiresAt={a.expiresAt} onExpire={onExpire} /></Row>)}
-          </ul>
-        )}
+        <SimpleTable rows={data.openOffers} empty="No offers waiting" columns={[
+          leadCol,
+          { key: 'tutor', header: 'Offered to', render: a => a.tutorName },
+          { key: 'score', header: 'Score', align: 'right', render: a => a.score },
+          { key: 'offered', header: 'Offered', render: a => <span className="whitespace-nowrap">{formatDateTime(a.offeredAt)}</span> },
+          { key: 'left', header: 'Time left', render: a => <Countdown expiresAt={a.expiresAt} onExpire={onExpire} /> },
+          { key: 'act', header: '', align: 'right', render: a => open(a.leadId) },
+        ]} />
       </Card>
       <Card title={`Questions from tutors (${data.infoRequests.length})`}>
-        {data.infoRequests.length === 0 ? <EmptyState title="No questions" /> : (
-          <ul className="divide-y divide-gray-100">
-            {data.infoRequests.map(a => <Row key={a.id} leadIdToOpen={a.leadId}><span><strong>{a.tutorName}</strong> on {a.leadCode}: “{a.infoRequest}”</span></Row>)}
-          </ul>
-        )}
+        <SimpleTable rows={data.infoRequests} empty="No questions" columns={[
+          leadCol,
+          { key: 'tutor', header: 'Tutor', render: a => a.tutorName },
+          { key: 'q', header: 'Question', render: a => a.infoRequest },
+          { key: 'left', header: 'Offer time left', render: a => <Countdown expiresAt={a.expiresAt} onExpire={onExpire} /> },
+          { key: 'act', header: '', align: 'right', render: a => open(a.leadId) },
+        ]} />
       </Card>
       <Card title={`Escalations (${data.escalations.length})`} subtitle="Repeated missed demos">
-        {data.escalations.length === 0 ? <EmptyState title="No escalations" /> : (
-          <ul className="divide-y divide-gray-100">{data.escalations.map(l => <Row key={l.id} leadIdToOpen={l.id}><span><strong>{l.code}</strong> · {l.parentName}</span></Row>)}</ul>
-        )}
+        <SimpleTable rows={data.escalations} empty="No escalations" columns={[
+          leadCol,
+          { key: 'parent', header: 'Parent', render: l => <span>{l.parentName}<br /><span className="text-xs text-gray-500">+91 {l.parentPhone}</span></span> },
+          { key: 'need', header: 'Requirement', render: l => `${classLabel(l.class)} · ${l.subjects.join(', ')}` },
+          { key: 'status', header: 'Status', render: l => <StatusBadge map={LEAD_STATUS} value={l.status} /> },
+          { key: 'act', header: '', align: 'right', render: l => open(l.id) },
+        ]} />
       </Card>
       <Card title={`Upcoming demos (${data.upcomingDemos.length})`}>
-        {data.upcomingDemos.length === 0 ? <EmptyState title="No demos scheduled" /> : (
-          <ul className="divide-y divide-gray-100">{data.upcomingDemos.map(d => <Row key={d.id} leadIdToOpen={d.leadId}><span><strong>{formatDateTime(d.scheduledAt)}</strong> · {d.leadCode} · {d.tutorName} · {MODE_LABELS[d.mode]}</span></Row>)}</ul>
-        )}
+        <SimpleTable rows={data.upcomingDemos} empty="No demos scheduled" columns={[
+          { key: 'when', header: 'When', render: d => <span className="whitespace-nowrap font-medium">{formatDateTime(d.scheduledAt)}</span> },
+          leadCol,
+          { key: 'tutor', header: 'Tutor', render: d => d.tutorName },
+          { key: 'mode', header: 'Mode', render: d => MODE_LABELS[d.mode] },
+          { key: 'where', header: 'Place / link', render: d => <span className="text-xs">{d.locationNote || '—'}</span> },
+          { key: 'act', header: '', align: 'right', render: d => open(d.leadId) },
+        ]} />
       </Card>
     </div>
   )
@@ -220,9 +233,8 @@ function TutorsTab({ version, onOpen }) {
         { key: 'rating', header: 'Rating', sortable: true, sortValue: r => r.ratingAvg || 0, render: r => (r.ratingCount ? `${r.ratingAvg.toFixed(1)} (${r.ratingCount})` : '—') },
         { key: 'students', header: 'Students', render: r => r.activeStudents },
         { key: 'status', header: 'Status', render: r => <span className="flex flex-col gap-1"><StatusBadge map={TUTOR_STATUS} value={r.status} />{!r.acceptingLeads && <span className="text-xs text-amber-700">Paused leads</span>}</span> },
-        { key: 'open', header: '', render: r => <button type="button" className={btn.secondary} onClick={() => onOpen(r.id)}>Review</button> },
+        { key: 'open', header: '', sticky: true, render: r => <button type="button" className={btn.secondary} onClick={() => onOpen(r.id)}>Review</button> },
       ]}
-      renderCard={r => <RecordCard title={r.name} subtitle={r.subjects.join(', ')} badge={<StatusBadge map={TUTOR_STATUS} value={r.status} />} fields={[['Area', r.pincode], ['Experience', `${r.experienceYears} yrs`], ['Students', r.activeStudents], ['Modes', r.modes.map(m => MODE_LABELS[m]).join(', ')]]} actions={<button type="button" className={btn.primary} onClick={() => onOpen(r.id)}>Review</button>} />}
       emptyMessage="No tutors have registered yet." />
   )
 }
@@ -250,15 +262,13 @@ function FinanceTab({ version, masters, run, busy, onChanged }) {
           { key: 'outstanding', header: 'Outstanding', align: 'right', sortable: true, sortValue: r => r.outstanding, render: r => rupees(r.outstanding) },
           { key: 'due', header: 'Due', sortable: true, sortValue: r => r.dueDate, render: r => <span className={r.overdue ? 'font-semibold text-red-700' : ''}>{formatDate(r.dueDate)}</span> },
           { key: 'status', header: 'Status', render: r => <StatusBadge map={INVOICE_STATUS} value={r.status} /> },
-          { key: 'act', header: '', render: r => (
+          { key: 'act', header: '', sticky: true, render: r => (
             <span className="flex gap-2">
               {['pending', 'partial'].includes(r.status) && <button type="button" className={btn.primary} onClick={() => setPaying(r)}>Record payment</button>}
               {r.status === 'pending' && <button type="button" className={btn.danger} disabled={busy} onClick={() => { if (window.confirm(`Void ${r.number}?`)) post(`/api/admin/invoices/${r.id}/void`, undefined, 'Invoice voided.').catch(() => {}) }}>Void</button>}
             </span>
           ) },
         ]}
-        renderCard={r => <RecordCard title={`${r.number} · ${rupees(r.amount)}`} subtitle={`${r.parentName} · ${r.periodLabel}`} badge={<StatusBadge map={INVOICE_STATUS} value={r.status} />}
-          fields={[['Outstanding', rupees(r.outstanding)], ['Due', formatDate(r.dueDate)]]} actions={['pending', 'partial'].includes(r.status) ? <button type="button" className={btn.primary} onClick={() => setPaying(r)}>Record payment</button> : null} />}
         emptyMessage="Invoices are created when a lead converts." />
 
       <DataTable title="Enrolments" noun="enrolments" rows={enrolments.data.items} rowKey={r => r.id}
@@ -271,7 +281,7 @@ function FinanceTab({ version, masters, run, busy, onChanged }) {
           { key: 'schedule', header: 'Schedule', render: r => <span className="text-xs">{scheduleText(r.schedule)}</span> },
           { key: 'start', header: 'Start', render: r => formatDate(r.startDate) },
           { key: 'status', header: 'Status', render: r => <StatusBadge map={ENROLMENT_STATUS} value={r.status} /> },
-          { key: 'act', header: '', render: r => (
+          { key: 'act', header: '', sticky: true, render: r => (
             <span className="flex flex-wrap gap-2">
               {r.status === 'active' && <button type="button" className={btn.secondary} onClick={() => setInvoiceFor(r)}>New invoice</button>}
               {r.status === 'active' && <button type="button" className={btn.secondary} disabled={busy} onClick={() => post(`/api/admin/enrolments/${r.id}/status`, { status: 'paused' }, 'Enrolment paused.').catch(() => {})}>Pause</button>}
@@ -280,7 +290,6 @@ function FinanceTab({ version, masters, run, busy, onChanged }) {
             </span>
           ) },
         ]}
-        renderCard={r => <RecordCard title={`${r.studentName} with ${r.tutorName}`} subtitle={`${r.leadCode} · ${rupees(r.feeAmount)} ${r.plan}`} badge={<StatusBadge map={ENROLMENT_STATUS} value={r.status} />} fields={[['Schedule', scheduleText(r.schedule)], ['Start', formatDate(r.startDate)]]} />}
         emptyMessage="No enrolments yet." />
 
       <PaymentModal invoice={paying} masters={masters} busy={busy} onClose={() => setPaying(null)}

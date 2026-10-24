@@ -5,10 +5,10 @@ import { useSearchParams } from 'next/navigation'
 import { FiBarChart2, FiBook, FiCalendar, FiDollarSign, FiFileText, FiUser, FiPlus, FiStar } from 'react-icons/fi'
 import AppShell from '../../../components/shell/AppShell'
 import DataTable from '../../../components/data/DataTable'
-import RecordCard from '../../../components/data/RecordCard'
 import Modal from '../../../components/ui/Modal'
+import SimpleTable from '../../../components/ui/SimpleTable'
 import { StatusBadge } from '../../../components/ui/Badge'
-import { btn, Card, Details, EmptyState, PageLoader, StatCard } from '../../../components/ui/Card'
+import { btn, Card, Details, PageLoader, StatCard } from '../../../components/ui/Card'
 import { ChipGroup, Notice, Select, TextArea, TextInput } from '../../../components/ui/Form'
 import { api } from '../../../lib/api'
 import { usePortal } from '../../../lib/usePortal'
@@ -34,6 +34,7 @@ function Dashboard() {
   const { masters } = useMasters()
   const [newRequest, setNewRequest] = useState(false)
   const [addStudent, setAddStudent] = useState(false)
+  const [openRequestId, setOpenRequestId] = useState(null)
   const { data, error, message, busy, run, logout } = portal
 
   if (!data) return error ? <div className="p-6"><Notice>{error}</Notice></div> : <PageLoader />
@@ -43,6 +44,26 @@ function Dashboard() {
   const pendingOutcome = data.requests.filter(r => r.status === 'demo_completed' && r.demos.some(d => d.status === 'completed' && !d.outcome))
   const toRate = data.requests.filter(r => r.demos.some(d => d.status === 'completed') && !r.reviewedStages.includes(r.enrolment ? 'ongoing' : 'demo'))
   const due = data.invoices.filter(i => i.outstanding > 0)
+  // One row per thing the parent should act on.
+  const attention = [
+    ...pendingOutcome.map(r => ({ id: `o${r.id}`, what: 'Demo feedback', student: r.student?.name, detail: `How did the demo with ${r.tutor?.name} go?`, action: 'Tell us', go: () => setOpenRequestId(r.id) })),
+    ...due.map(i => ({ id: `i${i.id}`, what: i.overdue ? 'Fee overdue' : 'Fee due', student: '', detail: `${i.periodLabel}: ${rupees(i.outstanding)} due ${formatDate(i.dueDate)}`, action: 'View', go: () => setTab('fees'), urgent: i.overdue })),
+    ...toRate.filter(r => !pendingOutcome.includes(r)).map(r => ({ id: `r${r.id}`, what: 'Rate tutor', student: r.student?.name, detail: `Rate ${r.tutor?.name || 'your tutor'}`, action: 'Rate', go: () => setOpenRequestId(r.id) })),
+  ]
+  const needsAction = r => pendingOutcome.includes(r) || toRate.includes(r)
+  const openRequest = data.requests.find(r => r.id === openRequestId)
+  const requestColumns = [
+    { key: 'code', header: 'Request', sortable: true, sortValue: r => r.code, render: r => <button type="button" className="font-semibold text-blue-700 hover:underline" onClick={() => setOpenRequestId(r.id)}>{r.code}</button> },
+    { key: 'student', header: 'Student', sortable: true, sortValue: r => r.student?.name || '', render: r => <span>{r.student?.name}<br /><span className="text-xs text-gray-500">{classLabel(r.class)} · {r.board}</span></span> },
+    { key: 'subjects', header: 'Subjects', render: r => r.subjects.join(', ') },
+    { key: 'mode', header: 'Mode', render: r => MODE_LABELS[r.mode] },
+    { key: 'tutor', header: 'Tutor', render: r => (r.tutor ? `${r.tutor.name}${r.tutor.confirmed ? '' : ' (pending)'}` : '—') },
+    { key: 'demo', header: 'Demo', render: r => { const d = r.demos[0]; return d ? <span>{formatDateTime(d.scheduledAt)}<br /><StatusBadge map={DEMO_STATUS} value={d.status} /></span> : '—' } },
+    { key: 'update', header: 'Latest update', render: r => <span className="text-xs">{r.timeline.at(-1)?.text}<br /><span className="text-gray-500">{formatDateTime(r.timeline.at(-1)?.at)}</span></span> },
+    { key: 'status', header: 'Status', render: r => <span className="flex flex-col items-start gap-1"><StatusBadge map={LEAD_STATUS} value={r.status} />{needsAction(r) && <span className="text-xs font-semibold text-amber-700">Action needed</span>}</span> },
+    { key: 'open', header: '', align: 'right', sticky: true, render: r => <button type="button" className={btn.secondary} onClick={() => setOpenRequestId(r.id)}>Open</button> },
+  ]
+
   const nav = NAV.map(n => (n.id === 'requests' ? { ...n, count: pendingOutcome.length } : n.id === 'fees' ? { ...n, count: due.length } : n))
 
   return (
@@ -63,68 +84,40 @@ function Dashboard() {
 
             <button type="button" onClick={() => setNewRequest(true)} className={`${btn.primary} w-full md:hidden`}><FiPlus aria-hidden="true" /> New tuition request</button>
 
-            {(pendingOutcome.length > 0 || due.length > 0 || toRate.length > 0) && (
+            {attention.length > 0 && (
               <Card title="Needs your attention">
-                <ul className="divide-y divide-gray-100">
-                  {pendingOutcome.map(r => (
-                    <li key={`o${r.id}`} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                      <p className="text-sm"><strong>{r.student?.name}</strong>: how did the demo with {r.tutor?.name} go?</p>
-                      <button type="button" className={btn.secondary} onClick={() => setTab('requests')}>Tell us</button>
-                    </li>
-                  ))}
-                  {due.map(i => (
-                    <li key={`i${i.id}`} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                      <p className="text-sm">{i.periodLabel}: <strong>{rupees(i.outstanding)}</strong> due {formatDate(i.dueDate)} {i.overdue && <span className="font-semibold text-red-700">(overdue)</span>}</p>
-                      <button type="button" className={btn.secondary} onClick={() => setTab('fees')}>View</button>
-                    </li>
-                  ))}
-                  {toRate.filter(r => !pendingOutcome.includes(r)).map(r => (
-                    <li key={`r${r.id}`} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                      <p className="text-sm">Rate {r.tutor?.name || 'your tutor'} for {r.student?.name}</p>
-                      <button type="button" className={btn.secondary} onClick={() => setTab('requests')}>Rate</button>
-                    </li>
-                  ))}
-                </ul>
+                <SimpleTable rows={attention} minWidth={560} rowClassName={a => (a.urgent ? 'bg-red-50/50' : '')} columns={[
+                  { key: 'what', header: 'Item', render: a => <span className={`font-medium ${a.urgent ? 'text-red-700' : ''}`}>{a.what}</span> },
+                  { key: 'student', header: 'Student', render: a => a.student || '—' },
+                  { key: 'detail', header: 'Details', render: a => a.detail },
+                  { key: 'go', header: '', align: 'right', render: a => <button type="button" className={btn.secondary} onClick={a.go}>{a.action}</button> },
+                ]} />
               </Card>
             )}
 
             <Card title="Upcoming classes" actions={<button type="button" className={btn.link} onClick={() => setTab('classes')}>All classes</button>}>
-              {data.upcomingClasses.length === 0
-                ? <EmptyState title="No classes scheduled">Classes appear here once a tuition starts.</EmptyState>
-                : (
-                  <ul className="divide-y divide-gray-100">
-                    {data.upcomingClasses.slice(0, 6).map(c => (
-                      <li key={c.id} className="flex items-center justify-between gap-3 py-3 text-sm">
-                        <div><p className="font-semibold">{c.studentName} · {c.subjects.join(', ')}</p><p className="text-gray-500">with {c.tutorName} · {MODE_LABELS[c.mode]}</p></div>
-                        <p className="text-right font-medium">{weekday(c.scheduledDate)} {formatDate(c.scheduledDate)}<br /><span className="text-gray-500">{SLOT_SHORT[c.slot]}</span></p>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+              <SimpleTable rows={data.upcomingClasses.slice(0, 8)} empty="No classes scheduled yet" columns={[
+                { key: 'date', header: 'Date', render: c => <span className="whitespace-nowrap font-medium">{weekday(c.scheduledDate)} {formatDate(c.scheduledDate)}</span> },
+                { key: 'time', header: 'Time', render: c => SLOT_SHORT[c.slot] },
+                { key: 'student', header: 'Student', render: c => c.studentName },
+                { key: 'subjects', header: 'Subjects', render: c => c.subjects.join(', ') },
+                { key: 'tutor', header: 'Tutor', render: c => c.tutorName },
+                { key: 'mode', header: 'Mode', render: c => MODE_LABELS[c.mode] },
+              ]} />
             </Card>
 
-            <Card title="Your requests" actions={<button type="button" className={btn.link} onClick={() => setTab('requests')}>Details</button>}>
-              {data.requests.length === 0
-                ? <EmptyState title="No requests yet" action={<button type="button" className={btn.primary} onClick={() => setNewRequest(true)}>Request a tutor</button>} />
-                : (
-                  <ul className="divide-y divide-gray-100">
-                    {data.requests.map(r => (
-                      <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
-                        <div><p className="font-semibold">{r.student?.name} · {r.subjects.join(', ')}</p><p className="text-gray-500">{r.code} · {MODE_LABELS[r.mode]} · {r.timeline.at(-1)?.text}</p></div>
-                        <StatusBadge map={LEAD_STATUS} value={r.status} />
-                      </li>
-                    ))}
-                  </ul>
-                )}
+            <Card title="Your requests" actions={<button type="button" className={btn.link} onClick={() => setTab('requests')}>All requests</button>}>
+              <SimpleTable rows={data.requests} empty="No requests yet" minWidth={900} columns={requestColumns.filter(c => c.key !== 'demo')} />
             </Card>
           </>
         )}
 
         {tab === 'requests' && (
-          <div className="space-y-4">
-            {data.requests.length === 0 && <Card><EmptyState title="No requests yet" action={<button type="button" className={btn.primary} onClick={() => setNewRequest(true)}>Request a tutor</button>} /></Card>}
-            {data.requests.map(r => <RequestCard key={r.id} request={r} masters={masters} busy={busy} act={act} />)}
-          </div>
+          <DataTable title="Requests" noun="requests" rows={data.requests} rowKey={r => r.id} columns={requestColumns}
+            searchText={r => `${r.code} ${r.student?.name} ${r.subjects.join(' ')} ${r.tutor?.name || ''}`}
+            filters={[{ key: 'status', label: 'statuses', get: r => r.status, options: Object.entries(LEAD_STATUS).map(([value, v]) => ({ value, label: v.label })) }]}
+            toolbarExtra={<button type="button" className={btn.primary} onClick={() => setNewRequest(true)}><FiPlus aria-hidden="true" /> New request</button>}
+            emptyMessage="No requests yet. Use New request to ask for a tutor." />
         )}
 
         {tab === 'classes' && <ClassesTab run={run} />}
@@ -144,7 +137,6 @@ function Dashboard() {
                 { key: 'due', header: 'Due date', sortable: true, sortValue: r => r.dueDate, render: r => <span className={r.overdue ? 'font-semibold text-red-700' : ''}>{formatDate(r.dueDate)}</span> },
                 { key: 'status', header: 'Status', render: r => <StatusBadge map={INVOICE_STATUS} value={r.status} /> },
               ]}
-              renderCard={r => <RecordCard title={r.periodLabel} subtitle={r.number} badge={<StatusBadge map={INVOICE_STATUS} value={r.status} />} fields={[['Amount', rupees(r.amount)], ['Outstanding', rupees(r.outstanding)], ['Due', formatDate(r.dueDate)], ['Payments', r.payments.length]]} />}
               emptyMessage="No invoices yet. The first invoice is created when tuition starts."
             />
           </>
@@ -152,15 +144,14 @@ function Dashboard() {
 
         {tab === 'students' && (
           <Card title="Students" actions={<button type="button" className={btn.primary} onClick={() => setAddStudent(true)}><FiPlus aria-hidden="true" /> Add student</button>}>
-            <ul className="grid gap-3 sm:grid-cols-2">
-              {data.students.map(s => (
-                <li key={s.id} className="rounded-lg border border-gray-200 p-4">
-                  <p className="font-semibold">{s.name}</p>
-                  <p className="text-sm text-gray-600">{classLabel(s.class)} · {s.board}{s.school ? ` · ${s.school}` : ''}</p>
-                  <p className="mt-2 text-xs text-gray-500">{data.requests.filter(r => r.student?.id === s.id).length} request(s)</p>
-                </li>
-              ))}
-            </ul>
+            <SimpleTable rows={data.students} empty="No students yet" minWidth={560} columns={[
+              { key: 'name', header: 'Name', render: st => <span className="font-medium">{st.name}</span> },
+              { key: 'class', header: 'Class', render: st => classLabel(st.class) },
+              { key: 'board', header: 'Board', render: st => st.board },
+              { key: 'school', header: 'School', render: st => st.school || '—' },
+              { key: 'requests', header: 'Requests', align: 'right', render: st => data.requests.filter(r => r.student?.id === st.id).length },
+              { key: 'active', header: 'Active tuitions', align: 'right', render: st => data.requests.filter(r => r.student?.id === st.id && r.enrolment?.status === 'active').length },
+            ]} />
           </Card>
         )}
 
@@ -172,6 +163,10 @@ function Dashboard() {
           </Card>
         )}
       </div>
+
+      <Modal open={!!openRequest} title={openRequest ? `${openRequest.code} · ${openRequest.student?.name}` : ''} onClose={() => setOpenRequestId(null)} wide>
+        {openRequest && <RequestDetail request={openRequest} masters={masters} busy={busy} act={act} />}
+      </Modal>
 
       {masters && (
         <NewRequestModal open={newRequest} onClose={() => setNewRequest(false)} masters={masters} students={data.students} parent={data.parent}
@@ -185,7 +180,7 @@ function Dashboard() {
   )
 }
 
-function RequestCard({ request: r, masters, busy, act }) {
+function RequestDetail({ request: r, masters, busy, act }) {
   const [rating, setRating] = useState(0)
   const [comment, setComment] = useState('')
   const [reschedule, setReschedule] = useState(null)
@@ -196,10 +191,9 @@ function RequestCard({ request: r, masters, busy, act }) {
   const canRate = completedDemo && !r.reviewedStages.includes(stage)
 
   return (
-    <Card title={`${r.student?.name} · ${r.subjects.join(', ')}`} subtitle={`${r.code} · ${classLabel(r.class)} ${r.board} · ${MODE_LABELS[r.mode]}`}
-      actions={<StatusBadge map={LEAD_STATUS} value={r.status} />}>
-      <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
-        <div className="space-y-5">
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600"><StatusBadge map={LEAD_STATUS} value={r.status} /> {r.subjects.join(', ')} · {classLabel(r.class)} {r.board} · {MODE_LABELS[r.mode]}</div>
+      <div className="space-y-5">
           <Details items={[
             ['Days', daysText(r.preferredDays)], ['Times', slotsText(r.preferredSlots)],
             ['Budget', masters ? optionLabel(masters.budgetRanges, r.budgetRange) : r.budgetRange], ['Start', r.startDate ? formatDate(r.startDate) : ''],
@@ -220,14 +214,13 @@ function RequestCard({ request: r, masters, busy, act }) {
           {r.demos.length > 0 && (
             <div>
               <h3 className="mb-2 text-sm font-semibold">Demo</h3>
-              <ul className="space-y-2">
-                {r.demos.map(d => (
-                  <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm">
-                    <span>{formatDateTime(d.scheduledAt)} · {MODE_LABELS[d.mode]} · {d.durationMin} min{d.locationNote ? ` · ${d.locationNote}` : ''}</span>
-                    <StatusBadge map={DEMO_STATUS} value={d.status} />
-                  </li>
-                ))}
-              </ul>
+              <SimpleTable flush={false} rows={r.demos} minWidth={560} columns={[
+                { key: 'when', header: 'When', render: d => <span className="whitespace-nowrap">{formatDateTime(d.scheduledAt)}</span> },
+                { key: 'mode', header: 'Mode', render: d => MODE_LABELS[d.mode] },
+                { key: 'len', header: 'Length', render: d => `${d.durationMin} min` },
+                { key: 'where', header: 'Place / link', render: d => d.locationNote || '—' },
+                { key: 'status', header: 'Status', render: d => <StatusBadge map={DEMO_STATUS} value={d.status} /> },
+              ]} />
               {scheduledDemo && <button type="button" className={`${btn.link} mt-2`} onClick={() => setReschedule(scheduledDemo.id)}>Ask to reschedule</button>}
             </div>
           )}
@@ -270,20 +263,14 @@ function RequestCard({ request: r, masters, busy, act }) {
           {r.canCancel && (
             <button type="button" disabled={busy} className={btn.danger} onClick={() => { if (window.confirm('Cancel this request? Tutors will stop receiving it.')) act(`/api/parents/me/requests/${r.id}/cancel`, {}, 'Request cancelled.') }}>Cancel request</button>
           )}
-        </div>
+      </div>
 
-        <div>
-          <h3 className="mb-3 text-sm font-semibold">Progress</h3>
-          <ol className="relative space-y-4 border-l border-gray-200 pl-5">
-            {r.timeline.map((t, i) => (
-              <li key={i} className="relative">
-                <span className={`absolute -left-[26px] top-1 h-3 w-3 rounded-full ${i === r.timeline.length - 1 ? 'bg-blue-600 ring-4 ring-blue-100' : 'bg-gray-300'}`} aria-hidden="true" />
-                <p className="text-sm font-medium">{t.text}</p>
-                <p className="text-xs text-gray-500">{formatDateTime(t.at)}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
+      <div>
+        <h3 className="mb-2 text-sm font-semibold">Progress</h3>
+        <SimpleTable flush={false} rows={[...r.timeline].reverse().map((t, i) => ({ ...t, id: i }))} minWidth={420} columns={[
+          { key: 'at', header: 'When', render: t => <span className="whitespace-nowrap">{formatDateTime(t.at)}</span> },
+          { key: 'text', header: 'Update', render: t => t.text },
+        ]} />
       </div>
 
       <Modal open={!!reschedule} title="Ask to reschedule the demo" onClose={() => setReschedule(null)}
@@ -292,7 +279,7 @@ function RequestCard({ request: r, masters, busy, act }) {
             onClick={() => act(`/api/parents/me/demos/${reschedule}/reschedule-request`, { message: rescheduleText }, 'Request sent. Our team will confirm a new time.').then(ok => { if (ok !== false) { setReschedule(null); setRescheduleText('') } })}>Send</button></>}>
         <TextArea label="When would suit you?" required rows={3} value={rescheduleText} onChange={e => setRescheduleText(e.target.value)} hint="For example: Saturday after 11 AM" />
       </Modal>
-    </Card>
+    </div>
   )
 }
 
@@ -318,11 +305,6 @@ function ClassesTab({ run }) {
         { key: 'status', header: 'Status', render: r => <StatusBadge map={SESSION_STATUS} value={r.status} /> },
         { key: 'ack', header: '', render: r => (r.status === 'completed' && !r.parentAckAt ? <button type="button" className={btn.secondary} onClick={() => ack(r.id)}>Confirm</button> : r.parentAckAt ? <span className="text-xs text-green-700">Confirmed</span> : null) },
       ]}
-      renderCard={r => (
-        <RecordCard title={`${weekday(r.scheduledDate)} ${formatDate(r.scheduledDate)} · ${SLOT_SHORT[r.slot]}`} subtitle={`${r.studentName} with ${r.tutorName}`} badge={<StatusBadge map={SESSION_STATUS} value={r.status} />}
-          fields={[['Subjects', r.subjects.join(', ')], ['Attendance', r.status === 'completed' ? (r.studentPresent ? 'Attended' : 'Absent') : '—'], ['Notes', r.notes || '—'], ['Homework', r.homework || '—']]}
-          actions={r.status === 'completed' && !r.parentAckAt ? <button type="button" className={btn.secondary} onClick={() => ack(r.id)}>Confirm class</button> : null} />
-      )}
       emptyMessage="No classes yet."
     />
   )

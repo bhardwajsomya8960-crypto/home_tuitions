@@ -187,7 +187,7 @@ async function verifyPhone(page, phone) {
   await lead.getByLabel('Note / link').fill('Near Ameerpet metro')
   await lead.getByRole('button', { name: 'Schedule demo' }).click()
   await lead.getByText('Demo scheduled.', { exact: false }).waitFor()
-  await lead.getByRole('button', { name: 'Mark completed' }).click()
+  await lead.getByRole('button', { name: 'Completed', exact: true }).click()
   const done = admin.getByRole('dialog', { name: 'Demo completed' })
   await done.getByRole('radio', { name: 'Interested — proceed' }).click()
   await done.getByRole('button', { name: 'Save' }).click()
@@ -206,11 +206,15 @@ async function verifyPhone(page, phone) {
   if (!parentText.includes('₹3,000')) problems.push('Parent overview does not show the ₹3,000 due')
   await shot(parent, 'parent-dashboard-converted')
   await parent.goto(`${BASE}/parent/dashboard?tab=requests`)
-  await parent.getByText('+91 9800000001').waitFor() // tutor contact after confirmation
+  await parent.getByRole('table').getByRole('button', { name: 'Open' }).click()
+  const detail = parent.getByRole('dialog', { name: new RegExp(leadCode) })
+  await detail.getByText('+91 9800000001').waitFor() // tutor contact after confirmation
   await shot(parent, 'parent-request-detail')
-  await parent.getByRole('radio', { name: '5 stars' }).click()
-  await parent.getByRole('button', { name: 'Submit rating' }).click()
+  await detail.getByRole('radio', { name: '5 stars' }).click()
+  await detail.getByRole('button', { name: 'Submit rating' }).click()
   await parent.getByText('Thanks for your feedback.').waitFor()
+  await detail.getByRole('button', { name: 'Close', exact: true }).click()
+  await shot(parent, 'parent-requests-table')
 
   // Tutor pauses new leads from the availability screen
   await tutor.goto(`${BASE}/tutor/dashboard?tab=availability`)
@@ -239,6 +243,9 @@ async function verifyPhone(page, phone) {
   await admin.getByRole('button', { name: 'Save settings' }).click()
   await admin.getByText('Matching rules saved.', { exact: false }).waitFor()
   await shot(admin, 'admin-settings')
+  await admin.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: /Operations/ }).click()
+  await admin.getByText(/Upcoming demos/).waitFor()
+  await shot(admin, 'admin-operations')
   await admin.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: /Overview/ }).click()
   await shot(admin, 'admin-overview')
 

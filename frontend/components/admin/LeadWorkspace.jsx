@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { FiPlay, FiSend, FiCheck } from 'react-icons/fi'
 import Modal from '../ui/Modal'
+import SimpleTable from '../ui/SimpleTable'
 import SlotGrid from '../ui/SlotGrid'
 import { StatusBadge } from '../ui/Badge'
 import { btn, Details, PageLoader } from '../ui/Card'
@@ -177,19 +178,19 @@ function MatchingSection({ lead, busy, onRun, onOfferNext, onOffer, onConfirm, o
       {lead.assignments.length > 0 && (
         <div>
           <h4 className="mb-2 text-sm font-semibold">Offers ({lead.assignments.length})</h4>
-          <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200">
-            {lead.assignments.map(a => (
-              <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm">
-                <span><strong>{a.tutorName}</strong> · score {a.score} · offered {formatDateTime(a.offeredAt)}{a.rejectReason ? ` · ${a.rejectReason.replace(/_/g, ' ')}${a.rejectComment ? `: ${a.rejectComment}` : ''}` : ''}{a.infoRequest ? ` · asks: “${a.infoRequest}”` : ''}</span>
-                <span className="flex items-center gap-2">
-                  {a.status === 'offered' && <Countdown expiresAt={a.expiresAt} onExpire={onExpire} />}
-                  <StatusBadge map={OFFER_STATUS} value={a.status} />
-                  {a.status === 'accepted' && <button type="button" className={btn.success} disabled={busy} onClick={() => onConfirm(a.id)}><FiCheck aria-hidden="true" /> Confirm</button>}
-                  {['accepted', 'confirmed'].includes(a.status) && lead.status !== 'converted' && <button type="button" className={btn.danger} disabled={busy} onClick={() => { if (window.confirm('Release this tutor and look for another?')) onRelease(a.id) }}>Release</button>}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <SimpleTable flush={false} rows={lead.assignments} minWidth={760} columns={[
+            { key: 'tutor', header: 'Tutor', render: a => <span className="font-medium">{a.tutorName}</span> },
+            { key: 'score', header: 'Score', align: 'right', render: a => a.score },
+            { key: 'offered', header: 'Offered', render: a => <span className="whitespace-nowrap text-xs">{formatDateTime(a.offeredAt)}</span> },
+            { key: 'response', header: 'Response', render: a => <span className="text-xs">{[a.rejectReason && `${a.rejectReason.replace(/_/g, ' ')}${a.rejectComment ? `: ${a.rejectComment}` : ''}`, a.infoRequest && `Asks: “${a.infoRequest}”`].filter(Boolean).join(' · ') || '—'}</span> },
+            { key: 'status', header: 'Status', render: a => <span className="flex flex-col items-start gap-1"><StatusBadge map={OFFER_STATUS} value={a.status} />{a.status === 'offered' && <Countdown expiresAt={a.expiresAt} onExpire={onExpire} />}</span> },
+            { key: 'act', header: '', align: 'right', sticky: true, render: a => (
+              <span className="inline-flex gap-2">
+                {a.status === 'accepted' && <button type="button" className={btn.success} disabled={busy} onClick={() => onConfirm(a.id)}><FiCheck aria-hidden="true" /> Confirm</button>}
+                {['accepted', 'confirmed'].includes(a.status) && lead.status !== 'converted' && <button type="button" className={btn.danger} disabled={busy} onClick={() => { if (window.confirm('Release this tutor and look for another?')) onRelease(a.id) }}>Release</button>}
+              </span>
+            ) },
+          ]} />
         </div>
       )}
     </section>
@@ -212,29 +213,41 @@ function DemoSection({ lead, masters, busy, act }) {
     <section className="space-y-3">
       <h3 className="text-base font-semibold">Demo</h3>
       {rescheduleAsks.length > 0 && lead.status === 'demo_scheduled' && <Notice tone="warning">Parent asked to reschedule: “{rescheduleAsks.at(-1).note}”</Notice>}
-      {lead.demos.map(d => (
-        <div key={d.id} className="rounded-lg border border-gray-200 p-3 text-sm">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span><strong>{formatDateTime(d.scheduledAt)}</strong> · {d.tutorName} · {MODE_LABELS[d.mode]} · {d.durationMin} min{d.locationNote ? ` · ${d.locationNote}` : ''}{d.outcome ? ` · outcome: ${optionLabel(masters.demoOutcomes, d.outcome)}` : ''}</span>
-            <StatusBadge map={DEMO_STATUS} value={d.status} />
-          </div>
-          {d.status === 'scheduled' && (
-            <div className="mt-3 flex flex-wrap items-end gap-2">
-              <button type="button" className={btn.success} disabled={busy} onClick={() => { setComplete(d.id); setOutcome(''); setNotes('') }}>Mark completed</button>
-              <button type="button" className={btn.secondary} disabled={busy} onClick={() => act(`/api/admin/demos/${d.id}/no-show`, { party: 'parent' }, 'Recorded parent no-show.')}>Parent no-show</button>
-              <button type="button" className={btn.secondary} disabled={busy} onClick={() => act(`/api/admin/demos/${d.id}/no-show`, { party: 'tutor' }, 'Recorded tutor no-show.')}>Tutor no-show</button>
-              <button type="button" className={btn.danger} disabled={busy} onClick={() => act(`/api/admin/demos/${d.id}/cancel`, {}, 'Demo cancelled.')}>Cancel</button>
-              <input type="datetime-local" aria-label="New time" min={minLocal} value={moveTo[d.id] || ''} onChange={e => setMoveTo({ ...moveTo, [d.id]: e.target.value })} className="min-h-[40px] rounded-lg border border-gray-300 px-2 text-sm" />
-              <button type="button" className={btn.secondary} disabled={busy || !moveTo[d.id]} onClick={() => act(`/api/admin/demos/${d.id}/reschedule`, { scheduledAt: istLocalToIso(moveTo[d.id]) }, 'Demo moved.')}>Reschedule</button>
-            </div>
-          )}
-          {d.status === 'completed' && !d.outcome && lead.status === 'demo_completed' && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {masters.demoOutcomes.map(o => <button key={o.value} type="button" className={btn.secondary} disabled={busy} onClick={() => act(`/api/admin/demos/${d.id}/outcome`, { outcome: o.value }, 'Outcome recorded.')}>{o.label}</button>)}
-            </div>
-          )}
-        </div>
-      ))}
+      {lead.demos.length > 0 && (
+        <SimpleTable flush={false} rows={lead.demos} minWidth={900} columns={[
+          { key: 'when', header: 'When', render: d => <span className="whitespace-nowrap font-medium">{formatDateTime(d.scheduledAt)}</span> },
+          { key: 'tutor', header: 'Tutor', render: d => d.tutorName },
+          { key: 'mode', header: 'Mode', render: d => `${MODE_LABELS[d.mode]} · ${d.durationMin} min` },
+          { key: 'where', header: 'Place / link', render: d => <span className="text-xs">{d.locationNote || '—'}</span> },
+          { key: 'outcome', header: 'Outcome', render: d => (d.outcome ? optionLabel(masters.demoOutcomes, d.outcome) : '—') },
+          { key: 'status', header: 'Status', render: d => <StatusBadge map={DEMO_STATUS} value={d.status} /> },
+          { key: 'act', header: 'Actions', sticky: true, render: d => (
+            <>
+              {d.status === 'scheduled' && (
+                <div className="flex min-w-[260px] flex-col gap-1.5">
+                  <span className="flex flex-wrap gap-1.5">
+                    <button type="button" className={btn.success} disabled={busy} onClick={() => { setComplete(d.id); setOutcome(''); setNotes('') }}>Completed</button>
+                    <button type="button" className={btn.danger} disabled={busy} onClick={() => act(`/api/admin/demos/${d.id}/cancel`, {}, 'Demo cancelled.')}>Cancel</button>
+                  </span>
+                  <span className="flex flex-wrap gap-1.5">
+                    <button type="button" className={btn.secondary} disabled={busy} onClick={() => act(`/api/admin/demos/${d.id}/no-show`, { party: 'parent' }, 'Recorded parent no-show.')}>Parent no-show</button>
+                    <button type="button" className={btn.secondary} disabled={busy} onClick={() => act(`/api/admin/demos/${d.id}/no-show`, { party: 'tutor' }, 'Recorded tutor no-show.')}>Tutor no-show</button>
+                  </span>
+                  <span className="flex gap-1.5">
+                    <input type="datetime-local" aria-label="New time" min={minLocal} value={moveTo[d.id] || ''} onChange={e => setMoveTo({ ...moveTo, [d.id]: e.target.value })} className="min-h-[40px] flex-1 rounded-lg border border-gray-300 px-2 text-sm" />
+                    <button type="button" className={btn.secondary} disabled={busy || !moveTo[d.id]} onClick={() => act(`/api/admin/demos/${d.id}/reschedule`, { scheduledAt: istLocalToIso(moveTo[d.id]) }, 'Demo moved.')}>Move</button>
+                  </span>
+                </div>
+              )}
+              {d.status === 'completed' && !d.outcome && lead.status === 'demo_completed' && (
+                <div className="flex min-w-[200px] flex-col gap-1.5">
+                  {masters.demoOutcomes.map(o => <button key={o.value} type="button" className={btn.secondary} disabled={busy} onClick={() => act(`/api/admin/demos/${d.id}/outcome`, { outcome: o.value }, 'Outcome recorded.')}>{o.label}</button>)}
+                </div>
+              )}
+            </>
+          ) },
+        ]} />
+      )}
       {lead.status === 'tutor_accepted' && (
         <div className="flex flex-wrap items-end gap-2 rounded-lg bg-gray-50 p-3">
           <label className="text-sm font-medium">When (IST)
@@ -287,14 +300,13 @@ function History({ lead, busy, onNote }) {
         <TextInput className="flex-1" placeholder="Add a call note or follow-up" value={note} onChange={e => setNote(e.target.value)} aria-label="Note" />
         <button type="button" className={btn.secondary} disabled={busy || !note.trim()} onClick={() => onNote(note.trim()).then(ok => ok && setNote(''))}>Add note</button>
       </div>
-      <ol className="space-y-2 border-l border-gray-200 pl-4 text-sm">
-        {[...lead.events].reverse().map(e => (
-          <li key={e.id}>
-            <p><span className="font-medium">{e.type.replace(/_/g, ' ')}</span>{e.toStatus && e.fromStatus ? ` (${LEAD_STATUS[e.fromStatus]?.label} → ${LEAD_STATUS[e.toStatus]?.label})` : ''}{e.note ? `: ${e.note}` : ''}</p>
-            <p className="text-xs text-gray-500">{formatDateTime(e.createdAt)} · {e.actor}</p>
-          </li>
-        ))}
-      </ol>
+      <SimpleTable flush={false} rows={[...lead.events].reverse()} minWidth={720} columns={[
+        { key: 'when', header: 'When', render: e => <span className="whitespace-nowrap text-xs">{formatDateTime(e.createdAt)}</span> },
+        { key: 'event', header: 'Event', render: e => <span className="font-medium">{e.type.replace(/_/g, ' ')}</span> },
+        { key: 'change', header: 'Status change', render: e => (e.toStatus && e.fromStatus ? <span className="whitespace-nowrap text-xs">{LEAD_STATUS[e.fromStatus]?.label} → {LEAD_STATUS[e.toStatus]?.label}</span> : '—') },
+        { key: 'note', header: 'Note', render: e => <span className="text-xs">{e.note || '—'}</span> },
+        { key: 'by', header: 'By', render: e => <span className="text-xs text-gray-500">{e.actor.split(':')[0]}</span> },
+      ]} />
     </section>
   )
 }

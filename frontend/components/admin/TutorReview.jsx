@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { FiEye } from 'react-icons/fi'
 import Modal from '../ui/Modal'
+import SimpleTable from '../ui/SimpleTable'
 import { StatusBadge } from '../ui/Badge'
 import { btn, Details, PageLoader } from '../ui/Card'
 import { Notice, TextInput } from '../ui/Form'
@@ -65,27 +66,19 @@ export default function TutorReview({ tutorId, masters, onClose, onChanged }) {
 
           <section>
             <h3 className="text-base mb-2 font-semibold">KYC documents</h3>
-            <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200">
-              {masters.documentTypes.map(t => {
-                const doc = latestByType(t.value)
-                return (
-                  <li key={t.value} className="flex flex-wrap items-center justify-between gap-2 px-3 py-3 text-sm">
-                    <div>
-                      <p className="font-medium">{t.label}{t.required && <span className="text-red-600"> *</span>}</p>
-                      {doc ? <p className="text-xs text-gray-500">{doc.originalName} · {Math.max(1, Math.round(doc.sizeBytes / 1024))} KB · {formatDate(doc.createdAt)}{doc.rejectReason ? ` · rejected: ${doc.rejectReason}` : ''}</p> : <p className="text-xs text-gray-500">Not uploaded</p>}
-                    </div>
-                    {doc && (
-                      <div className="flex flex-wrap items-center gap-2">
-                        <StatusBadge map={DOC_STATUS} value={doc.status} />
-                        <button type="button" className={btn.secondary} onClick={() => openProtectedFile(`/api/admin/documents/${doc.id}/file`, 'admin').catch(e => setError(e.message))}><FiEye aria-hidden="true" /> View</button>
-                        {doc.status !== 'accepted' && <button type="button" className={btn.success} disabled={busy} onClick={() => act(`/api/admin/documents/${doc.id}/review`, { status: 'accepted' }, `${t.label} accepted.`)}>Accept</button>}
-                        {doc.status !== 'rejected' && <button type="button" className={btn.danger} disabled={busy} onClick={() => { setRejecting(doc); setReason('') }}>Reject</button>}
-                      </div>
-                    )}
-                  </li>
-                )
-              })}
-            </ul>
+            <SimpleTable flush={false} rows={masters.documentTypes.map(t => ({ ...t, id: t.value, doc: latestByType(t.value) }))} minWidth={640} columns={[
+              { key: 'type', header: 'Document', render: t => <span className="font-medium">{t.label}{t.required && <span className="text-red-600"> *</span>}</span> },
+              { key: 'file', header: 'File', render: t => (t.doc ? <span className="text-xs">{t.doc.originalName} · {Math.max(1, Math.round(t.doc.sizeBytes / 1024))} KB</span> : <span className="text-xs text-gray-500">Not uploaded</span>) },
+              { key: 'date', header: 'Uploaded', render: t => (t.doc ? formatDate(t.doc.createdAt) : '—') },
+              { key: 'status', header: 'Status', render: t => (t.doc ? <span className="flex flex-col items-start gap-1"><StatusBadge map={DOC_STATUS} value={t.doc.status} />{t.doc.rejectReason && <span className="text-xs text-red-700">{t.doc.rejectReason}</span>}</span> : '—') },
+              { key: 'act', header: '', align: 'right', sticky: true, render: t => t.doc && (
+                <span className="inline-flex gap-2">
+                  <button type="button" className={btn.secondary} onClick={() => openProtectedFile(`/api/admin/documents/${t.doc.id}/file`, 'admin').catch(e => setError(e.message))}><FiEye aria-hidden="true" /> View</button>
+                  {t.doc.status !== 'accepted' && <button type="button" className={btn.success} disabled={busy} onClick={() => act(`/api/admin/documents/${t.doc.id}/review`, { status: 'accepted' }, `${t.label} accepted.`)}>Accept</button>}
+                  {t.doc.status !== 'rejected' && <button type="button" className={btn.danger} disabled={busy} onClick={() => { setRejecting(t.doc); setReason('') }}>Reject</button>}
+                </span>
+              ) },
+            ]} />
           </section>
 
           <section className="space-y-3">

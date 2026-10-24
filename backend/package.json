@@ -8,7 +8,8 @@
     "dev": "nodemon src/index.js",
     "test": "node --test test/*.test.js",
     "seed:catalogue": "node scripts/seed-catalogue.js",
-    "admin:hash-password": "node scripts/hash-admin-password.js"
+    "admin:hash-password": "node scripts/hash-admin-password.js",
+    "seed:test-users": "node scripts/seed-test-users.js"
   },
   "dependencies": {
     "axios": "^1.4.0",

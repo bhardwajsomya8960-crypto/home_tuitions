@@ -6,33 +6,25 @@ class GeoService {
     this.baseUrl = 'https://maps.googleapis.com/maps/api';
   }
 
-  // Geocode address to coordinates
+  // Geocodes an address to coordinates. Returns null when no API key is configured or the
+  // address cannot be found; callers then fall back to pincode matching.
   async geocodeAddress(address, pincode) {
+    if (!this.googleMapsKey) return null;
     try {
-      const query = `${address}, ${pincode}`;
-      const response = await axios.get(
-        `${this.baseUrl}/geocode/json`,
-        {
-          params: {
-            address: query,
-            key: this.googleMapsKey
-          }
-        }
-      );
-
-      if (response.data.results.length === 0) {
-        throw new Error('Address not found');
-      }
-
-      const location = response.data.results[0].geometry.location;
+      const response = await axios.get(`${this.baseUrl}/geocode/json`, {
+        params: { address: `${address}, ${pincode}`, region: 'in', key: this.googleMapsKey },
+        timeout: 5000
+      });
+      const result = response.data.results && response.data.results[0];
+      if (!result) return null;
       return {
-        latitude: location.lat,
-        longitude: location.lng,
-        formatted_address: response.data.results[0].formatted_address
+        latitude: result.geometry.location.lat,
+        longitude: result.geometry.location.lng,
+        formatted_address: result.formatted_address
       };
     } catch (error) {
       console.error('Geocoding error:', error.message);
-      throw error;
+      return null;
     }
   }
 

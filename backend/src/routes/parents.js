@@ -1,129 +1,63 @@
-const express = require('express');
-const catalyst = require('../config/catalyst');
-const geoService = require('../services/geoService');
-const { AppError } = require('../errors');
+const express = require('express')
+const { asyncHandler } = require('../middleware/asyncHandler')
+const { requireUser } = require('../middleware/requireUser')
 
-const router = express.Router();
+// Parent portal. Registration is public (it needs a verified phone token); everything under
+// /me requires a parent session and only ever reads or changes that parent's own records.
+function createParentsRouter({ authService, operations }) {
+  const router = express.Router()
+  const { people, portals, delivery, views } = operations
 
-// Register parent
-router.post('/register', async (req, res) => {
-  try {
-    const {
-      name, phone, email, relationship,
-      studentName, class: studentClass, board, subjects,
-      address, pincode, latitude, longitude,
-      preferredDays, preferredTimes, budget, mode,
-      courseId, courseSlug
-    } = req.body;
-
-    // Optional course context. Validated before anything is written, so an invalid
-    // reference does not leave a half-created parent or student behind.
-    if (courseId != null && typeof courseId !== 'string') {
-      return res.status(400).json({ error: 'courseId must be text', code: 'VALIDATION_FAILED' });
-    }
-    if (courseSlug != null && typeof courseSlug !== 'string') {
-      return res.status(400).json({ error: 'courseSlug must be text', code: 'VALIDATION_FAILED' });
-    }
-    const course = await req.app.locals.catalogueService.resolvePublicCourse({ courseId, courseSlug });
-
-    // Create parent record
-    const parent = await catalyst.createParent({
-      name, phone, email, relationship
-    });
-
-    // Create student record
-    const student = await catalyst.createStudent({
-      parent_id: parent.id,
-      name: studentName,
-      class: studentClass,
-      board,
-      subjects
-    });
-
-    // Geocode if no coordinates provided
-    let lat = latitude, lon = longitude;
-    if (!lat || !lon) {
-      const geocoded = await geoService.geocodeAddress(address, pincode);
-      lat = geocoded.latitude;
-      lon = geocoded.longitude;
-    }
-
-    // Create lead
-    const lead = await catalyst.createLead({
-      parent_id: parent.id,
-      student_id: student.id,
-      latitude: lat,
-      longitude: lon,
-      subjects,
-      class: studentClass,
-      board,
-      mode,
-      preferred_days: preferredDays,
-      preferred_times: preferredTimes,
-      budget,
-      course_id: course ? course.id : null,
-      course_slug: course ? course.slug : null
-    });
-
+  router.post('/register', asyncHandler(async (req, res) => {
+    const { parent, student, lead } = await people.registerParent(req.body, authService)
     res.status(201).json({
-      success: true,
-      parent,
-      student,
-      lead,
-      message: 'Parent registered successfully'
-    });
-  } catch (error) {
-    if (error instanceof AppError) {
-      return res.status(error.status).json({ error: error.message, code: error.code });
-    }
-    console.error('Registration error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
+      token: authService.issueSession('parent', parent.id),
+      parent: { id: parent.id, name: parent.name },
+      student: { id: student.id, name: student.name },
+      lead: views.parentLead(lead),
+    })
+  }))
 
-// Get parent profile
-router.get('/:parentId', async (req, res) => {
-  try {
-    const { parentId } = req.params;
+  router.use('/me', requireUser('parent'))
 
-    // TODO: Fetch from Catalyst
-    res.json({
-      parentId,
-      name: 'Parent Name',
-      phone: 'XXXX XXXX XX',
-      email: 'parent@email.com'
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+  router.get('/me/overview', asyncHandler(async (req, res) => {
+    res.json(portals.parentOverview(req.user.id))
+  }))
 
-// Get parent's students
-router.get('/:parentId/students', async (req, res) => {
-  try {
-    const { parentId } = req.params;
+  router.get('/me/classes', asyncHandler(async (req, res) => {
+    res.json({ items: portals.parentClasses(req.user.id) })
+  }))
 
-    // TODO: Fetch from Catalyst
-    res.json({
-      students: []
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+  router.post('/me/students', asyncHandler(async (req, res) => {
+    res.status(201).json(people.addStudent(req.user.id, req.body))
+  }))
 
-// Get parent's leads
-router.get('/:parentId/leads', async (req, res) => {
-  try {
-    const { parentId } = req.params;
+  router.post('/me/requests', asyncHandler(async (req, res) => {
+    const lead = await people.createParentRequest(req.user.id, req.body)
+    res.status(201).json(views.parentLead(lead))
+  }))
 
-    // TODO: Fetch from Catalyst
-    res.json({
-      leads: []
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+  router.post('/me/requests/:leadId/cancel', asyncHandler(async (req, res) => {
+    res.json(portals.cancelRequest(req.user.id, req.params.leadId, req.body?.reason))
+  }))
 
-module.exports = router;
+  router.post('/me/requests/:leadId/review', asyncHandler(async (req, res) => {
+    res.status(201).json(delivery.reviewTutor(req.user.id, req.params.leadId, req.body))
+  }))
+
+  router.post('/me/demos/:demoId/outcome', asyncHandler(async (req, res) => {
+    res.json(portals.parentDemoOutcome(req.user.id, req.params.demoId, req.body?.outcome))
+  }))
+
+  router.post('/me/demos/:demoId/reschedule-request', asyncHandler(async (req, res) => {
+    res.json(portals.parentRescheduleRequest(req.user.id, req.params.demoId, req.body?.message))
+  }))
+
+  router.post('/me/classes/:sessionId/acknowledge', asyncHandler(async (req, res) => {
+    res.json(delivery.acknowledgeSession(req.params.sessionId, req.user.id))
+  }))
+
+  return router
+}
+
+module.exports = { createParentsRouter }

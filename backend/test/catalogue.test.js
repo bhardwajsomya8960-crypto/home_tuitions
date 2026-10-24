@@ -19,7 +19,7 @@ before(async () => {
   dbFile = tempDbPath('catalogue')
   const db = openDatabase(dbFile)
   const service = createCatalogueService({ repo: createCatalogueRepository(db) })
-  server = await startServer(createApp({ catalogueService: service }))
+  server = await startServer(createApp({ catalogueService: service, db }))
   const login = await server.request('POST', '/api/admin/auth/login', { body: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD } })
   token = login.body.token
 })
@@ -244,7 +244,7 @@ describe('persistence across restarts', () => {
     openDatabase(file).close()
     const db = openDatabase(file)
     const rows = db.prepare('SELECT version FROM schema_migrations').all()
-    assert.deepEqual(rows.map(r => r.version), [1])
+    assert.deepEqual(rows.map(r => r.version), [1, 2])
     db.close()
   })
 })

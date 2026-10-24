@@ -12,8 +12,9 @@ const { createApp } = require('../src/app')
 let server
 
 before(async () => {
-  const service = createCatalogueService({ repo: createCatalogueRepository(openDatabase(':memory:')) })
-  server = await startServer(createApp({ catalogueService: service }))
+  const db = openDatabase(':memory:')
+  const service = createCatalogueService({ repo: createCatalogueRepository(db) })
+  server = await startServer(createApp({ catalogueService: service, db }))
 })
 after(async () => { if (server) await server.close() })
 
@@ -23,8 +24,10 @@ const ADMIN_ROUTES = [
   ['PATCH', '/api/admin/catalogue/courses/some-id'],
   ['POST', '/api/admin/catalogue/courses/some-id/publish'],
   ['GET', '/api/admin/dashboard'],
-  ['GET', '/api/admin/users'],
-  ['GET', '/api/admin/finance'],
+  ['GET', '/api/admin/leads'],
+  ['GET', '/api/admin/operations'],
+  ['PUT', '/api/admin/settings'],
+  ['POST', '/api/admin/tutors/some-id/actions'],
 ]
 
 describe('admin login', () => {
@@ -105,16 +108,35 @@ describe('admin route protection', () => {
 })
 
 describe('role cannot be obtained from request input', () => {
-  test('OTP login refuses the admin role before checking the OTP', async () => {
-    const res = await server.request('POST', '/api/auth/verify-otp', { body: { phone: '9999999999', otp: '123456', role: 'admin' } })
+  test('OTP sign-in refuses the admin role before checking the code', async () => {
+    const res = await server.request('POST', '/api/auth/verify-otp', { body: { phone: '9999999999', code: '123456', role: 'admin', purpose: 'login' } })
     assert.equal(res.status, 400)
-    assert.equal(res.body.code, 'INVALID_ROLE')
+    assert.equal(res.body.code, 'VALIDATION_FAILED')
+    assert.ok(res.body.details.some(d => d.field === 'role'))
   })
 
-  test('userType cannot smuggle the admin role either', async () => {
-    const res = await server.request('POST', '/api/auth/verify-otp', { body: { phone: '9999999999', otp: '123456', userType: 'admin' } })
+  test('extra fields such as userType are refused', async () => {
+    const res = await server.request('POST', '/api/auth/send-otp', { body: { phone: '9999999999', role: 'parent', purpose: 'login', userType: 'admin' } })
     assert.equal(res.status, 400)
-    assert.equal(res.body.code, 'INVALID_ROLE')
+    assert.ok(res.body.details.some(d => d.field === 'userType'))
+  })
+
+  test('a parent session token is not accepted on admin routes', async () => {
+    const parentToken = server.app.locals.authService.issueSession('parent', 'someone')
+    const res = await server.request('GET', '/api/admin/dashboard', { token: parentToken })
+    assert.equal(res.status, 401)
+  })
+
+  test('an admin token is not accepted on parent routes', async () => {
+    const login = await server.request('POST', '/api/admin/auth/login', { body: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD } })
+    const res = await server.request('GET', '/api/parents/me/overview', { token: login.body.token })
+    assert.equal(res.status, 401)
+  })
+
+  test('a parent token cannot use tutor routes', async () => {
+    const parentToken = server.app.locals.authService.issueSession('parent', 'someone')
+    const res = await server.request('GET', '/api/tutors/me/overview', { token: parentToken })
+    assert.equal(res.status, 403)
   })
 })
 

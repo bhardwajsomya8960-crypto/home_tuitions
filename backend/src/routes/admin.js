@@ -1,188 +1,75 @@
-const express = require('express');
-const catalyst = require('../config/catalyst');
-const matchingService = require('../services/matchingService');
+const express = require('express')
+const { asyncHandler } = require('../middleware/asyncHandler')
+const { publicMasters } = require('../services/masters')
 
-const router = express.Router();
+// Internal operations API. Mounted behind requireAdmin in app.js, so every route here needs a
+// valid admin token. All writes are recorded in the audit log by the service layer.
+function createAdminRouter({ operations }) {
+  const router = express.Router()
+  const { admin, people, assignments, delivery } = operations
+  const ACTOR = 'admin'
+  const json = fn => asyncHandler(async (req, res) => res.json(await fn(req)))
+  const created = fn => asyncHandler(async (req, res) => res.status(201).json(await fn(req)))
 
-const VERIFICATION_DECISIONS = ['verified', 'rejected'];
-const LEAD_STAGES = ['new', 'contacted', 'qualified', 'matching', 'offered', 'accepted', 'converted', 'lost'];
+  router.get('/dashboard', json(() => { assignments.expireOffers(); return admin.dashboard() }))
+  router.get('/operations', json(() => { assignments.expireOffers(); return admin.operations() }))
+  router.get('/masters', json(() => publicMasters()))
 
-function parsePage(query) {
-  const limit = Math.min(Math.max(parseInt(query.limit, 10) || 20, 1), 100);
-  const offset = Math.max(parseInt(query.offset, 10) || 0, 0);
-  return { limit, offset };
+  // Leads (CRM)
+  router.get('/leads', json(req => admin.listLeads(req.query)))
+  router.post('/leads', created(async req => admin.leadDetail((await people.createStaffLead(req.body, ACTOR)).id)))
+  router.get('/leads/:id', json(req => { assignments.expireOffers(); return admin.leadDetail(req.params.id) }))
+  router.post('/leads/:id/status', json(req => admin.changeLeadStatus(req.params.id, req.body, ACTOR)))
+  router.post('/leads/:id/notes', json(req => admin.addLeadNote(req.params.id, req.body?.note, ACTOR)))
+  router.patch('/leads/:id/location', json(req => admin.updateLeadLocation(req.params.id, req.body, ACTOR)))
+
+  // Matching and offers
+  router.post('/leads/:id/match', json(req => { assignments.runMatching(req.params.id, ACTOR); return admin.leadDetail(req.params.id) }))
+  router.post('/leads/:id/offers', json(req => {
+    const tutorIds = req.body?.tutorIds
+    if (tutorIds !== undefined && (!Array.isArray(tutorIds) || tutorIds.length === 0 || tutorIds.length > 10 || tutorIds.some(t => typeof t !== 'string'))) {
+      throw operations.ctx.invalid([{ field: 'tutorIds', message: 'must be a list of 1 to 10 tutor ids' }])
+    }
+    assignments.offerNext(req.params.id, ACTOR, { tutorIds })
+    return admin.leadDetail(req.params.id)
+  }))
+  router.post('/assignments/:id/confirm', json(req => admin.leadDetail(assignments.confirm(req.params.id, ACTOR).leadId)))
+  router.post('/assignments/:id/release', json(req => admin.leadDetail(assignments.release(req.params.id, ACTOR, req.body?.note).leadId)))
+
+  // Demos
+  router.post('/leads/:id/demos', created(req => { delivery.scheduleDemo(req.params.id, req.body, ACTOR); return admin.leadDetail(req.params.id) }))
+  router.post('/demos/:id/reschedule', json(req => admin.leadDetail(delivery.rescheduleDemo(req.params.id, req.body?.scheduledAt, ACTOR).leadId)))
+  router.post('/demos/:id/complete', json(req => admin.leadDetail(delivery.completeDemo(req.params.id, req.body, ACTOR).leadId)))
+  router.post('/demos/:id/outcome', json(req => admin.leadDetail(delivery.setOutcome(req.params.id, req.body?.outcome, ACTOR).leadId)))
+  router.post('/demos/:id/no-show', json(req => admin.leadDetail(delivery.markNoShow(req.params.id, req.body?.party, ACTOR).leadId)))
+  router.post('/demos/:id/cancel', json(req => admin.leadDetail(delivery.cancelDemo(req.params.id, ACTOR, req.body?.note).leadId)))
+
+  // Conversion, enrolments, billing
+  router.post('/leads/:id/convert', created(req => { delivery.convertLead(req.params.id, req.body, ACTOR); return admin.leadDetail(req.params.id) }))
+  router.get('/enrolments', json(req => admin.listEnrolments(req.query)))
+  router.post('/enrolments/:id/status', json(req => delivery.setEnrolmentStatus(req.params.id, req.body?.status, ACTOR)))
+  router.get('/invoices', json(req => admin.listInvoices(req.query)))
+  router.post('/invoices', created(req => delivery.invoiceView(delivery.createInvoice(req.body, ACTOR))))
+  router.post('/invoices/:id/payments', created(req => delivery.invoiceView(delivery.recordPayment(req.params.id, req.body, ACTOR).invoice)))
+  router.post('/invoices/:id/void', json(req => delivery.invoiceView(delivery.voidInvoice(req.params.id, ACTOR))))
+
+  // Tutors and KYC
+  router.get('/tutors', json(req => admin.listTutors(req.query)))
+  router.get('/tutors/:id', json(req => admin.tutorDetail(req.params.id)))
+  router.post('/tutors/:id/actions', json(req => admin.tutorAction(req.params.id, req.body, ACTOR)))
+  router.post('/documents/:id/review', json(req => admin.reviewDocument(req.params.id, req.body, ACTOR)))
+  router.get('/documents/:id/file', asyncHandler(async (req, res) => {
+    const { doc, path } = people.documentFile(req.params.id)
+    operations.ctx.audit(ACTOR, 'tutor.document.view', 'tutor', doc.tutorId, { documentId: doc.id })
+    res.type(doc.mimeType).set('Cache-Control', 'no-store').sendFile(path)
+  }))
+
+  // Settings and audit
+  router.get('/settings', json(() => admin.getSettings()))
+  router.put('/settings', json(req => admin.updateSettings(req.body, ACTOR)))
+  router.get('/audit', json(req => admin.listAudit(req.query)))
+
+  return router
 }
 
-function sumWhere(records, status) {
-  return records
-    .filter(r => r.status === status)
-    .reduce((total, r) => total + (Number(r.amount) || 0), 0);
-}
-
-// Dashboard stats
-router.get('/dashboard', async (req, res) => {
-  try {
-    const { leads, tutors, payments, invoices } = catalyst.data;
-    res.json({
-      totalLeads: leads.length,
-      newLeads: leads.filter(l => l.status === 'new').length,
-      convertedLeads: leads.filter(l => l.status === 'converted').length,
-      totalTutors: tutors.length,
-      activeTutors: tutors.filter(t => t.verification_status === 'verified').length,
-      pendingVerification: tutors.filter(t => t.verification_status === 'pending').length,
-      totalRevenue: sumWhere(payments, 'paid'),
-      pendingPayments: sumWhere(invoices, 'pending')
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Get all users (parents and tutors), optionally filtered by role and status
-router.get('/users', async (req, res) => {
-  try {
-    const { role, status } = req.query;
-    const { limit, offset } = parsePage(req.query);
-
-    const parents = catalyst.data.parents.map(p => ({ ...p, role: 'parent', status: p.verification_status }));
-    const tutors = catalyst.data.tutors.map(t => ({ ...t, role: 'tutor', status: t.verification_status }));
-    let users = [...parents, ...tutors];
-    if (role) users = users.filter(u => u.role === role);
-    if (status) users = users.filter(u => u.status === status);
-
-    const total = users.length;
-    res.json({ users: users.slice(offset, offset + limit), total, limit, offset });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Get all tutors with verification status
-router.get('/tutors', async (req, res) => {
-  try {
-    const { status } = req.query;
-    const { limit, offset } = parsePage(req.query);
-
-    let tutors = catalyst.data.tutors;
-    if (status) tutors = tutors.filter(t => t.verification_status === status);
-
-    const total = tutors.length;
-    res.json({ tutors: tutors.slice(offset, offset + limit), total, limit, offset });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Verify/reject tutor KYC
-router.post('/tutors/:tutorId/verify', async (req, res) => {
-  try {
-    const { tutorId } = req.params;
-    const { status, notes } = req.body || {};
-
-    if (!VERIFICATION_DECISIONS.includes(status)) {
-      return res.status(400).json({ error: `status must be one of: ${VERIFICATION_DECISIONS.join(', ')}` });
-    }
-    if (notes !== undefined && typeof notes !== 'string') {
-      return res.status(400).json({ error: 'notes must be a string' });
-    }
-
-    const tutor = await catalyst.getTutorById(tutorId);
-    if (!tutor) {
-      return res.status(404).json({ error: 'Tutor not found' });
-    }
-
-    const updated = await catalyst.updateRecord('tutors', tutorId, {
-      verification_status: status,
-      verification_notes: notes || null,
-      verified_at: new Date()
-    });
-
-    // TODO: Send email to tutor (emailService) once templates are approved
-    res.json({
-      success: true,
-      tutor: updated,
-      message: `Tutor ${status}`
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Get matching configuration
-router.get('/config/matching', async (req, res) => {
-  try {
-    res.json({
-      weights: matchingService.weights,
-      config: matchingService.config
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Update matching weights
-router.post('/config/matching/weights', async (req, res) => {
-  try {
-    const { distance, subjectFit, availability, experience, quality, acceptanceReliability, feeFit } = req.body;
-
-    matchingService.updateWeights({
-      distance, subjectFit, availability, experience, quality, acceptanceReliability, feeFit
-    });
-
-    // TODO: Persist to Catalyst
-    res.json({
-      success: true,
-      weights: matchingService.weights,
-      message: 'Matching weights updated'
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Get lead pipeline
-router.get('/leads/pipeline', async (req, res) => {
-  try {
-    const pipeline = Object.fromEntries(LEAD_STAGES.map(stage => [stage, 0]));
-    for (const lead of catalyst.data.leads) {
-      if (lead.status in pipeline) pipeline[lead.status] += 1;
-    }
-    res.json(pipeline);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Get finance dashboard
-router.get('/finance', async (req, res) => {
-  try {
-    // TODO: Fetch from Catalyst
-    res.json({
-      totalCollected: 0,
-      pendingAmount: 0,
-      overdue: 0,
-      refunds: 0,
-      tutorPayouts: 0
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Get configuration masters (subjects, boards, etc)
-router.get('/masters', async (req, res) => {
-  try {
-    res.json({
-      subjects: ['Maths', 'Science', 'English', 'History', 'Geography', 'Sanskrit'],
-      classes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-      boards: ['CBSE', 'ICSE', 'State', 'IB'],
-      languages: ['English', 'Hindi', 'Marathi'],
-      modes: ['Home', 'Online', 'Hybrid'],
-      qualifications: ['Bachelor', 'Master', 'PhD', 'Diploma']
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-module.exports = router;
+module.exports = { createAdminRouter }

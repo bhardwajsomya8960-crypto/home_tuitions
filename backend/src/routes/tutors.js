@@ -1,140 +1,69 @@
-const express = require('express');
-const catalyst = require('../config/catalyst');
-const geoService = require('../services/geoService');
+const express = require('express')
+const multer = require('multer')
+const { asyncHandler } = require('../middleware/asyncHandler')
+const { requireUser } = require('../middleware/requireUser')
+const { MAX_UPLOAD_BYTES } = require('../services/operations/people')
+const { AppError } = require('../errors')
 
-const router = express.Router();
+// Tutor portal. Registration is public (it needs a verified phone token); everything under
+// /me requires a tutor session and is scoped to that tutor.
+function createTutorsRouter({ authService, operations }) {
+  const router = express.Router()
+  const { people, portals, assignments, delivery, views } = operations
+  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_UPLOAD_BYTES, files: 1, fields: 2 } })
 
-// Register tutor
-router.post('/register', async (req, res) => {
-  try {
-    const {
-      name, phone, email, gender, qualification, experience,
-      subjects, classes, boards, teachingLanguages, teachingMode,
-      address, pincode, latitude, longitude, serviceRadius
-    } = req.body;
+  router.post('/register', asyncHandler(async (req, res) => {
+    const tutor = await people.registerTutor(req.body, authService)
+    res.status(201).json({ token: authService.issueSession('tutor', tutor.id), tutor: { id: tutor.id, name: tutor.name, status: tutor.status } })
+  }))
 
-    // Geocode if no coordinates provided
-    let lat = latitude, lon = longitude;
-    if (!lat || !lon) {
-      const geocoded = await geoService.geocodeAddress(address, pincode);
-      lat = geocoded.latitude;
-      lon = geocoded.longitude;
-    }
+  router.use('/me', requireUser('tutor'))
 
-    const tutor = await catalyst.createTutor({
-      name, phone, email, gender, qualification, experience,
-      subjects, classes, boards, teachingLanguages, teachingMode,
-      service_radius: serviceRadius || 8,
-      latitude: lat,
-      longitude: lon
-    });
+  router.get('/me/overview', asyncHandler(async (req, res) => {
+    res.json(portals.tutorOverview(req.user.id))
+  }))
 
-    res.status(201).json({
-      success: true,
-      tutor,
-      message: 'Tutor registered. Awaiting KYC verification.'
-    });
-  } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
+  router.patch('/me', asyncHandler(async (req, res) => {
+    res.json(people.updateTutor(req.user.id, req.body))
+  }))
 
-// Get tutor profile
-router.get('/:tutorId', async (req, res) => {
-  try {
-    const { tutorId } = req.params;
-    // TODO: Fetch from Catalyst
-    res.json({ tutor: {} });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+  router.post('/me/documents', (req, res, next) => {
+    upload.single('file')(req, res, err => {
+      if (err && err.code === 'LIMIT_FILE_SIZE') return next(new AppError(413, 'FILE_TOO_LARGE', 'Files must be 5 MB or smaller'))
+      if (err) return next(new AppError(400, 'UPLOAD_FAILED', 'The upload could not be read'))
+      return next()
+    })
+  }, asyncHandler(async (req, res) => {
+    res.status(201).json(people.uploadDocument(req.user.id, req.body?.type, req.file))
+  }))
 
-// Update tutor availability
-router.post('/:tutorId/availability', async (req, res) => {
-  try {
-    const { tutorId } = req.params;
-    const { availableDays, availableSlots } = req.body;
+  router.get('/me/documents/:docId/file', asyncHandler(async (req, res) => {
+    const { doc, path } = people.documentFile(req.params.docId)
+    if (doc.tutorId !== req.user.id) throw new AppError(404, 'NOT_FOUND', 'Document not found')
+    res.type(doc.mimeType).set('Cache-Control', 'no-store').sendFile(path)
+  }))
 
-    // TODO: Create/update availability in Catalyst
-    res.json({
-      success: true,
-      message: 'Availability updated'
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+  router.post('/me/offers/:id/accept', asyncHandler(async (req, res) => {
+    res.json(views.tutorOffer(assignments.accept(req.params.id, req.user.id)))
+  }))
 
-// Get tutor's assigned leads
-router.get('/:tutorId/leads', async (req, res) => {
-  try {
-    const { tutorId } = req.params;
-    // TODO: Fetch from Catalyst
-    res.json({ leads: [] });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+  router.post('/me/offers/:id/reject', asyncHandler(async (req, res) => {
+    res.json(views.tutorOffer(assignments.decline(req.params.id, req.user.id, req.body)))
+  }))
 
-// Accept lead
-router.post('/:tutorId/leads/:leadId/accept', async (req, res) => {
-  try {
-    const { tutorId, leadId } = req.params;
+  router.post('/me/offers/:id/unavailable', asyncHandler(async (req, res) => {
+    res.json(views.tutorOffer(assignments.decline(req.params.id, req.user.id, req.body, { unavailable: true })))
+  }))
 
-    // TODO: Update assignment status in Catalyst
-    // TODO: Notify parent and BDA
-    res.json({
-      success: true,
-      message: 'Lead accepted successfully'
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+  router.post('/me/offers/:id/request-info', asyncHandler(async (req, res) => {
+    res.json(views.tutorOffer(assignments.requestInfo(req.params.id, req.user.id, req.body?.message)))
+  }))
 
-// Reject lead
-router.post('/:tutorId/leads/:leadId/reject', async (req, res) => {
-  try {
-    const { tutorId, leadId } = req.params;
-    const { reason } = req.body;
+  router.post('/me/classes/:sessionId/attendance', asyncHandler(async (req, res) => {
+    res.json(delivery.recordAttendance(req.params.sessionId, req.user.id, req.body))
+  }))
 
-    // TODO: Update assignment status in Catalyst
-    // TODO: Move to next tutor in queue
-    // TODO: Notify admin
-    res.json({
-      success: true,
-      message: 'Lead rejected'
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+  return router
+}
 
-// Get tutor's classes/students
-router.get('/:tutorId/classes', async (req, res) => {
-  try {
-    const { tutorId } = req.params;
-    // TODO: Fetch from Catalyst
-    res.json({ classes: [] });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Upload KYC documents
-router.post('/:tutorId/kyc', async (req, res) => {
-  try {
-    const { tutorId } = req.params;
-    // TODO: Handle file uploads
-    res.json({
-      success: true,
-      message: 'Documents uploaded. Verification in progress.'
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-module.exports = router;
+module.exports = { createTutorsRouter }

@@ -4,6 +4,10 @@
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const HEX_COLOUR = /^#[0-9a-fA-F]{6}$/
 const KEY_PATTERN = /^[a-z0-9-]+$/
+const PHONE_PATTERN = /^[6-9]\d{9}$/
+const PINCODE_PATTERN = /^[1-9]\d{5}$/
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
 function slugify(value) {
   return String(value)
@@ -45,8 +49,43 @@ function checkValue(rule, value) {
       return typeof value === 'boolean' ? null : 'must be true or false'
     case 'id':
       return typeof value === 'string' && value.length > 0 && value.length <= 64 ? null : 'is not a valid id'
+    case 'enum':
+      return rule.allowed.includes(value) ? null : `must be one of: ${rule.allowed.join(', ')}`
+    case 'phone':
+      return typeof value === 'string' && PHONE_PATTERN.test(value) ? null : 'must be a 10-digit Indian mobile number'
+    case 'pincode':
+      return typeof value === 'string' && PINCODE_PATTERN.test(value) ? null : 'must be a 6-digit pincode'
+    case 'email':
+      return typeof value === 'string' && value.length <= 254 && EMAIL_PATTERN.test(value) ? null : 'must be a valid email address'
+    case 'number':
+      return typeof value === 'number' && Number.isFinite(value) && value >= rule.min && value <= rule.max ? null : `must be a number from ${rule.min} to ${rule.max}`
+    case 'date':
+      return typeof value === 'string' && DATE_PATTERN.test(value) && !Number.isNaN(Date.parse(value)) ? null : 'must be a date (YYYY-MM-DD)'
+    case 'datetime':
+      return typeof value === 'string' && value.length <= 40 && /^\d{4}-\d{2}-\d{2}T/.test(value) && !Number.isNaN(Date.parse(value)) ? null : 'must be a date and time'
+    case 'consent': {
+      // { terms, communication, location? } — each a boolean
+      if (!value || typeof value !== 'object' || Array.isArray(value)) return 'must be an object'
+      for (const [k, v] of Object.entries(value)) {
+        if (!['terms', 'communication', 'location'].includes(k) || typeof v !== 'boolean') return 'has an unknown or non-boolean entry'
+      }
+      return null
+    }
+    case 'slots': {
+      // Weekly availability or schedule: [{ day, slot }]
+      if (!Array.isArray(value)) return 'must be a list'
+      if (value.length < (rule.minItems || 0)) return `must include at least ${rule.minItems}`
+      if (value.length > 49) return 'has too many entries'
+      for (const item of value) {
+        if (!item || typeof item !== 'object' || !rule.days.includes(item.day) || !rule.slots.includes(item.slot)) {
+          return 'entries must be { day, slot } with known values'
+        }
+      }
+      return null
+    }
     case 'stringArray': {
       if (!Array.isArray(value)) return 'must be a list'
+      if (value.length < (rule.minItems || 0)) return rule.minItems === 1 ? 'must include at least one item' : `must include at least ${rule.minItems} items`
       if (value.length > rule.maxItems) return `may contain at most ${rule.maxItems} items`
       for (const item of value) {
         if (typeof item !== 'string' || item.trim().length === 0 || item.length > rule.maxItemLength) {
@@ -81,7 +120,20 @@ function validateFields(body, spec, { partial = false } = {}) {
       continue
     }
     let raw = body[key]
-    if (rule.type === 'string' && typeof raw === 'string') raw = raw.trim()
+    if (['string', 'phone', 'pincode', 'email'].includes(rule.type) && typeof raw === 'string') raw = raw.trim()
+    if (rule.type === 'email' && typeof raw === 'string') raw = raw.toLowerCase()
+    if (rule.type === 'stringArray' && Array.isArray(raw)) raw = [...new Set(raw)]
+    if (rule.type === 'slots' && Array.isArray(raw)) {
+      const seen = new Set()
+      raw = raw.filter(item => {
+        const key = item && `${item.day}:${item.slot}`
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+      }).map(item => (item && typeof item === 'object' ? { day: item.day, slot: item.slot } : item))
+    }
+    // Optional text fields may be sent empty; treat that as "not provided".
+    if (rule.type === 'string' && !rule.required && raw === '') { value[key] = ''; continue }
     const problem = checkValue(rule, raw)
     if (problem) {
       errors.push({ field: key, message: problem })

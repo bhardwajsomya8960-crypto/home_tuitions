@@ -7,7 +7,7 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "test": "node --test test/*.test.js",
-    "db:local": "docker compose -f ../docker-compose.dev.yml up -d mongo",
+    "db:local": "docker compose -f ../docker-compose.yml up -d mongo",
     "seed:catalogue": "node scripts/seed-catalogue.js",
     "seed:test-users": "node scripts/seed-test-users.js",
     "admin:hash-password": "node scripts/hash-admin-password.js",

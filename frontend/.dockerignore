@@ -15,3 +15,5 @@ dist
 .idea
 *.swp
 *.swo
+.next-*
+.env*

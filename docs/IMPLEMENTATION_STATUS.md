@@ -2,13 +2,13 @@
 
 This maps each section of the blueprint (`docs/UI.md`) to what the code does now. **Built** means it works end to end on stored data and is covered by tests. **Partial** means part of the section is built; the gap is listed. **Not built** means nothing exists yet.
 
-Verified by: `npm test` in `backend/` (131 tests) and `e2e/walkthrough.js` (browser walkthrough of the full journey, see `e2e/README.md`).
+Verified by: `npm test` in `backend/` (131 tests, against MongoDB) and `e2e/walkthrough.js` (browser walkthrough of the full journey, see `e2e/README.md`).
 
 ## Summary
 
 | Blueprint area | Status | Notes |
 |---|---|---|
-| §4 Persistence | Partial | SQLite (development only), same pattern as the catalogue. Production needs a shared, backed-up datastore (PostgreSQL + PostGIS recommended in §4.2; Zoho Catalyst still not connected). |
+| §4 Persistence | Built | MongoDB (Atlas in production) through Mongoose models, one per collection, with unique indexes (phone numbers, lead codes, invoice numbers, slugs), transactions for multi-step writes and atomic counters. Tutor KYC files are in a private, encrypted S3 bucket (local disk in development). Distance is computed in the app, not with geospatial queries (PostGIS was suggested in §4.2). See `docs/ARCHITECTURE.md` and `deploy/aws/README.md`. |
 | §6 Roles | Partial | Parent, tutor and a single admin role are enforced by signed tokens. Ops manager, BDA, finance, support, student and LMS admin roles do not exist yet; the admin role can do all staff actions. |
 | §8 Sitemap | Partial | See "Screens" below. |
 | §11.1 Parent form | Built | Every field in the dictionary except tutor gender "Other" options and the map-pin picker (device location is supported instead). |
@@ -32,7 +32,7 @@ Verified by: `npm test` in `backend/` (131 tests) and `e2e/walkthrough.js` (brow
 | §19 Payments | Partial | Manual recording only (see §12.7). |
 | §21 Online / LMS | Not built | Online leads are matched and scheduled like home leads; there is no video, recordings, assignments or tests. |
 | §22 Ratings | Partial | Parents rate the tutor once after the demo and once during tuition; the average feeds matching. No complaints, SLA or quality score. |
-| §23 Security | Partial | Signed role tokens, OTP hashing/attempt limits/cooldown, admin rate limiting, input validation that rejects unknown fields, uploads checked by file signature and size, KYC files served only to the owner or admin (admin views are audited), configurable CORS. Not yet: admin 2FA, encryption at rest, malware scanning, retention policy, per-route rate limits beyond login. |
+| §23 Security | Partial | Signed role tokens, OTP hashing/attempt limits/cooldown, admin rate limiting, input validation that rejects unknown fields, uploads checked by file signature and size, KYC files served only to the owner or admin (admin views are audited), configurable CORS, KYC files encrypted at rest in S3 (Atlas encrypts the database at rest). Not yet: admin 2FA, malware scanning, retention policy, per-route rate limits beyond login. |
 | §24 Business rules | Built | Rules 1–10 are enforced and tested. Rule 1 is applied strictly: no tutor can opt into a wider radius yet. Rule 3: the hours of classes a tutor already teaches are removed from their availability before matching. Duplicate enquiries (same parent, student and subject within 30 days) are flagged. |
 
 ## Screens

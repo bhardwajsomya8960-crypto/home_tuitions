@@ -1,0 +1,34 @@
+# Caddy gets and renews the HTTPS certificate for DOMAIN automatically (Let's Encrypt).
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	# KYC uploads are up to 5 MB.
+	request_body {
+		max_size 6MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	@api path /api/* /health
+	handle @api {
+		reverse_proxy api:5000
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}
+
+# Send www to the main domain.
+www.{$DOMAIN} {
+	redir https://{$DOMAIN}{uri} permanent
+}

@@ -15,15 +15,16 @@ It fails on any page error or console error, and if a tutor offer exposes parent
 
 ## Run it
 
-It needs an **empty** database, because it registers fixed phone numbers.
+It needs an **empty** database, because it registers fixed phone numbers. Start MongoDB first (`docker compose up -d mongo` from the repository root).
 
 ```bash
 # 1. Backend on :5055 with a throwaway database and codes echoed in responses
 cd backend
 export PORT=5055 OTP_DEV_ECHO=true JWT_SECRET=$(openssl rand -hex 24) ADMIN_JWT_SECRET=$(openssl rand -hex 24)
 export ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD_HASH="$(printf '%s' 'admin-password-123' | node scripts/hash-admin-password.js)"
-export CATALOGUE_DB_PATH=/tmp/ht-e2e.sqlite UPLOADS_DIR=/tmp/ht-e2e-uploads
-rm -f /tmp/ht-e2e.sqlite*; node src/index.js &
+export MONGODB_URI='mongodb://127.0.0.1:27017/ht-e2e?directConnection=true' UPLOADS_DIR=/tmp/ht-e2e-uploads
+mongosh --quiet "$MONGODB_URI" --eval 'db.dropDatabase()'   # or: docker compose exec mongo mongosh ht-e2e --eval 'db.dropDatabase()'
+node src/server.js &
 
 # 2. Frontend on :3055 pointing at that backend
 cd ../frontend

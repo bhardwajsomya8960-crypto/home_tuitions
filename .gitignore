@@ -55,11 +55,11 @@ frontend/public/swe-worker-*.js.map
 frontend/public/fallback-*.js
 frontend/public/worker-*.js
 
-# Local catalogue database (SQLite, development only)
+# Local uploads (development only; production uses S3)
 backend/data/
-*.sqlite
-*.sqlite-wal
-*.sqlite-shm
+
+# Production settings on the server
+deploy/aws/.env.production
 
 # End-to-end walkthrough screenshots
 e2e/output/

@@ -1,0 +1,55 @@
+# Production on one EC2 machine: Caddy (HTTPS) in front of the website and the API.
+# MongoDB runs on MongoDB Atlas and tutor documents in a private S3 bucket, so this machine keeps
+# no data and can be replaced at any time.
+#
+#   cd deploy/aws
+#   docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
+#
+# See deploy/aws/README.md for the full setup.
+services:
+  api:
+    build: ../../backend
+    env_file: .env.production
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      TRUST_PROXY: 1
+      STORAGE_DRIVER: s3
+      CORS_ORIGINS: https://${DOMAIN}
+      OTP_DEV_ECHO: "false"
+    restart: unless-stopped
+    logging: &logging
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+
+  web:
+    build:
+      context: ../../frontend
+      args:
+        # The browser calls the API on the same domain (Caddy sends /api to the API).
+        NEXT_PUBLIC_API_URL: https://${DOMAIN}
+    restart: unless-stopped
+    logging: *logging
+
+  caddy:
+    image: caddy:2.8
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+      - web
+    restart: unless-stopped
+    logging: *logging
+
+volumes:
+  caddy_data:   # HTTPS certificates; keep this volume across deploys
+  caddy_config:

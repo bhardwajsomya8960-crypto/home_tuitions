@@ -238,6 +238,16 @@ async function verifyPhone(page, phone) {
   await tutor.goto(`${BASE}/tutor/dashboard?tab=availability`)
   await tutor.getByRole('switch', { name: 'Available on Saturday' }).waitFor()
   if ((await tutor.getByLabel(/^Saturday start time/).count()) !== 2) problems.push('Saturday hours were not saved as two ranges')
+  // "Add more hours" keeps finding free time (also earlier in the day) and stays visible once the day is full.
+  const saturday = tutor.locator('li', { hasText: 'Saturday' })
+  const addHours = saturday.getByRole('button', { name: 'Add more hours' })
+  for (let i = 0; i < 10 && await addHours.isEnabled(); i++) await addHours.click()
+  if (!(await addHours.isVisible()) || await addHours.isEnabled()) problems.push('Add more hours should stay visible and be disabled on a full day')
+  await saturday.getByText('This day is full.').waitFor()
+  await shot(tutor, 'tutor-hours-full-day')
+  // Leave Saturday as it was saved
+  await tutor.reload()
+  await tutor.getByRole('switch', { name: 'Available on Saturday' }).waitFor()
   // Holidays are saved straight away
   await tutor.getByLabel('First day').fill('2026-12-24')
   await tutor.getByLabel('Last day').fill('2026-12-26')

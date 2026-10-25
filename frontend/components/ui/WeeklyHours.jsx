@@ -38,7 +38,7 @@ export function Switch({ checked, onChange, label }) {
 function TimeSelect({ value, onChange, label, min, max }) {
   return (
     <select aria-label={label} value={value} onChange={e => onChange(e.target.value)}
-      className="h-10 rounded-lg border border-sand-300 bg-white px-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-ink">
+      className="h-10 w-32 rounded-lg border border-sand-300 bg-white px-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-ink">
       {TIMES.filter(t => (!min || t > min) && (!max || t < max)).map(t => <option key={t} value={t}>{timeLabel(t)}</option>)}
     </select>
   )
@@ -58,10 +58,23 @@ export default function WeeklyHours({ days, value: rawValue, onChange, error, la
     if (r.end <= r.start) r.end = toTime(Math.min(LAST, toMinutes(r.start) + 60))
     replaceDay(day, ranges)
   }
+  // Where a new range fits: the first free gap after the day's last range, otherwise the largest
+  // free gap earlier in the day. New ranges keep half an hour from existing ones (touching ranges
+  // would merge into one when saved) and last up to two hours. Null when the day has no room.
   const nextRange = day => {
-    const last = rangesOf(day).reduce((latest, r) => (r.end > latest ? r.end : latest), '00:00')
-    const start = Math.max(FIRST, toMinutes(last) + 60)
-    return start + STEP <= LAST ? { start: toTime(start), end: toTime(Math.min(LAST, start + 120)) } : null
+    const taken = rangesOf(day).map(r => [toMinutes(r.start), toMinutes(r.end)]).sort((a, b) => a[0] - b[0])
+    const gaps = []
+    let cursor = FIRST
+    for (const [start, end] of taken) {
+      gaps.push([cursor === FIRST ? cursor : cursor + STEP, start - STEP])
+      cursor = Math.max(cursor, end)
+    }
+    gaps.push([taken.length ? cursor + STEP : FIRST, LAST])
+    const usable = gaps.filter(([from, to]) => to - from >= 60)
+    if (!usable.length) return null
+    const lastEnd = taken.length ? taken[taken.length - 1][1] : FIRST
+    const [from, to] = usable.find(([g]) => g > lastEnd) || usable.reduce((best, g) => (g[1] - g[0] > best[1] - best[0] ? g : best))
+    return { start: toTime(from), end: toTime(Math.min(to, from + 120)) }
   }
   const copyToAll = day => onChange(days.flatMap(d => rangesOf(day).map(r => ({ day: d, start: r.start, end: r.end }))))
 
@@ -94,9 +107,14 @@ export default function WeeklyHours({ days, value: rawValue, onChange, error, la
                     </div>
                   ))}
                   <div className="flex flex-wrap gap-x-4 gap-y-1">
-                    {next && <button type="button" onClick={() => replaceDay(day, [...ranges, next])} className="inline-flex min-h-[32px] items-center gap-1.5 text-sm font-semibold text-ink underline decoration-lemon decoration-2 underline-offset-4 hover:decoration-ink"><FiPlus className="h-4 w-4" aria-hidden="true" /> Add more hours</button>}
+                    <button type="button" disabled={!next} title={next ? undefined : 'No free time left on this day between 6 AM and 10 PM'}
+                      onClick={() => next && replaceDay(day, [...ranges, next])}
+                      className="inline-flex min-h-[32px] items-center gap-1.5 text-sm font-semibold text-ink underline decoration-lemon decoration-2 underline-offset-4 hover:decoration-ink disabled:cursor-not-allowed disabled:text-sage-soft disabled:no-underline">
+                      <FiPlus className="h-4 w-4" aria-hidden="true" /> Add more hours
+                    </button>
                     <button type="button" onClick={() => copyToAll(day)} className="inline-flex min-h-[32px] items-center gap-1.5 text-sm text-sage hover:text-ink"><FiCopy className="h-4 w-4" aria-hidden="true" /> Copy to all days</button>
                   </div>
+                  {!next && <p className="text-xs text-sage">This day is full. Change a time above to make room.</p>}
                 </div>
               ) : (
                 <p className="text-sm text-sage sm:leading-10">Unavailable</p>

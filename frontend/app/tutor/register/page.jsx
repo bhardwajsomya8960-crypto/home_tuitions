@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { FiMapPin } from 'react-icons/fi'
-import Logo from '../../../components/landing/Logo'
+import { BrandLockup } from '../../../components/landing/Logo'
 import PhoneVerify from '../../../components/ui/PhoneVerify'
 import SlotGrid from '../../../components/ui/SlotGrid'
 import { Checkbox, ChipGroup, Notice, Select, TextArea, TextInput } from '../../../components/ui/Form'
@@ -151,7 +151,7 @@ export default function TutorRegisterPage() {
     <div className="min-h-screen bg-ivory px-4 font-landing text-ink pb-16 pt-8">
       <div className="mx-auto max-w-2xl">
         <div className="mb-6 text-center">
-          <Link href="/" className="mb-6 flex items-center justify-center gap-2.5"><Logo /><span className="text-lg font-bold">Home Tuition</span></Link>
+          <Link href="/" className="mb-6 flex justify-center"><BrandLockup className="h-20 w-auto" /></Link>
           <h1 className="text-3xl font-bold text-ink sm:text-4xl">Teach with us</h1>
           <p className="mt-2 text-sage">Get matched with students near you and online.</p>
         </div>

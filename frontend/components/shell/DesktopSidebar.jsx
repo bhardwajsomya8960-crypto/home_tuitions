@@ -16,9 +16,9 @@ export default function DesktopSidebar({ brandLabel, navItems, activeTab, onNavi
       className={`hidden md:flex fixed inset-y-0 left-0 z-40 flex-col bg-ink text-ivory ${widthClass}`}
     >
       <div className={`flex items-center gap-3 px-4 h-16 border-b border-ivory/10 ${centerClass}`}>
-        <span className="flex w-9 h-9 shrink-0 items-center justify-center rounded-full bg-ivory"><Logo className="w-7 h-7" /></span>
+        <span className="flex w-10 h-10 shrink-0 items-center justify-center rounded-xl bg-ivory"><Logo className="w-9 h-9" /></span>
         <div className={brandClass}>
-          <p className="font-bold text-ivory leading-tight">Home Tuition</p>
+          <p className="text-sm font-bold text-ivory leading-tight">Home &amp; Online<br />Tutor Hub</p>
           <p className="text-xs text-ivory/60">{brandLabel}</p>
         </div>
       </div>

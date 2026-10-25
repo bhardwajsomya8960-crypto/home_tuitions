@@ -63,4 +63,4 @@ Removed: the old stub routes `/api/leads`, `/api/demos`, `/api/enrolments`, `/ap
 - One-time codes and the admin login limiter are kept in memory, so they reset on restart and do not work across several server processes.
 - Class sessions are generated two weeks ahead when someone opens a dashboard; there is no background scheduler for them.
 - Times are shown in India time (IST); there is no per-user time zone.
-- Brand: the blueprint uses "homeTuitions", the landing page, sign-in pages and portals say "Home Tuition". This needs a decision before launch.
+- Brand: the site uses "Home & Online Tutor Hub" and the logo in `frontend/public/brand` (the blueprint still says "homeTuitions").

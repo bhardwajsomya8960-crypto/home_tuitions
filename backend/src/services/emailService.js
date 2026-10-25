@@ -18,9 +18,9 @@ class EmailService {
     const mailOptions = {
       from: process.env.ZOHO_MAIL_FROM || 'noreply@hometution.com',
       to: email,
-      subject: 'Your home tution OTP',
+      subject: 'Your Home & Online Tutor Hub OTP',
       html: `
-        <h2>Welcome to home tution</h2>
+        <h2>Welcome to Home & Online Tutor Hub</h2>
         <p>Your OTP is: <strong>${otp}</strong></p>
         <p>This OTP is valid for 10 minutes.</p>
         <p>Do not share this with anyone.</p>
@@ -73,7 +73,7 @@ class EmailService {
     const mailOptions = {
       from: process.env.ZOHO_MAIL_FROM || 'noreply@hometution.com',
       to: recipientEmail,
-      subject: 'Demo Scheduled - home tution',
+      subject: 'Demo Scheduled - Home & Online Tutor Hub',
       html: `
         <h2>Demo Scheduled</h2>
         <p>Your tuition demo is scheduled for:</p>
@@ -100,7 +100,7 @@ class EmailService {
     const mailOptions = {
       from: process.env.ZOHO_MAIL_FROM || 'noreply@hometution.com',
       to: parentEmail,
-      subject: 'Invoice - home tution',
+      subject: 'Invoice - Home & Online Tutor Hub',
       html: `
         <h2>Invoice</h2>
         <p>Invoice ID: ${invoiceData.invoiceId}</p>

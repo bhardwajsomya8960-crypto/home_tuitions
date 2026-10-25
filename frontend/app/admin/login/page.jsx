@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import Logo from '../../../components/landing/Logo'
+import Logo, { BrandLockup, BRAND_NAME } from '../../../components/landing/Logo'
 import { api, getSession, setSession } from '../../../lib/api'
 import { Notice, TextInput } from '../../../components/ui/Form'
 import { btn } from '../../../components/ui/Card'
@@ -42,8 +42,8 @@ export default function AdminLoginPage() {
     <div className="grid min-h-screen bg-ivory font-landing text-ink lg:grid-cols-2">
       <aside className="relative hidden overflow-hidden bg-ink p-12 text-ivory lg:flex lg:flex-col lg:justify-between">
         <Link href="/" className="flex items-center gap-2.5">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-ivory"><Logo className="h-8 w-8" /></span>
-          <span className="text-lg font-bold">Home Tuition</span>
+          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-ivory"><Logo className="h-11 w-11" /></span>
+          <span className="text-lg font-bold">{BRAND_NAME}</span>
         </Link>
         <div className="relative z-10 max-w-md">
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-lemon">Operations console</p>
@@ -58,10 +58,7 @@ export default function AdminLoginPage() {
 
       <div className="flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-sm">
-          <Link href="/" className="mb-8 flex items-center justify-center gap-2.5 lg:hidden">
-            <Logo />
-            <span className="text-lg font-bold">Home Tuition</span>
-          </Link>
+          <Link href="/" className="mb-6 flex justify-center"><BrandLockup className="h-20 w-auto" /></Link>
           <form onSubmit={submit} className="space-y-4 rounded-2xl border border-ink/10 bg-white p-6 shadow-sm sm:p-8">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sage">For staff</p>

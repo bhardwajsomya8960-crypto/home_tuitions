@@ -3,7 +3,7 @@ import SiteHeader from '../components/landing/SiteHeader'
 import { SiteFooter } from '../components/landing/Sections'
 
 export const metadata = {
-  title: 'Page not found | Home Tuition',
+  title: 'Page not found | Home & Online Tutor Hub',
   description: 'This page could not be found.',
 }
 

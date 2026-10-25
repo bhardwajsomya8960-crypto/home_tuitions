@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { FiArrowRight } from 'react-icons/fi'
-import Logo from './Logo'
+import Logo, { BrandLockup, BRAND_NAME } from './Logo'
 import Reveal from './Reveal'
 import HeroArt from './HeroArt'
 import LearningMatch from './LearningMatch'
@@ -173,9 +173,7 @@ export function FinalCta() {
   return (
     <section aria-labelledby="final-title" className="mx-auto max-w-6xl px-4 py-20 text-center sm:px-6 md:py-28">
       <Reveal className="flex flex-col items-center">
-        <span className="flex h-16 w-16 items-center justify-center rounded-full bg-lemon ring-2 ring-ink" aria-hidden="true">
-          <Logo className="h-10 w-10" />
-        </span>
+        <Logo className="h-24 w-24" />
         <h2 id="final-title" className="mt-6 max-w-[22ch] text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
           Let&apos;s make learning feel a little easier.
         </h2>
@@ -202,17 +200,14 @@ export function SiteFooter() {
   return (
     <footer className="border-t border-ink/10">
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10 sm:px-6 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-2.5">
-          <Logo className="h-8 w-8" />
-          <span className="font-bold text-ink">Home Tuition</span>
-        </div>
+        <BrandLockup className="h-16 w-auto" />
         <nav aria-label="Footer" className="flex flex-wrap gap-x-6 gap-y-3 text-sm font-medium">
           <a href="#learning-match" className={linkClass}>Find a Tutor</a>
           <a href="#how-it-works" className={linkClass}>How It Works</a>
           <Link href="/tutor/register" className={linkClass}>Become a Tutor</Link>
           <Link href="/parent/register" className={linkClass}>Find My Tutor</Link>
         </nav>
-        <p className="text-sm text-sage">© {year} Home Tuition</p>
+        <p className="text-sm text-sage">© {year} {BRAND_NAME}</p>
       </div>
     </footer>
   )

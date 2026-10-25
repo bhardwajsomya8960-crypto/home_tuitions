@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import Logo from '../../components/landing/Logo'
+import { BrandLockup } from '../../components/landing/Logo'
 import HeroArt from '../../components/landing/HeroArt'
 import PhoneVerify from '../../components/ui/PhoneVerify'
 import { getSession, setSession } from '../../lib/api'
@@ -30,21 +30,15 @@ function LoginForm() {
     <div className="min-h-screen bg-ivory font-landing text-ink">
       <div className="mx-auto grid min-h-screen max-w-6xl items-center gap-10 px-4 py-10 sm:px-6 lg:grid-cols-2">
         <div className="hidden lg:block">
-          <Link href="/" className="inline-flex items-center gap-2.5">
-            <Logo />
-            <span className="text-lg font-bold">Home Tuition</span>
-          </Link>
-          <p className="mt-12 text-xs font-semibold uppercase tracking-[0.25em] text-sage">Welcome back</p>
+          <Link href="/" className="inline-flex"><BrandLockup className="h-24 w-auto" /></Link>
+          <p className="mt-10 text-xs font-semibold uppercase tracking-[0.25em] text-sage">Welcome back</p>
           <h2 className="mt-3 text-4xl font-bold leading-tight tracking-tight">Pick up right where you left off.</h2>
           <p className="mt-3 max-w-md text-sage">{role === 'parent' ? 'See tutor updates, demo times, classes and fees for your child.' : 'See new lead offers, your classes and your verification status.'}</p>
           <div className="mt-6 max-w-md"><HeroArt /></div>
         </div>
 
         <div className="mx-auto w-full max-w-md">
-          <Link href="/" className="mb-8 flex items-center justify-center gap-2.5 lg:hidden">
-            <Logo />
-            <span className="text-lg font-bold">Home Tuition</span>
-          </Link>
+          <Link href="/" className="mb-6 flex justify-center lg:hidden"><BrandLockup className="h-20 w-auto" /></Link>
           <div className="rounded-2xl border border-ink/10 bg-white p-6 shadow-sm sm:p-8">
             <h1 className="text-2xl font-bold">Sign in</h1>
             <p className="mt-1 text-sm text-sage">Use the mobile number you registered with.</p>

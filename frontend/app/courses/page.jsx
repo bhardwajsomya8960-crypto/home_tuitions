@@ -6,7 +6,7 @@ import CatalogueUnavailable from '../../components/catalogue/CatalogueUnavailabl
 import { CatalogueUnavailableError, listCategories, listCourses } from '../../lib/catalogueApi'
 
 export const metadata = {
-  title: 'Courses | Home Tuition',
+  title: 'Courses | Home & Online Tutor Hub',
   description: 'Browse school, competitive exam, college and computer courses for home and online tuition.',
 }
 

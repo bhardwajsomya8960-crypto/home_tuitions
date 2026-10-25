@@ -19,10 +19,10 @@ async function load(slug) {
 
 export async function generateMetadata({ params }) {
   const { category, failed } = await load(params.slug)
-  if (failed) return { title: 'Category | Home Tuition' }
-  if (!category) return { title: 'Category not found | Home Tuition' }
+  if (failed) return { title: 'Category | Home & Online Tutor Hub' }
+  if (!category) return { title: 'Category not found | Home & Online Tutor Hub' }
   return {
-    title: category.seoTitle || `${category.name} | Home Tuition`,
+    title: category.seoTitle || `${category.name} | Home & Online Tutor Hub`,
     description: category.seoDescription || category.shortDescription || undefined,
     alternates: { canonical: `/categories/${category.slug}` },
   }

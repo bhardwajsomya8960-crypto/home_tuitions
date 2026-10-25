@@ -23,10 +23,10 @@ async function load(slug) {
 
 export async function generateMetadata({ params }) {
   const { course, failed } = await load(params.slug)
-  if (failed) return { title: 'Course | Home Tuition' }
-  if (!course) return { title: 'Course not found | Home Tuition' }
+  if (failed) return { title: 'Course | Home & Online Tutor Hub' }
+  if (!course) return { title: 'Course not found | Home & Online Tutor Hub' }
   return {
-    title: course.seoTitle || `${course.name} | Home Tuition`,
+    title: course.seoTitle || `${course.name} | Home & Online Tutor Hub`,
     description: course.seoDescription || course.shortDescription || undefined,
     alternates: { canonical: `/courses/${course.slug}` },
     openGraph: {

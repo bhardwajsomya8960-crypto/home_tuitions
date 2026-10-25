@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { FiMapPin, FiEdit2 } from 'react-icons/fi'
-import Logo from '../../../components/landing/Logo'
+import { BrandLockup } from '../../../components/landing/Logo'
 import PhoneVerify from '../../../components/ui/PhoneVerify'
 import { Checkbox, ChipGroup, Notice, Select, TextArea, TextInput } from '../../../components/ui/Form'
 import { PageLoader } from '../../../components/ui/Card'
@@ -181,7 +181,7 @@ function ParentRegisterForm() {
   return (
     <div className="min-h-screen bg-ivory px-4 pb-16 pt-8 font-landing text-ink">
       <div className="mx-auto max-w-2xl">
-        <Link href="/" className="mb-6 flex items-center justify-center gap-2.5"><Logo /><span className="text-lg font-bold">Home Tuition</span></Link>
+        <Link href="/" className="mb-6 flex justify-center"><BrandLockup className="h-20 w-auto" /></Link>
         <div className="mb-6 text-center">
           <h1 className="text-3xl font-bold sm:text-4xl">Find a tutor for your child</h1>
           <p className="mt-2 text-sage">Four short steps. It takes about three minutes.</p>

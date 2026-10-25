@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { FiMenu, FiX } from 'react-icons/fi'
-import Logo from './Logo'
+import Logo, { BRAND_NAME } from './Logo'
 
 const NAV = [
   { href: '/courses', label: 'Courses' },
@@ -43,8 +43,8 @@ export default function SiteHeader() {
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-ivory">
-          <Logo />
-          <span className="text-lg font-bold tracking-tight text-ink">Home Tuition</span>
+          <Logo className="h-11 w-11" />
+          <span className="text-lg font-bold tracking-tight text-ink">{BRAND_NAME}</span>
         </Link>
 
         <nav aria-label="Main" className="hidden items-center gap-7 md:flex">

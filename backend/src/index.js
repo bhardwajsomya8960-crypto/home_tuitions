@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 5000
 const EXPIRY_SWEEP_MS = 30 * 1000
 
 app.listen(PORT, () => {
-  console.log(`home tution API running on port ${PORT}`)
+  console.log(`Home & Online Tutor Hub API running on port ${PORT}`)
   console.log(envFiles.length ? `Settings loaded from: ${envFiles.join(', ')}` : 'No .env file found; using environment variables only.')
   const admin = readAdminConfig()
   if (!admin.configured) {

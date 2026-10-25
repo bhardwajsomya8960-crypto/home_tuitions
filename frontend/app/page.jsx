@@ -8,10 +8,10 @@ import CategoryDiscovery from '../components/landing/CategoryDiscovery'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: 'Home Tuition: home and online tuition for your child',
+  title: 'Home & Online Tutor Hub: home and online tuition for your child',
   description: 'Find home and online tutors for your child. Tell us what your child needs and start your enquiry.',
   openGraph: {
-    title: 'Home Tuition',
+    title: 'Home & Online Tutor Hub',
     description: 'Home and online tuition for your child. Tell us what you need to get started.',
     type: 'website',
   },

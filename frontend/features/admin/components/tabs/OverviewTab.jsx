@@ -11,6 +11,7 @@ export function Overview({ dash, goto }) {
   return (
     <>
       <SummaryTable items={[
+        { label: 'New enquiries', value: dash.enquiries.new, hint: `${dash.enquiries.contacted} called, not yet converted`, tone: dash.enquiries.new ? 'orange' : undefined },
         { label: 'Leads', value: dash.leads.total, hint: `${dash.leads.byStatus.new} new` },
         { label: 'Conversion rate', value: `${dash.conversionRate}%`, hint: `${dash.leads.byStatus.converted} converted` },
         { label: 'Active tutors', value: dash.tutors.byStatus.active || 0, hint: `${dash.tutors.awaitingReview} awaiting review` },

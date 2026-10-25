@@ -35,6 +35,14 @@ const RELATIONSHIPS = ['Parent', 'Guardian', 'Other']
 const GENDERS = ['Female', 'Male', 'Other', 'Prefer not to say']
 const QUALIFICATIONS = ['Diploma', 'Bachelor', 'B.Ed', 'Master', 'M.Ed', 'PhD', 'Other']
 const LEAD_SOURCES = ['website', 'meta', 'google', 'whatsapp', 'referral', 'bda', 'other']
+// Website callback requests ("enquiries"): the level a parent or student is looking for, or a
+// tutor teaches. Deliberately broad; staff get the details on the call.
+const ENQUIRY_LEVELS = [
+  { value: 'school', label: 'Playgroup to Class 12' },
+  { value: 'graduation', label: 'Graduation / college' },
+  { value: 'competitive', label: 'Competitive exams' },
+]
+const ENQUIRY_STATUSES = ['new', 'contacted', 'converted', 'closed']
 const REJECT_REASONS = [
   { value: 'too_far', label: 'Too far' },
   { value: 'schedule_conflict', label: 'Schedule conflict' },
@@ -99,7 +107,7 @@ function publicMasters() {
     urgency: URGENCY, relationships: RELATIONSHIPS, genders: GENDERS, qualifications: QUALIFICATIONS,
     leadSources: LEAD_SOURCES, rejectReasons: REJECT_REASONS, lostReasons: LOST_REASONS,
     documentTypes: DOCUMENT_TYPES, paymentMethods: PAYMENT_METHODS, plans: PLANS,
-    demoOutcomes: DEMO_OUTCOMES, leadStatuses: LEAD_STATUSES,
+    demoOutcomes: DEMO_OUTCOMES, leadStatuses: LEAD_STATUSES, enquiryLevels: ENQUIRY_LEVELS,
   }
 }
 
@@ -109,5 +117,5 @@ module.exports = {
   CLASSES, BOARDS, SUBJECTS, LANGUAGES, LEAD_MODES, TUTOR_MODES, DAYS, SLOTS, BUDGET_RANGES,
   URGENCY, RELATIONSHIPS, GENDERS, QUALIFICATIONS, LEAD_SOURCES, REJECT_REASONS, LOST_REASONS,
   DOCUMENT_TYPES, PAYMENT_METHODS, PLANS, DEMO_OUTCOMES, LEAD_STATUSES, MANUAL_LEAD_TRANSITIONS,
-  publicMasters, values,
+  ENQUIRY_LEVELS, ENQUIRY_STATUSES, publicMasters, values,
 }

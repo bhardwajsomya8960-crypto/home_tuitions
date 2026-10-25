@@ -21,7 +21,8 @@ function createTutorDocumentService(ctx, { storage }) {
     REQUIRED_DOCS,
 
     // details: { title, description } from the form. Every type except the photo needs a name.
-    async upload(tutorId, type, file, details = {}) {
+    // actor: who uploads (the tutor by default; staff can upload documents a tutor sent them).
+    async upload(tutorId, type, file, details = {}, { actor = `tutor:${tutorId}` } = {}) {
       const tutor = await ctx.require('Tutor', tutorId, 'Tutor')
       const docType = M.DOCUMENT_TYPES.find(d => d.value === type)
       if (!docType) throw ctx.invalid([{ field: 'type', message: 'is not a known document type' }])
@@ -51,7 +52,7 @@ function createTutorDocumentService(ctx, { storage }) {
         originalName: String(file.originalname || 'upload').slice(0, 120), mimeType: kind.mime,
         sizeBytes: file.size, storageKey, status: 'submitted', createdAt: ctx.iso(),
       })
-      await ctx.audit(`tutor:${tutorId}`, 'tutor.document.upload', 'tutor', tutorId, { type })
+      await ctx.audit(actor, 'tutor.document.upload', 'tutor', tutorId, { type })
 
       if (tutor.status === 'pending' && await self.hasRequired(tutorId)) {
         await repo.update('Tutor', tutorId, { status: 'documents_submitted', updatedAt: ctx.iso() })

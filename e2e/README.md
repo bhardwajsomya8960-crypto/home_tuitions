@@ -11,6 +11,8 @@
 7. The parent sees the tutor's contact, upcoming classes and the invoice, and rates the tutor.
 8. The tutor pauses new leads; the admin records the payment, checks the audit log and saves matching rules.
 
+`manual-flow.js` checks the manual operations flow: a visitor sends the website callback form with only a phone number, staff call back from Enquiries, create the parent and tuition request from it, add a second child, create a tutor from a tutor enquiry, upload and accept their documents, activate them and assign them by hand. Run it the same way (`node e2e/manual-flow.js`); it uses its own phone numbers, so it can run after the walkthrough. Its screenshots go to `e2e/output/manual/`.
+
 It fails on any page error or console error, and if a tutor offer exposes parent details. Screenshots go to `e2e/output/` (git-ignored).
 
 ## Run it

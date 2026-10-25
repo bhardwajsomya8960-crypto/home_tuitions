@@ -1,6 +1,7 @@
 # Frontend image (Next.js, standalone server). Build from frontend/:
 #   docker build --build-arg NEXT_PUBLIC_API_URL=https://example.com -t tutorhub-web .
-# NEXT_PUBLIC_API_URL is baked into the browser bundle at build time.
+# NEXT_PUBLIC_* values (API URL, public contact details) are baked into the browser bundle at
+# build time.
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package*.json ./
@@ -11,7 +12,13 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_CONTACT_PHONE
+ARG NEXT_PUBLIC_CONTACT_WHATSAPP
+ARG NEXT_PUBLIC_CONTACT_EMAIL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NEXT_PUBLIC_CONTACT_PHONE=$NEXT_PUBLIC_CONTACT_PHONE \
+    NEXT_PUBLIC_CONTACT_WHATSAPP=$NEXT_PUBLIC_CONTACT_WHATSAPP \
+    NEXT_PUBLIC_CONTACT_EMAIL=$NEXT_PUBLIC_CONTACT_EMAIL \
     NEXT_OUTPUT_STANDALONE=1 \
     NEXT_TELEMETRY_DISABLED=1
 RUN npm run build

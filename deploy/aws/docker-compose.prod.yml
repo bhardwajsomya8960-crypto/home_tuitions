@@ -28,6 +28,10 @@ services:
       args:
         # The browser calls the API on the same domain (Caddy sends /api to the API).
         NEXT_PUBLIC_API_URL: https://${DOMAIN}
+        # Shown on the website next to the callback form.
+        NEXT_PUBLIC_CONTACT_PHONE: ${CONTACT_PHONE:-}
+        NEXT_PUBLIC_CONTACT_WHATSAPP: ${CONTACT_WHATSAPP:-}
+        NEXT_PUBLIC_CONTACT_EMAIL: ${CONTACT_EMAIL:-}
     restart: unless-stopped
     logging: *logging
 

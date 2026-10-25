@@ -8,9 +8,10 @@ import Logo, { BRAND_NAME } from '@/shared/brand/Logo'
 
 const NAV = [
   { href: '/courses', label: 'Courses' },
-  { href: '#learning-match', label: 'Find a Tutor' },
-  { href: '#how-it-works', label: 'How It Works' },
-  { href: '#for-tutors', label: 'For Tutors' },
+  { href: '/#learning-match', label: 'Find a Tutor' },
+  { href: '/#how-it-works', label: 'How It Works' },
+  { href: '/#for-tutors', label: 'For Tutors' },
+  { href: '/#enquire', label: 'Contact' },
 ]
 
 export default function SiteHeader() {
@@ -54,10 +55,11 @@ export default function SiteHeader() {
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Link href="/tutor/register" className={`${linkClass} px-3`}>I&apos;m a Tutor</Link>
-          <Link href="/parent/register" className={`${btnBase} h-10 bg-lemon px-5 text-ink shadow-[0_1px_0_rgba(38,53,47,0.9)] border border-ink hover:bg-[#f2e04f]`}>
+          <Link href="/login" className={`${linkClass} px-2 text-sm`}>Sign in</Link>
+          <a href="/#enquire-tutor" className={`${linkClass} px-3`}>I&apos;m a Tutor</a>
+          <a href="/#enquire" className={`${btnBase} h-10 bg-lemon px-5 text-ink shadow-[0_1px_0_rgba(38,53,47,0.9)] border border-ink hover:bg-[#f2e04f]`}>
             Find My Tutor
-          </Link>
+          </a>
         </div>
 
         <button
@@ -94,19 +96,24 @@ export default function SiteHeader() {
                 </a>
               ))}
               <Link
-                href="/tutor/register"
+                href="/login"
+                onClick={() => setOpen(false)}
+                className="flex min-h-[48px] items-center rounded-xl px-3 text-base font-medium text-ink hover:bg-mint/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
+              >
+                Sign in
+              </Link>
+              <a href="/#enquire-tutor"
                 onClick={() => setOpen(false)}
                 className="flex min-h-[48px] items-center rounded-xl px-3 text-base font-medium text-ink hover:bg-mint/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
               >
                 I&apos;m a Tutor
-              </Link>
-              <Link
-                href="/parent/register"
+              </a>
+              <a href="/#enquire"
                 onClick={() => setOpen(false)}
                 className="mt-2 flex min-h-[48px] items-center justify-center rounded-full border border-ink bg-lemon px-5 text-base font-semibold text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2"
               >
                 Find My Tutor
-              </Link>
+              </a>
             </nav>
           </motion.div>
         )}

@@ -258,7 +258,7 @@ function createAssignmentService(ctx) {
       const stats = await offerStats()
       const already = await offeredTutorIds(leadId)
       const matches = (await repo.find('Tutor', {}, { sort: { name: 1 } }))
-        .filter(t => t.name.toLowerCase().includes(q) || t.email.toLowerCase().includes(q) || (digits.length >= 3 && t.phone.includes(digits)))
+        .filter(t => t.name.toLowerCase().includes(q) || (t.email || '').toLowerCase().includes(q) || (digits.length >= 3 && t.phone.includes(digits)))
         .slice(0, 20)
       return mapSeries(matches, async t => {
         const assignable = MANUALLY_ASSIGNABLE.includes(t.status)

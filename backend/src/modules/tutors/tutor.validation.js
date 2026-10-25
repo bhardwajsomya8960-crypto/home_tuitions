@@ -45,4 +45,32 @@ const tutorUpdateSpec = {
   timeOff: { type: 'timeOff' },
 }
 
-module.exports = { tutorProfileFields, tutorRegistrationSpec, tutorUpdateSpec }
+// A tutor profile created by staff from details shared on a call. Only what matching needs is
+// required; the rest can be added later by staff or by the tutor after signing in.
+const adminTutorSpec = {
+  name: { type: 'string', required: true, min: 2, max: 80 },
+  phone: { type: 'phone', required: true },
+  email: { type: 'email' },
+  gender: { type: 'enum', required: true, allowed: M.GENDERS },
+  qualification: { type: 'enum', allowed: M.QUALIFICATIONS },
+  college: { type: 'string', max: 120 },
+  experienceYears: { type: 'int', min: 0, max: 50 },
+  address: { type: 'string', max: 300 },
+  pincode: { type: 'pincode' },
+  latitude: { type: 'number', min: -90, max: 90 },
+  longitude: { type: 'number', min: -180, max: 180 },
+  subjects: tutorProfileFields.subjects,
+  classes: tutorProfileFields.classes,
+  modes: tutorProfileFields.modes,
+  boards: { ...tutorProfileFields.boards, required: false },
+  languages: { ...tutorProfileFields.languages, required: false },
+  serviceRadiusKm: tutorProfileFields.serviceRadiusKm,
+  availability: { ...tutorProfileFields.availability, required: false, minItems: 0 },
+  feeMin: tutorProfileFields.feeMin,
+  feeMax: tutorProfileFields.feeMax,
+  bio: { type: 'string', max: 1000 },
+  demoAvailable: { type: 'bool' },
+  enquiryId: { type: 'id' },
+}
+
+module.exports = { tutorProfileFields, tutorRegistrationSpec, tutorUpdateSpec, adminTutorSpec }

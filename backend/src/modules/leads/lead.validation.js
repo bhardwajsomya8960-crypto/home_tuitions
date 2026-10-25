@@ -45,6 +45,8 @@ const staffLeadSpec = {
   ...requirementFields,
   source: { type: 'enum', required: true, allowed: M.LEAD_SOURCES },
   note: { type: 'string', max: 1000 },
+  // The website enquiry this came from, if any; it is marked as converted.
+  enquiryId: { type: 'id' },
 }
 
 const locationSpec = {
@@ -54,4 +56,13 @@ const locationSpec = {
   longitude: { type: 'number', min: -180, max: 180 },
 }
 
-module.exports = { parentFields, studentFields, requirementFields, consentField, staffLeadSpec, locationSpec }
+// Staff adding a tuition request for a parent who already has an account.
+const parentLeadSpec = {
+  studentId: { type: 'id', required: true },
+  ...requirementFields,
+  source: { type: 'enum', required: true, allowed: M.LEAD_SOURCES },
+  note: { type: 'string', max: 1000 },
+  enquiryId: { type: 'id' },
+}
+
+module.exports = { parentFields, studentFields, requirementFields, consentField, staffLeadSpec, parentLeadSpec, locationSpec }

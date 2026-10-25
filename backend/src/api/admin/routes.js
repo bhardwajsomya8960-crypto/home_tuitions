@@ -1,6 +1,8 @@
 const express = require('express')
 const { json, created } = require('../../shared/http')
 const { asyncHandler } = require('../../shared/middleware/asyncHandler')
+const { singleUpload } = require('../../shared/middleware/upload')
+const { MAX_UPLOAD_BYTES } = require('../../modules/tutors/tutorDocument.service')
 const { requireAdmin } = require('../../shared/middleware/requireAdmin')
 const { createAuthController } = require('./controllers/auth.controller')
 const { createDashboardController } = require('./controllers/dashboard.controller')
@@ -13,6 +15,8 @@ const { createTutorsController } = require('./controllers/tutors.controller')
 const { createSettingsController } = require('./controllers/settings.controller')
 const { createAuditController } = require('./controllers/audit.controller')
 const { createCatalogueController } = require('./controllers/catalogue.controller')
+const { createEnquiriesController } = require('./controllers/enquiries.controller')
+const { createParentsController } = require('./controllers/parents.controller')
 
 const LIFECYCLE_ACTIONS = ['publish', 'unpublish', 'archive', 'restore']
 
@@ -31,6 +35,8 @@ function createAdminRouter(deps) {
   const settings = createSettingsController(deps)
   const audit = createAuditController(deps)
   const catalogue = createCatalogueController(deps)
+  const enquiries = createEnquiriesController(deps)
+  const parents = createParentsController(deps)
 
   router.post('/auth/login', asyncHandler(auth.login))
   router.use(requireAdmin)
@@ -39,6 +45,20 @@ function createAdminRouter(deps) {
   router.get('/dashboard', json(dashboard.dashboard))
   router.get('/operations', json(dashboard.operations))
   router.get('/masters', json(dashboard.masters))
+
+  // Website callback requests
+  router.get('/enquiries', json(enquiries.list))
+  router.post('/enquiries', created(enquiries.create))
+  router.get('/enquiries/:id', json(enquiries.detail))
+  router.patch('/enquiries/:id', json(enquiries.update))
+
+  // Parents and students (accounts created by staff, or from the website)
+  router.get('/parents', json(parents.list))
+  router.post('/parents', created(parents.create))
+  router.get('/parents/:id', json(parents.detail))
+  router.patch('/parents/:id', json(parents.update))
+  router.post('/parents/:id/students', created(parents.addStudent))
+  router.post('/parents/:id/leads', created(parents.createRequest))
 
   // Leads
   router.get('/leads', json(leads.list))
@@ -75,6 +95,8 @@ function createAdminRouter(deps) {
 
   // Tutors and KYC
   router.get('/tutors', json(tutors.list))
+  router.post('/tutors', created(tutors.create))
+  router.post('/tutors/:id/documents', singleUpload('file', { maxBytes: MAX_UPLOAD_BYTES }), created(tutors.uploadDocument))
   router.get('/tutors/:id', json(tutors.detail))
   router.post('/tutors/:id/actions', json(tutors.action))
   router.post('/documents/:id/review', json(tutors.reviewDocument))

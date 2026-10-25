@@ -1,12 +1,12 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { FiEye } from 'react-icons/fi'
+import { FiEye, FiUpload } from 'react-icons/fi'
 import Modal from '@/shared/ui/Modal'
 import SimpleTable from '@/shared/ui/SimpleTable'
 import { StatusBadge } from '@/shared/ui/Badge'
 import { btn, Details, PageLoader } from '@/shared/ui/Card'
-import { Notice, TextInput } from '@/shared/ui/Form'
+import { Notice, Select, TextInput } from '@/shared/ui/Form'
 import { api, openProtectedFile } from '@/shared/lib/api'
 import { classLabel, DOC_STATUS, formatDate, MODE_LABELS, hoursText, rupees, TUTOR_STATUS } from '@/shared/lib/format'
 import { ADMIN_API } from '@/features/admin/api/endpoints'
@@ -59,15 +59,15 @@ export default function TutorReview({ tutorId, masters, onClose, onChanged }) {
 
           <Details items={[
             ['Phone', `+91 ${tutor.phone}`], ['Email', tutor.email], ['Gender', tutor.gender], ['Date of birth', tutor.dob && formatDate(tutor.dob)],
-            ['Qualification', `${tutor.qualification}${tutor.college ? `, ${tutor.college}` : ''}`], ['Experience', `${tutor.experienceYears} years`],
+            ['Qualification', [tutor.qualification, tutor.college].filter(Boolean).join(', ')], ['Experience', `${tutor.experienceYears} years`],
             ['Subjects', tutor.subjects.join(', ')], ['Classes', tutor.classes.map(classLabel).join(', ')], ['Boards', tutor.boards.join(', ')],
             ['Languages', tutor.languages.join(', ')], ['Modes', tutor.modes.map(m => MODE_LABELS[m]).join(', ')], ['Travel radius', `${tutor.serviceRadiusKm} km`],
-            ['Address', `${tutor.address}, ${tutor.pincode}`], ['Location', tutor.latitude != null ? `${tutor.latitude.toFixed(4)}, ${tutor.longitude.toFixed(4)}` : 'Pincode only'],
+            ['Address', [tutor.address, tutor.pincode].filter(Boolean).join(', ')], ['Location', tutor.latitude != null ? `${tutor.latitude.toFixed(4)}, ${tutor.longitude.toFixed(4)}` : 'Pincode only'],
             ['Fees', tutor.feeMin || tutor.feeMax ? `${rupees(tutor.feeMin)} – ${rupees(tutor.feeMax)} / month` : ''], ['Weekly hours', hoursText(tutor.availability)], ['Time off', (tutor.timeOff || []).map(t => `${t.from === t.to ? formatDate(t.from) : `${formatDate(t.from)} – ${formatDate(t.to)}`}${t.reason ? ` (${t.reason})` : ''}`).join(' · ') || 'None'],
             ['Offers', `${tutor.offerStats.total} received · ${tutor.offerStats.accepted} accepted · ${tutor.offerStats.declined} declined · ${tutor.offerStats.expired} expired`],
             ['Rating', tutor.ratingCount ? `${tutor.ratingAvg.toFixed(1)} from ${tutor.ratingCount}` : 'No reviews'],
           ]} />
-          <div><p className="text-xs text-sage">Bio</p><p className="text-sm">{tutor.bio}</p></div>
+          {tutor.bio && <div><p className="text-xs text-sage">Bio</p><p className="text-sm">{tutor.bio}</p></div>}
 
           <section>
             <h3 className="text-base mb-2 font-semibold">KYC documents</h3>
@@ -89,6 +89,8 @@ export default function TutorReview({ tutorId, masters, onClose, onChanged }) {
               ) },
             ]} />
           </section>
+
+          <StaffUpload tutorId={tutor.id} masters={masters} onUploaded={updated => { setTutor(updated); setNotice('Document uploaded. Review it above.'); onChanged?.() }} />
 
           <section className="space-y-3">
             <h3 className="text-base font-semibold">Account actions</h3>
@@ -113,5 +115,51 @@ export default function TutorReview({ tutorId, masters, onClose, onChanged }) {
         <TextInput label="Reason shown to the tutor" required value={reason} onChange={e => setReason(e.target.value)} placeholder="For example: image is blurred" />
       </Modal>
     </Modal>
+  )
+}
+
+// Staff upload a document the tutor sent them (for example on WhatsApp). It then goes through
+// the same review as a document the tutor uploaded.
+function StaffUpload({ tutorId, masters, onUploaded }) {
+  const [type, setType] = useState('')
+  const [title, setTitle] = useState('')
+  const [file, setFile] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [inputKey, setInputKey] = useState(0)
+  const docType = masters.documentTypes.find(t => t.value === type)
+  const upload = async () => {
+    if (!type || !file) return setError('Choose the document type and the file.')
+    if (docType?.multiple && title.trim().length < 2) return setError('Give the document a name, for example "Aadhaar card".')
+    setBusy(true); setError('')
+    try {
+      const form = new FormData()
+      form.append('type', type)
+      if (title.trim()) form.append('title', title.trim())
+      form.append('file', file)
+      onUploaded(await api(ADMIN_API.tutorDocuments(tutorId), { method: 'POST', form, role: 'admin' }))
+      setType(''); setTitle(''); setFile(null); setInputKey(k => k + 1)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <section className="space-y-3 rounded-xl border border-dashed border-sand-300 bg-sand-50 p-4">
+      <h3 className="text-base font-semibold">Upload a document for this tutor</h3>
+      <p className="text-xs text-sage">For files the tutor sent by WhatsApp or email. PDF, JPG or PNG, up to 5 MB.</p>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Select label="Document" options={masters.documentTypes} value={type} onChange={e => setType(e.target.value)} />
+        {docType?.multiple && <TextInput label="Name" value={title} onChange={e => setTitle(e.target.value)} placeholder="For example: Aadhaar card" />}
+        <label className="flex flex-col text-sm font-medium text-ink">
+          <span className="mb-1.5">File</span>
+          <input key={inputKey} type="file" aria-label="File" accept={type === 'photo' ? 'image/jpeg,image/png' : 'application/pdf,image/jpeg,image/png'} onChange={e => setFile(e.target.files?.[0] || null)}
+            className="text-sm file:mr-3 file:rounded-full file:border file:border-ink/20 file:bg-white file:px-3 file:py-2 file:font-semibold" />
+        </label>
+      </div>
+      <Notice>{error}</Notice>
+      <button type="button" className={btn.primary} disabled={busy} onClick={upload}><FiUpload aria-hidden="true" /> {busy ? 'Uploading…' : 'Upload'}</button>
+    </section>
   )
 }

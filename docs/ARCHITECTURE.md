@@ -14,15 +14,16 @@ db/
   models.js               every model, by name
   repository.js           data access used by services (find, insert, update, transaction, ...)
 api/                      HTTP layer, one folder per audience
-  website/                /api/masters, /api/catalogue/*, /api/auth/*   (public)
+  website/                /api/masters, /api/catalogue/*, /api/auth/*, /api/enquiries (public)
   parent/                 /api/parents/*                                (parent portal)
   tutor/                  /api/tutors/*                                 (tutor portal)
   admin/                  /api/admin/*                                  (staff console)
     routes.js             every URL of that area in one place
     controllers/          one file per topic: read the request, call services, return data
 modules/                  business logic, one folder per area
+  enquiries/              website callback requests: enquiry.model, enquiry.service, enquiry.validation
   leads/                  lead.model, leadEvent.model, lead.service, lead.views, lead.validation
-  parents/                parent.model, student.model, parent.service, parentPortal.service
+  parents/                parent.model, student.model, parent.service, parentPortal.service, parentAdmin.service
   tutors/                 tutor.model, tutorDocument.model, tutor/document/admin/portal services
   matching/               matching.engine (scores and filters), availability (weekly hours)
   assignments/            offers to tutors, accept/decline, manual assignment
@@ -77,8 +78,9 @@ features/
     api/endpoints.js
   admin/
     pages/                 AdminDashboardPage, AdminLoginPage
-    components/            tabs/ (Overview, Leads, Operations, Tutors, Finance, Settings, Audit),
-                           LeadWorkspace, TutorReview, NewLeadModal, SettingsForm
+    components/            tabs/ (Overview, Enquiries, Leads, Parents, Operations, Tutors, Finance, Settings, Audit),
+                           LeadWorkspace, TutorReview, EnquiryDetail, ParentDetail, RequirementFields,
+                           New{Lead,Parent,Tutor,Enquiry}Modal, SettingsForm
     hooks/useAdminData.js
     api/endpoints.js
 shared/
@@ -101,7 +103,7 @@ MongoDB collections, one per model:
 |---|---|
 | People | `parents`, `students`, `tutors` |
 | Tutor KYC | `tutor_documents` (details only; the files themselves are in S3) |
-| Leads | `leads`, `lead_events` |
+| Leads | `enquiries`, `leads`, `lead_events` |
 | Matching | `match_runs`, `assignments` |
 | Teaching | `demos`, `enrolments`, `class_sessions` |
 | Money | `invoices`, `payments` |

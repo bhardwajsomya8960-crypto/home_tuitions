@@ -2,6 +2,7 @@ import SiteHeader from '@/features/website/components/landing/SiteHeader'
 import MotionRoot from '@/features/website/components/landing/MotionRoot'
 import { Hero, LearningMatchSection, HowItWorks, HomeOrOnline, ForTutors, FinalCta, SiteFooter } from '@/features/website/components/landing/Sections'
 import CategoryDiscovery from '@/features/website/components/landing/CategoryDiscovery'
+import EnquirySection from '@/features/website/components/landing/EnquirySection'
 
 // Rendered per request so the category section never freezes a build-time "unavailable" state.
 // The catalogue fetch inside CategoryDiscovery is cached for 60 seconds.
@@ -9,7 +10,7 @@ export const dynamic = 'force-dynamic'
 
 export const metadata = {
   title: 'Home & Online Tutor Hub: home and online tuition for your child',
-  description: 'Find home and online tutors for your child. Tell us what your child needs and start your enquiry.',
+  description: 'Find home and online tutors for your child. Leave your number and we will call you back to find the right tutor.',
   openGraph: {
     title: 'Home & Online Tutor Hub',
     description: 'Home and online tuition for your child. Tell us what you need to get started.',
@@ -30,6 +31,7 @@ export default function HomePage() {
         <SiteHeader />
         <main id="main">
           <Hero />
+          <EnquirySection />
           <CategoryDiscovery />
           <LearningMatchSection />
           <HowItWorks />

@@ -18,5 +18,6 @@ module.exports = {
   AuditLog: require('../modules/audit/auditLog.model'),
   Category: require('../modules/catalogue/category.model'),
   Course: require('../modules/catalogue/course.model'),
+  Enquiry: require('../modules/enquiries/enquiry.model'),
   Counter: require('./counter.model'),
 }

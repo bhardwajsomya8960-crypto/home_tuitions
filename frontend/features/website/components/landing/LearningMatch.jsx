@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { FiArrowRight, FiCheck } from 'react-icons/fi'
 
 const MODES = [
@@ -54,8 +53,9 @@ export default function LearningMatch() {
   const [stage, setStage] = useState()
   const [goal, setGoal] = useState()
 
-  const href = mode ? `/parent/register?mode=${encodeURIComponent(mode)}` : '/parent/register'
   const picked = [mode, stage, goal].filter(Boolean)
+  // Opens the callback form with these choices written into the message.
+  const href = picked.length ? `/?prefill=${encodeURIComponent(picked.join(' · '))}#enquire` : '/#enquire'
 
   return (
     <div className="rounded-[28px] border border-ink/10 bg-white p-5 shadow-[0_1px_0_rgba(38,53,47,0.06)] sm:p-7">
@@ -73,17 +73,17 @@ export default function LearningMatch() {
             <>
               Your choice:{' '}
               <span className="font-semibold text-ink">{picked.join(' · ')}</span>
-              {mode && <span className="block text-xs text-sage">Your learning mode will be pre-selected in the enquiry form.</span>}
+              {mode && <span className="block text-xs text-sage">These choices are added to your callback request.</span>}
             </>
           )}
         </p>
-        <Link
+        <a
           href={href}
           className="inline-flex min-h-[48px] shrink-0 items-center justify-center gap-2 rounded-full border border-ink bg-lemon px-6 font-semibold text-ink transition-transform duration-150 motion-safe:hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-white"
         >
           Find My Tutor
           <FiArrowRight className="h-4 w-4" aria-hidden="true" />
-        </Link>
+        </a>
       </div>
     </div>
   )

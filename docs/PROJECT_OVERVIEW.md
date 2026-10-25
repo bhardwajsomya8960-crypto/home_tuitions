@@ -46,6 +46,11 @@ Details and conventions: `docs/ARCHITECTURE.md`.
 
 ## 3. What each user can do
 
+### Website visitor (no sign-in)
+- The home page shows the contact number, WhatsApp and email (set with `NEXT_PUBLIC_CONTACT_PHONE`, `NEXT_PUBLIC_CONTACT_WHATSAPP`, `NEXT_PUBLIC_CONTACT_EMAIL`; empty values are hidden).
+- A callback form with two tabs, "I need a tutor" and "I want to teach". Only the mobile number is required. Optional: name, parent or student, level (Playgroup to Class 12, Graduation / college, Competitive exams) and a message. Nothing redirects to sign-in. Every "Find My Tutor" and "Join as a Tutor" button leads to this form.
+- The same number sent again within 7 days updates the open enquiry instead of adding a duplicate. The form is limited to 10 sends per hour per IP (`ENQUIRY_RATE_LIMIT`) and has a hidden spam trap.
+
 ### Parent
 - Start an enquiry in four steps: their details (mobile verified by code), student, tuition needs (mode, address and optional device location, days, times, budget, start, urgency, tutor preferences, notes) and a review with consent.
 - Sign in later with a code. The dashboard shows what needs attention, each request's progress, the tutor's profile once a tutor accepts and their contact once confirmed, demo details, a choice of outcome after the demo, ratings, classes with the tutor's notes (and a button to confirm each class), invoices, and students. Parents can raise more requests, add students, cancel a request and ask to move a demo.
@@ -56,6 +61,9 @@ Details and conventions: `docs/ARCHITECTURE.md`.
 - See confirmed students with parent contact, demos, classes (record attendance, notes and homework), and edit availability, subjects, fees and whether they want new leads.
 
 ### Staff (admin)
+- Enquiries: every website callback request (and ones staff add from calls or WhatsApp), with call and WhatsApp links, call notes, "mark as contacted" and "close with a reason". From an enquiry, staff open a prefilled form to create a parent with a tuition request, a parent only, or a tutor profile; the enquiry is then marked converted and linked to the new record.
+- Parents: list and detail of every parent; create a parent by hand, add students, and raise a tuition request for any student. Accounts are found by phone; parents and tutors sign in later with a code sent to that phone (no passwords to share).
+- Tutors added by staff start as pending. Staff upload the documents the tutor sent them (photo, ID, qualification) from the tutor window, accept them, then verify and activate. Only active tutors can be offered or assigned.
 - Overview of leads by stage, conversion, tutors, enrolments and money collected or outstanding.
 - Leads: search and filter, add a lead for a caller, change status (with reasons for lost leads), add notes, fix a location, run matching and see each tutor's score breakdown and reasons, send offers (next in line or a chosen tutor), confirm or release a tutor, schedule, move, complete or cancel demos, record no-shows and outcomes, and convert to an enrolment.
 - Operations queues: accepted offers awaiting confirmation, leads with no tutor, open offers with countdowns, tutor questions, escalations and upcoming demos.

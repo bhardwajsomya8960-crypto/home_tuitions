@@ -24,6 +24,7 @@ function createDashboardService(ctx, { views }) {
           upcomingDemos: (await repo.find('Demo', { status: 'scheduled' })).filter(d => d.scheduledAt.slice(0, 10) <= weekAhead).length,
         },
         enrolments: { active: await repo.count('Enrolment', { status: 'active' }) },
+        enquiries: { new: await repo.count('Enquiry', { status: 'new' }), contacted: await repo.count('Enquiry', { status: 'contacted' }) },
         finance: { collected, outstanding, overdue: await repo.overdueTotal(ctx.today()) },
       }
     },

@@ -39,10 +39,10 @@ Verified by: `npm test` in `backend/` (131 tests, against MongoDB) and `e2e/walk
 
 | Area | Built | Not yet |
 |---|---|---|
-| Public | Sign in (`/login`, parent or tutor by code), admin sign-in (`/admin/login`) | About, contact, terms, privacy pages |
+| Public | Home page callback form (phone only, no sign-in) with contact details, sign in (`/login`, parent or tutor by code), admin sign-in (`/admin/login`) | About, contact, terms, privacy pages |
 | Parent | Register (4 steps with code, consent and review), dashboard: overview with "needs your attention", requests (timeline, tutor profile, demo, outcome, rating, cancel, reschedule request), classes (confirm), fees, students (add), profile, new request | Payments online, support tickets, calendar view |
 | Tutor | Register (4 steps), dashboard: overview, lead offers (countdown, accept, decline with reason, not available, ask a question, history), classes (attendance), students, availability and profile editing, verification (uploads) | Earnings and payouts, support, calendar view, check-in/out |
-| Admin | Overview, leads (search, filters, new lead), lead workspace (status, notes, location, matching with score breakdown, offers, confirm/release, demo actions, conversion), operations queues, tutors (document review, verify/activate/suspend/reject), finance (invoices, payments, enrolments), matching rules, audit log | Users and roles, masters editing, notification templates, reports, BDA/ops/finance-specific views |
+| Admin | Overview, enquiries (call notes, contacted/closed, convert to parent, request or tutor), parents (create, students, requests), new tutor by staff with staff document upload, leads (search, filters, new lead), lead workspace (status, notes, location, matching with score breakdown, offers, confirm/release, demo actions, conversion), operations queues, tutors (document review, verify/activate/suspend/reject), finance (invoices, payments, enrolments), matching rules, audit log | Users and roles, masters editing, notification templates, reports, BDA/ops/finance-specific views |
 | Student | — | All |
 
 ## API
@@ -50,10 +50,11 @@ Verified by: `npm test` in `backend/` (131 tests, against MongoDB) and `e2e/walk
 All new routes validate input with the shared validator and return `{ error, code, details? }` on failure.
 
 - `GET /api/masters`: form master data.
+- `POST /api/enquiries`: website callback request (public, rate limited; only `kind` and `phone` required).
 - `POST /api/auth/send-otp`, `POST /api/auth/verify-otp`, `GET /api/auth/me/parent|tutor`.
 - `POST /api/parents/register`; under `/api/parents/me` (parent token): `GET overview`, `GET classes`, `POST students`, `POST requests`, `POST requests/:id/cancel`, `POST requests/:id/review`, `POST demos/:id/outcome`, `POST demos/:id/reschedule-request`, `POST classes/:id/acknowledge`.
 - `POST /api/tutors/register`; under `/api/tutors/me` (tutor token): `GET overview`, `PATCH /`, `POST documents` (multipart: type, title, description, file), `DELETE documents/:id`, `GET documents/:id/file`, `POST offers/:id/accept|reject|unavailable|request-info`, `POST classes/:id/attendance`.
-- Under `/api/admin` (admin token): `GET dashboard`, `GET operations`, `GET|POST leads`, `GET leads/:id`, `POST leads/:id/status|notes|match|offers|demos|convert`, `PATCH leads/:id/location`, `POST assignments/:id/confirm|release`, `POST demos/:id/reschedule|complete|outcome|no-show|cancel`, `GET enrolments`, `POST enrolments/:id/status`, `GET|POST invoices`, `POST invoices/:id/payments|void`, `GET tutors`, `GET tutors/:id`, `POST tutors/:id/actions`, `POST documents/:id/review`, `GET documents/:id/file`, `GET|PUT settings`, `GET audit`.
+- Under `/api/admin` (admin token): `GET dashboard`, `GET operations`, `GET|POST leads`, `GET leads/:id`, `POST leads/:id/status|notes|match|offers|demos|convert`, `PATCH leads/:id/location`, `POST assignments/:id/confirm|release`, `POST demos/:id/reschedule|complete|outcome|no-show|cancel`, `GET enrolments`, `POST enrolments/:id/status`, `GET|POST invoices`, `POST invoices/:id/payments|void`, `GET|POST enquiries`, `GET|PATCH enquiries/:id`, `GET|POST parents`, `GET|PATCH parents/:id`, `POST parents/:id/students|leads`, `GET|POST tutors`, `POST tutors/:id/documents`, `GET tutors/:id`, `POST tutors/:id/actions`, `POST documents/:id/review`, `GET documents/:id/file`, `GET|PUT settings`, `GET audit`.
 
 Removed: the old stub routes `/api/leads`, `/api/demos`, `/api/enrolments`, `/api/classes`, `/api/payments`, the unauthenticated `GET /api/parents/:id` and `GET /api/tutors/:id`, and the in-memory store `config/catalyst.js`.
 

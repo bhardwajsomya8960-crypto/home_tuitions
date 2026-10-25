@@ -1,5 +1,5 @@
-import Link from 'next/link'
 import { FiArrowRight } from 'react-icons/fi'
+import { CONTACT } from '@/features/website/contact'
 import Logo, { BrandLockup, BRAND_NAME } from '@/shared/brand/Logo'
 import Reveal from '@/features/website/components/landing/Reveal'
 import HeroArt from '@/features/website/components/landing/HeroArt'
@@ -22,13 +22,13 @@ export function Hero() {
           Personalised home and online tuition that fits your child&apos;s needs, schedule, and goals.
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <Link href="/parent/register" className={primaryBtn}>
+          <a href="/#enquire" className={primaryBtn}>
             Find My Tutor
             <FiArrowRight className="h-4 w-4" aria-hidden="true" />
-          </Link>
-          <Link href="/tutor/register" className={secondaryBtn}>I&apos;m a Tutor</Link>
+          </a>
+          <a href="/#enquire-tutor" className={secondaryBtn}>I&apos;m a Tutor</a>
         </div>
-        <p className="mt-5 text-sm text-sage">Home &amp; online classes · Tell us what you need</p>
+        <p className="mt-5 text-sm text-sage">Home &amp; online classes · Leave your number and we&apos;ll call you back</p>
       </div>
       <div className="order-2">
         <HeroArt />
@@ -110,8 +110,8 @@ function OnlineIcon() {
 
 export function HomeOrOnline() {
   const panels = [
-    { title: 'Home Tuition', body: 'Personal attention, right where your child feels comfortable.', icon: <HomeIcon />, href: '/parent/register?mode=Home', tint: 'bg-lavender/50' },
-    { title: 'Online Tuition', body: 'Flexible learning from wherever you are.', icon: <OnlineIcon />, href: '/parent/register?mode=Online', tint: 'bg-mint/60' },
+    { title: 'Home Tuition', body: 'Personal attention, right where your child feels comfortable.', icon: <HomeIcon />, href: '/?prefill=Home%20tuition#enquire', tint: 'bg-lavender/50' },
+    { title: 'Online Tuition', body: 'Flexible learning from wherever you are.', icon: <OnlineIcon />, href: '/?prefill=Online%20tuition#enquire', tint: 'bg-mint/60' },
   ]
   return (
     <section aria-labelledby="home-online-title" className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 md:pb-24">
@@ -129,9 +129,9 @@ export function HomeOrOnline() {
                 </div>
                 {p.icon}
               </div>
-              <Link href={p.href} className={`${secondaryBtn} mt-7 self-start bg-white/80`}>
+              <a href={p.href} className={`${secondaryBtn} mt-7 self-start bg-white/80`}>
                 Choose {p.title.split(' ')[0]}
-              </Link>
+              </a>
             </article>
           </Reveal>
         ))}
@@ -151,10 +151,10 @@ export function ForTutors() {
           <p className="mt-4 max-w-[46ch] text-lg leading-relaxed text-ink/85">
             Discover teaching opportunities that fit your subjects, availability, and preferences.
           </p>
-          <Link href="/tutor/register" className={`${primaryBtn} mt-8`}>
+          <a href="/#enquire-tutor" className={`${primaryBtn} mt-8`}>
             Join as a Tutor
             <FiArrowRight className="h-4 w-4" aria-hidden="true" />
-          </Link>
+          </a>
         </Reveal>
         <Reveal delay={0.1} className="flex justify-center">
           <svg viewBox="0 0 280 220" className="w-full max-w-[300px]" aria-hidden="true" focusable="false">
@@ -181,13 +181,13 @@ export function FinalCta() {
           Start with what your child needs. We&apos;ll help you take the next step.
         </p>
         <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row">
-          <Link href="/parent/register" className={primaryBtn}>
+          <a href="/#enquire" className={primaryBtn}>
             Find My Tutor
             <FiArrowRight className="h-4 w-4" aria-hidden="true" />
-          </Link>
-          <Link href="/tutor/register" className="rounded-md px-2 py-2 text-base font-semibold text-ink underline decoration-lemon decoration-4 underline-offset-4 hover:decoration-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink">
+          </a>
+          <a href="/#enquire-tutor" className="rounded-md px-2 py-2 text-base font-semibold text-ink underline decoration-lemon decoration-4 underline-offset-4 hover:decoration-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink">
             Teach with Us
-          </Link>
+          </a>
         </div>
       </Reveal>
     </section>
@@ -202,12 +202,16 @@ export function SiteFooter() {
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10 sm:px-6 md:flex-row md:items-center md:justify-between">
         <BrandLockup className="h-16 w-auto" />
         <nav aria-label="Footer" className="flex flex-wrap gap-x-6 gap-y-3 text-sm font-medium">
-          <a href="#learning-match" className={linkClass}>Find a Tutor</a>
-          <a href="#how-it-works" className={linkClass}>How It Works</a>
-          <Link href="/tutor/register" className={linkClass}>Become a Tutor</Link>
-          <Link href="/parent/register" className={linkClass}>Find My Tutor</Link>
+          <a href="/#learning-match" className={linkClass}>Find a Tutor</a>
+          <a href="/#how-it-works" className={linkClass}>How It Works</a>
+          <a href="/#enquire-tutor" className={linkClass}>Become a Tutor</a>
+          <a href="/#enquire" className={linkClass}>Find My Tutor</a>
         </nav>
-        <p className="text-sm text-sage">© {year} {BRAND_NAME}</p>
+        <div className="space-y-1 text-sm text-sage md:text-right">
+          {CONTACT.phone && <p><a href={CONTACT.phoneHref} className={linkClass}>{CONTACT.phone}</a></p>}
+          {CONTACT.email && <p><a href={`mailto:${CONTACT.email}`} className={linkClass}>{CONTACT.email}</a></p>}
+          <p>© {year} {BRAND_NAME}</p>
+        </div>
       </div>
     </footer>
   )

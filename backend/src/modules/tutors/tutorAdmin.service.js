@@ -1,3 +1,4 @@
+const specs = require('./tutor.validation')
 const { pageParams } = require('../../shared/utils/pagination')
 const { mapSeries } = require('../../shared/utils/async')
 
@@ -11,7 +12,7 @@ const TUTOR_ACTIONS = {
 }
 
 // Staff view of tutors: lists, the review screen, document checks and account actions.
-function createTutorAdminService(ctx, { documents }) {
+function createTutorAdminService(ctx, { documents, enquiries, geo }) {
   const { repo } = ctx
 
   const self = {
@@ -22,6 +23,54 @@ function createTutorAdminService(ctx, { documents }) {
       const q = typeof query.q === 'string' ? query.q.trim().toLowerCase().slice(0, 80) : ''
       if (q) items = items.filter(t => [t.name, t.phone, t.email, t.pincode, ...t.subjects].some(v => v && String(v).toLowerCase().includes(q)))
       return { items: await mapSeries(items.slice(offset, offset + limit), self.tutorSummary), total: items.length, page, limit }
+    },
+
+    // A tutor profile created by staff from details shared on a call or WhatsApp. It starts as
+    // "pending": documents still have to be uploaded and accepted before verification
+    // (business rule 2). The tutor can sign in later with their phone number.
+    async createTutor(body, actor) {
+      const v = ctx.validate(body, specs.adminTutorSpec)
+      if (v.feeMin !== undefined && v.feeMax !== undefined && v.feeMin > v.feeMax) {
+        throw ctx.invalid([{ field: 'feeMax', message: 'must be at least the minimum fee' }])
+      }
+      if ((v.latitude === undefined) !== (v.longitude === undefined)) throw ctx.invalid([{ field: 'latitude', message: 'latitude and longitude must be sent together' }])
+      if (v.enquiryId) await enquiries.get(v.enquiryId)
+      const existing = await repo.findOne('Tutor', { phone: v.phone })
+      if (existing) throw ctx.conflict('ALREADY_REGISTERED', `${existing.name} already uses this number. Open their profile instead.`)
+      let { latitude, longitude } = v
+      if (latitude === undefined && v.address && v.pincode) {
+        const geocoded = await geo.geocodeAddress(v.address, v.pincode)
+        if (geocoded) ({ latitude, longitude } = geocoded)
+      }
+      const stamp = ctx.iso()
+      const { enquiryId, ...fields } = v
+      const tutor = await repo.insert('Tutor', {
+        ...fields,
+        id: ctx.newId(),
+        latitude: latitude ?? null,
+        longitude: longitude ?? null,
+        serviceRadiusKm: v.serviceRadiusKm ?? (await ctx.settings()).defaultHomeRadiusKm,
+        experienceYears: v.experienceYears ?? 0,
+        boards: v.boards || [],
+        languages: v.languages || [],
+        availability: v.availability || [],
+        demoAvailable: v.demoAvailable ?? true,
+        acceptingLeads: true,
+        status: 'pending',
+        ratingCount: 0,
+        consent: { recordedBy: actor, recordedAt: stamp, note: 'Created by staff; consent to be confirmed with the tutor' },
+        createdAt: stamp,
+        updatedAt: stamp,
+      })
+      await ctx.audit(actor, 'tutor.create', 'tutor', tutor.id)
+      if (enquiryId) await enquiries.link(enquiryId, { tutorId: tutor.id }, actor)
+      return self.tutorDetail(tutor.id)
+    },
+
+    // Staff uploading a document the tutor sent them (for example on WhatsApp).
+    async uploadDocument(tutorId, type, file, details, actor) {
+      await documents.upload(tutorId, type, file, details, { actor })
+      return self.tutorDetail(tutorId)
     },
 
     async tutorSummary(t) {

@@ -2,15 +2,16 @@ const { defineModel, types: t } = require('../../db/defineModel')
 
 const TUTOR_STATUSES = ['pending', 'documents_submitted', 'under_review', 'verified', 'active', 'suspended', 'rejected']
 
+// Profiles created by staff may not have email, qualification, address or bio yet.
 // availability: weekly hours [{ day, start: 'HH:MM', end: 'HH:MM' }]
 // timeOff: holidays and leave [{ from: 'YYYY-MM-DD', to: 'YYYY-MM-DD', reason }]
 module.exports = defineModel('Tutor', {
   name: t.requiredString(),
   phone: t.requiredString(),
-  email: t.requiredString(),
+  email: t.string(),
   gender: t.requiredString(),
   dob: t.string(),
-  qualification: t.requiredString(),
+  qualification: t.string(),
   college: t.string(),
   experienceYears: t.number({ default: 0 }),
   subjects: t.strings(),
@@ -19,15 +20,15 @@ module.exports = defineModel('Tutor', {
   languages: t.strings(),
   modes: t.strings(),
   serviceRadiusKm: t.number({ default: 8 }),
-  address: t.requiredString(),
-  pincode: t.requiredString(),
+  address: t.string(),
+  pincode: t.string(),
   latitude: t.number(),
   longitude: t.number(),
   availability: t.mixed([]),
   timeOff: t.mixed([]),
   feeMin: t.number(),
   feeMax: t.number(),
-  bio: t.requiredString(),
+  bio: t.string(),
   teachingMethod: t.string(),
   achievements: t.string(),
   demoAvailable: t.bool(true),

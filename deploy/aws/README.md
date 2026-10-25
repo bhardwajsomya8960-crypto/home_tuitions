@@ -79,6 +79,7 @@ nano .env.production    # domain, Atlas URI, bucket, secrets (see comments in th
 - **Private repository:** clone with a deploy key or a GitHub token instead of the plain URL.
 - **Admin password hash:** create it on the server with the command in `.env.production.example`, then put it in single quotes.
 - **Secrets:** generate each one with `openssl rand -hex 32`.
+- **Contact details on the website:** `CONTACT_PHONE`, `CONTACT_WHATSAPP` (digits with country code, for example `919876543210`) and `CONTACT_EMAIL`. They are built into the website, so run the update (step 5) after changing them.
 
 Start everything:
 

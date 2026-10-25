@@ -31,4 +31,21 @@ const studentSpec = {
   school: studentFields.school,
 }
 
-module.exports = { parentRegistrationSpec, parentRequestSpec, studentSpec }
+// A parent account created by staff (for example after a phone call).
+const adminParentSpec = {
+  ...parentFields,
+  address: { type: 'string', max: 300 },
+  pincode: { type: 'pincode' },
+  enquiryId: { type: 'id' },
+}
+
+// Details staff can correct later. The phone number is the sign-in, so it is not changed here.
+const adminParentUpdateSpec = {
+  name: parentFields.name,
+  email: parentFields.email,
+  relationship: parentFields.relationship,
+  address: { type: 'string', max: 300 },
+  pincode: { type: 'pincode' },
+}
+
+module.exports = { parentRegistrationSpec, parentRequestSpec, studentSpec, adminParentSpec, adminParentUpdateSpec }

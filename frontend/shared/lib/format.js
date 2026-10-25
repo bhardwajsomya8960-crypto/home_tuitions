@@ -63,6 +63,14 @@ export const SESSION_STATUS = {
 
 export const ENROLMENT_STATUS = { active: { label: 'Active', tone: 'green' }, paused: { label: 'Paused', tone: 'amber' }, completed: { label: 'Completed', tone: 'slate' }, cancelled: { label: 'Cancelled', tone: 'slate' } }
 
+export const ENQUIRY_STATUS = {
+  new: { label: 'New', tone: 'yellow' },
+  contacted: { label: 'Contacted', tone: 'blue' },
+  converted: { label: 'Converted', tone: 'green' },
+  closed: { label: 'Closed', tone: 'slate' },
+}
+export const ENQUIRY_KIND = { parent: 'Parent / student', tutor: 'Tutor' }
+
 export const DOC_STATUS = {
   submitted: { label: 'Waiting for review', tone: 'sky' },
   accepted: { label: 'Accepted', tone: 'green' },

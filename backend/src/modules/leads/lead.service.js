@@ -6,7 +6,7 @@ const { parentRecord, studentRecord } = require('../parents/parent.records')
 const specs = require('./lead.validation')
 
 // Leads (blueprint §12.1): creating them from any channel, and the staff CRM actions.
-function createLeadService(ctx, { views, geo }) {
+function createLeadService(ctx, { views, geo, enquiries }) {
   const { repo } = ctx
 
   // Leads from the same parent for the same student and subject within 30 days are flagged.
@@ -73,8 +73,9 @@ function createLeadService(ctx, { views, geo }) {
     // Staff-entered lead (BDA). Reuses the parent account when the number is known.
     async createStaffLead(body, actor) {
       const v = ctx.validate(body, specs.staffLeadSpec)
+      if (v.enquiryId) await enquiries.get(v.enquiryId)
       const location = await self.resolveLocation(v)
-      return repo.transaction(async () => {
+      const lead = await repo.transaction(async () => {
         let parent = await repo.findOne('Parent', { phone: v.phone })
         if (!parent) {
           parent = await repo.insert('Parent', parentRecord(ctx, v, location, { recordedBy: actor, recordedAt: ctx.iso(), note: 'Created by staff; consent to be confirmed with the parent' }))
@@ -83,6 +84,22 @@ function createLeadService(ctx, { views, geo }) {
           || await repo.insert('Student', studentRecord(ctx, parent.id, v))
         return self.createLead({ parent, student, req: v, location, source: v.source, actor, note: v.note })
       })
+      if (v.enquiryId) await enquiries.link(v.enquiryId, { parentId: lead.parentId, leadId: lead.id }, actor)
+      return lead
+    },
+
+    // A tuition request for a parent and student who already have records (staff, after a call).
+    // Without an address, the parent's saved address is used.
+    async createLeadForParent(parentId, body, actor) {
+      const v = ctx.validate(body, specs.parentLeadSpec)
+      const parent = await ctx.require('Parent', parentId, 'Parent')
+      const student = await repo.get('Student', v.studentId)
+      if (!student || student.parentId !== parentId) throw ctx.invalid([{ field: 'studentId', message: 'Choose one of this parent\'s students' }])
+      if (v.enquiryId) await enquiries.get(v.enquiryId)
+      const location = await self.resolveLocation({ ...v, address: v.address || parent.address || undefined, pincode: v.pincode || parent.pincode || undefined })
+      const lead = await self.createLead({ parent, student, req: v, location, source: v.source, actor, note: v.note || 'Added by staff' })
+      if (v.enquiryId) await enquiries.link(v.enquiryId, { parentId, leadId: lead.id }, actor)
+      return lead
     },
 
     // ---- Staff CRM -----------------------------------------------------------------------

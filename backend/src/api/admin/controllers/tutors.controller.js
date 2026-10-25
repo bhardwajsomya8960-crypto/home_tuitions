@@ -7,6 +7,8 @@ function createTutorsController({ services }) {
   const { tutorAdmin, documents, ctx } = services
   return {
     list: req => tutorAdmin.listTutors(req.query),
+    create: req => tutorAdmin.createTutor(req.body, ACTOR),
+    uploadDocument: req => tutorAdmin.uploadDocument(req.params.id, req.body?.type, req.file, { title: req.body?.title, description: req.body?.description }, ACTOR),
     detail: req => tutorAdmin.tutorDetail(req.params.id),
     action: req => tutorAdmin.tutorAction(req.params.id, req.body, ACTOR),
     reviewDocument: req => tutorAdmin.reviewDocument(req.params.id, req.body, ACTOR),

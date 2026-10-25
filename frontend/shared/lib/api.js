@@ -22,6 +22,13 @@ export class ApiError extends Error {
   }
 }
 
+// Errors for a form: messages keyed by field, or `_form` with the whole message when the API
+// refused without naming a field (for example "this number is already registered").
+export function formErrors(err) {
+  const fields = err && err.fieldErrors ? err.fieldErrors() : {}
+  return Object.keys(fields).length ? fields : { _form: err?.message || 'Something went wrong. Please try again.' }
+}
+
 export function getSession(role) {
   try {
     const raw = window.localStorage.getItem(KEY(role))

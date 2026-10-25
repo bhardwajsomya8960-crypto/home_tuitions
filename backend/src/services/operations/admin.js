@@ -162,7 +162,7 @@ function createAdmin(ctx, { views, people, delivery }) {
       if (!rule.from.includes(tutor.status)) throw ctx.conflict('INVALID_TRANSITION', `Cannot ${action.replace('_', ' ')} a tutor who is ${tutor.status}`)
       // Business rule 2: verification requires the KYC documents to have been checked.
       if (action === 'verify' && !people.hasRequiredDocuments(tutorId, { acceptedOnly: true })) {
-        throw ctx.conflict('DOCUMENTS_PENDING', 'Accept the photo, identity and qualification documents before verifying')
+        throw ctx.conflict('DOCUMENTS_PENDING', 'Accept at least one profile photo, identity document and qualification before verifying')
       }
       if ((action === 'reject' || action === 'suspend') && !notes) throw ctx.invalid([{ field: 'notes', message: 'Add a reason' }])
       return repo.transaction(() => {

@@ -6,6 +6,7 @@ const specs = require('../operationsSpecs')
 const { needsLocation } = require('../matchingService')
 
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+const MAX_DOCS_PER_TYPE = 10
 // Accepted uploads, checked by file signature rather than the name or the browser's type.
 const SIGNATURES = [
   { mime: 'application/pdf', ext: '.pdf', test: b => b.slice(0, 4).toString('latin1') === '%PDF' },
@@ -231,9 +232,18 @@ function createPeople(ctx, { geo, catalogueService, uploadsDir }) {
     },
 
     // ---- Tutor documents (KYC) ---------------------------------------------------------
-    uploadDocument(tutorId, type, file) {
+    // details: { title, description } from the form. Every type except the photo needs a name.
+    uploadDocument(tutorId, type, file, details = {}) {
       const tutor = self.getTutor(tutorId)
-      if (!M.values(M.DOCUMENT_TYPES).includes(type)) throw ctx.invalid([{ field: 'type', message: 'is not a known document type' }])
+      const docType = M.DOCUMENT_TYPES.find(d => d.value === type)
+      if (!docType) throw ctx.invalid([{ field: 'type', message: 'is not a known document type' }])
+      const title = typeof details.title === 'string' ? details.title.trim() : ''
+      const description = typeof details.description === 'string' ? details.description.trim() : ''
+      const errors = []
+      if (docType.multiple && title.length < 2) errors.push({ field: 'title', message: 'is required' })
+      if (title.length > 120) errors.push({ field: 'title', message: 'must be 120 characters or fewer' })
+      if (description.length > 500) errors.push({ field: 'description', message: 'must be 500 characters or fewer' })
+      if (errors.length) throw ctx.invalid(errors)
       if (!file || !file.buffer || file.size === 0) throw ctx.invalid([{ field: 'file', message: 'is required' }])
       if (file.size > MAX_UPLOAD_BYTES) throw new AppError(413, 'FILE_TOO_LARGE', 'Files must be 5 MB or smaller')
       const kind = SIGNATURES.find(sig => sig.test(file.buffer))
@@ -241,13 +251,17 @@ function createPeople(ctx, { geo, catalogueService, uploadsDir }) {
         throw new AppError(415, 'UNSUPPORTED_FILE', type === 'photo' ? 'Photos must be JPG or PNG' : 'Upload a PDF, JPG or PNG file')
       }
       if (['suspended', 'rejected'].includes(tutor.status)) throw ctx.conflict('TUTOR_LOCKED', 'Documents cannot be changed for this account. Contact support.')
+      if (repo.count('tutor_documents', { tutorId, type }) >= MAX_DOCS_PER_TYPE) {
+        throw ctx.conflict('TOO_MANY_DOCUMENTS', `You can add up to ${MAX_DOCS_PER_TYPE} files here. Remove one you no longer need first.`)
+      }
 
       const id = ctx.newId()
       const storageKey = `${id}${kind.ext}`
       fs.mkdirSync(uploadsDir, { recursive: true })
       fs.writeFileSync(path.join(uploadsDir, storageKey), file.buffer, { mode: 0o600 })
       const doc = repo.insert('tutor_documents', {
-        id, tutorId, type, originalName: String(file.originalname || 'upload').slice(0, 120), mimeType: kind.mime,
+        id, tutorId, type, title: title || docType.label, description: description || null,
+        originalName: String(file.originalname || 'upload').slice(0, 120), mimeType: kind.mime,
         sizeBytes: file.size, storageKey, status: 'submitted', createdAt: ctx.iso(),
       })
       ctx.audit(`tutor:${tutorId}`, 'tutor.document.upload', 'tutor', tutorId, { type })
@@ -259,17 +273,32 @@ function createPeople(ctx, { geo, catalogueService, uploadsDir }) {
       return doc
     },
 
+    // A tutor can remove a document that has not been accepted (a wrong file, or one we rejected).
+    deleteDocument(tutorId, docId) {
+      const tutor = self.getTutor(tutorId)
+      const doc = repo.get('tutor_documents', docId)
+      if (!doc || doc.tutorId !== tutorId) throw ctx.notFound('Document')
+      if (doc.status === 'accepted') throw ctx.conflict('DOCUMENT_ACCEPTED', 'Accepted documents cannot be removed. Contact support if it needs to change.')
+      if (['suspended', 'rejected'].includes(tutor.status)) throw ctx.conflict('TUTOR_LOCKED', 'Documents cannot be changed for this account. Contact support.')
+      repo.transaction(() => {
+        repo.remove('tutor_documents', doc.id)
+        ctx.audit(`tutor:${tutorId}`, 'tutor.document.delete', 'tutor', tutorId, { documentId: doc.id, type: doc.type })
+        if (tutor.status === 'documents_submitted' && !self.hasRequiredDocuments(tutorId)) {
+          repo.update('tutors', tutorId, { status: 'pending', updatedAt: ctx.iso() })
+          ctx.audit('system', 'tutor.status', 'tutor', tutorId, { from: 'documents_submitted', to: 'pending' })
+        }
+      })
+      fs.rmSync(path.join(uploadsDir, path.basename(doc.storageKey)), { force: true })
+    },
+
     listDocuments(tutorId) {
       return repo.find('tutor_documents', { tutorId })
     },
 
-    // Latest upload per required type, not rejected.
+    // Every required type has at least one document that is not rejected (or, for verification, accepted).
     hasRequiredDocuments(tutorId, { acceptedOnly = false } = {}) {
       const docs = repo.find('tutor_documents', { tutorId })
-      return REQUIRED_DOCS.every(type => {
-        const latest = docs.find(d => d.type === type)
-        return latest && (acceptedOnly ? latest.status === 'accepted' : latest.status !== 'rejected')
-      })
+      return REQUIRED_DOCS.every(type => docs.some(d => d.type === type && (acceptedOnly ? d.status === 'accepted' : d.status !== 'rejected')))
     },
 
     documentFile(docId) {

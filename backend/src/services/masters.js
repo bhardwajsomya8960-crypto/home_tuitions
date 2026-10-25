@@ -55,10 +55,11 @@ const LOST_REASONS = [
   { value: 'other', label: 'Other' },
 ]
 const DOCUMENT_TYPES = [
-  { value: 'photo', label: 'Profile photo', required: true },
-  { value: 'identity', label: 'Identity document', required: true },
-  { value: 'qualification', label: 'Qualification certificate', required: true },
-  { value: 'experience', label: 'Experience proof', required: false },
+  // multiple: the tutor can add several, each with a name. The profile photo is a single upload.
+  { value: 'photo', label: 'Profile photo', required: true, multiple: false },
+  { value: 'identity', label: 'Identity documents', required: true, multiple: true },
+  { value: 'qualification', label: 'Qualifications', required: true, multiple: true },
+  { value: 'experience', label: 'Experience proof', required: false, multiple: true },
 ]
 const PAYMENT_METHODS = ['upi', 'bank_transfer', 'cash', 'cheque', 'other']
 const PLANS = ['monthly', 'quarterly', 'one_time', 'custom']

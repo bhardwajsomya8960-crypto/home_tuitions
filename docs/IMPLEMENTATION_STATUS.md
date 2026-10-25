@@ -2,7 +2,7 @@
 
 This maps each section of the blueprint (`docs/UI.md`) to what the code does now. **Built** means it works end to end on stored data and is covered by tests. **Partial** means part of the section is built; the gap is listed. **Not built** means nothing exists yet.
 
-Verified by: `npm test` in `backend/` (123 tests) and `e2e/walkthrough.js` (browser walkthrough of the full journey, see `e2e/README.md`).
+Verified by: `npm test` in `backend/` (125 tests) and `e2e/walkthrough.js` (browser walkthrough of the full journey, see `e2e/README.md`).
 
 ## Summary
 
@@ -15,7 +15,7 @@ Verified by: `npm test` in `backend/` (123 tests) and `e2e/walkthrough.js` (brow
 | §11.2 Tutor form | Built | All fields. Bank/payout details are not collected (no payouts yet). Documents are uploaded after registration, from the dashboard. |
 | §11.3 Staff-entered lead | Built | Reuses the parent account when the number is known. |
 | §12.1 Lead lifecycle | Built | All 12 statuses. Manual transitions are restricted to an allowed list; matching, offers, demos and conversion move leads through their own actions. Every change is logged. |
-| §12.2 Tutor verification | Built | pending → documents_submitted (automatic when required documents are uploaded) → under_review → verified (requires accepted photo, identity and qualification) → active; suspended and rejected need a reason. |
+| §12.2 Tutor verification | Built | pending → documents_submitted (automatic when required documents are uploaded) → under_review → verified (requires at least one accepted photo, identity document and qualification) → active; suspended and rejected need a reason. Tutors can add several identity documents, qualifications and experience proofs, each with a name, optional description and file (up to 10 per section), and remove any that are not yet accepted. |
 | §12.3 Offers | Built | Staff can also search tutors by name or phone in a lead and assign one directly (confirmed at once) or send them an offer; a tutor who fails the filters needs a recorded reason. |
 | §12.3 Offers (automatic) | Built | Timed offers, auto-expiry and re-offer (30-second sweeper plus on every read), first acceptance wins, other open offers withdrawn, confirm/release. |
 | §12.4 Demos | Built | Schedule (confirms the tutor), reschedule, complete, outcome (staff or parent), parent/tutor no-show with escalation after a configurable count, cancel. Parent can request a reschedule. |
@@ -52,7 +52,7 @@ All new routes validate input with the shared validator and return `{ error, cod
 - `GET /api/masters`: form master data.
 - `POST /api/auth/send-otp`, `POST /api/auth/verify-otp`, `GET /api/auth/me/parent|tutor`.
 - `POST /api/parents/register`; under `/api/parents/me` (parent token): `GET overview`, `GET classes`, `POST students`, `POST requests`, `POST requests/:id/cancel`, `POST requests/:id/review`, `POST demos/:id/outcome`, `POST demos/:id/reschedule-request`, `POST classes/:id/acknowledge`.
-- `POST /api/tutors/register`; under `/api/tutors/me` (tutor token): `GET overview`, `PATCH /`, `POST documents` (multipart), `GET documents/:id/file`, `POST offers/:id/accept|reject|unavailable|request-info`, `POST classes/:id/attendance`.
+- `POST /api/tutors/register`; under `/api/tutors/me` (tutor token): `GET overview`, `PATCH /`, `POST documents` (multipart: type, title, description, file), `DELETE documents/:id`, `GET documents/:id/file`, `POST offers/:id/accept|reject|unavailable|request-info`, `POST classes/:id/attendance`.
 - Under `/api/admin` (admin token): `GET dashboard`, `GET operations`, `GET|POST leads`, `GET leads/:id`, `POST leads/:id/status|notes|match|offers|demos|convert`, `PATCH leads/:id/location`, `POST assignments/:id/confirm|release`, `POST demos/:id/reschedule|complete|outcome|no-show|cancel`, `GET enrolments`, `POST enrolments/:id/status`, `GET|POST invoices`, `POST invoices/:id/payments|void`, `GET tutors`, `GET tutors/:id`, `POST tutors/:id/actions`, `POST documents/:id/review`, `GET documents/:id/file`, `GET|PUT settings`, `GET audit`.
 
 Removed: the old stub routes `/api/leads`, `/api/demos`, `/api/enrolments`, `/api/classes`, `/api/payments`, the unauthenticated `GET /api/parents/:id` and `GET /api/tutors/:id`, and the in-memory store `config/catalyst.js`.

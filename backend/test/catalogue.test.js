@@ -244,7 +244,7 @@ describe('persistence across restarts', () => {
     openDatabase(file).close()
     const db = openDatabase(file)
     const rows = db.prepare('SELECT version FROM schema_migrations').all()
-    assert.deepEqual(rows.map(r => r.version), [1, 2])
+    assert.deepEqual(rows.map(r => r.version), [1, 2, 3])
     db.close()
   })
 })

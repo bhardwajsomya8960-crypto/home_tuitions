@@ -64,6 +64,53 @@ describe('tutor onboarding and verification', () => {
     assert.equal(big.status, 413)
   })
 
+  test('a tutor can add several named qualifications, and verification needs one accepted per required type', async () => {
+    const t = await h.registerTutor(server)
+    const noName = await h.uploadDocument(server, t.token, 'qualification', h.PDF, 'q.pdf', {})
+    assert.equal(noName.status, 400)
+    assert.equal(noName.body.details[0].field, 'title')
+    const longNote = await h.uploadDocument(server, t.token, 'qualification', h.PDF, 'q.pdf', { title: 'MSc', description: 'x'.repeat(501) })
+    assert.equal(longNote.status, 400)
+
+    const msc = await h.uploadDocument(server, t.token, 'qualification', h.PDF, 'msc.pdf', { title: 'MSc Mathematics', description: 'Osmania University, 2019' })
+    const bed = await h.uploadDocument(server, t.token, 'qualification', h.PDF, 'bed.pdf', { title: 'B.Ed' })
+    const photo = await h.uploadDocument(server, t.token, 'photo', h.PNG, 'me.png', {})
+    const id = await h.uploadDocument(server, t.token, 'identity', h.PDF, 'aadhaar.pdf', { title: 'Aadhaar' })
+    assert.deepEqual([msc.status, bed.status, photo.status, id.status], [201, 201, 201, 201])
+    assert.equal(msc.body.title, 'MSc Mathematics')
+    assert.equal(msc.body.description, 'Osmania University, 2019')
+    assert.equal(photo.body.title, 'Profile photo')
+
+    const me = await req('GET', '/api/tutors/me/overview', { token: t.token })
+    assert.equal(me.body.tutor.documents.filter(d => d.type === 'qualification').length, 2)
+
+    // One rejected qualification does not block verification when another is accepted.
+    await req('POST', `/api/admin/documents/${bed.body.id}/review`, { token: admin, body: { status: 'rejected', reason: 'Blurred scan' } })
+    for (const doc of [msc, photo, id]) await req('POST', `/api/admin/documents/${doc.body.id}/review`, { token: admin, body: { status: 'accepted' } })
+    const verify = await req('POST', `/api/admin/tutors/${t.tutor.id}/actions`, { token: admin, body: { action: 'verify' } })
+    assert.equal(verify.status, 200)
+  })
+
+  test('a tutor can remove documents that are not accepted, and only their own', async () => {
+    const t = await h.registerTutor(server)
+    const other = await h.registerTutor(server)
+    const ups = {}
+    for (const [type, buf] of [['photo', h.PNG], ['identity', h.PDF], ['qualification', h.PDF]]) ups[type] = await h.uploadDocument(server, t.token, type, buf, 'f')
+    assert.equal((await req('GET', '/api/tutors/me/overview', { token: t.token })).body.tutor.status, 'documents_submitted')
+
+    assert.equal((await req('DELETE', `/api/tutors/me/documents/${ups.qualification.body.id}`, { token: other.token })).status, 404)
+    assert.equal((await req('DELETE', `/api/tutors/me/documents/${ups.qualification.body.id}`, { token: t.token })).status, 204)
+    // The last required qualification is gone, so the tutor goes back to uploading.
+    const me = await req('GET', '/api/tutors/me/overview', { token: t.token })
+    assert.equal(me.body.tutor.status, 'pending')
+    assert.equal(me.body.tutor.documents.length, 2)
+
+    await req('POST', `/api/admin/documents/${ups.identity.body.id}/review`, { token: admin, body: { status: 'accepted' } })
+    const accepted = await req('DELETE', `/api/tutors/me/documents/${ups.identity.body.id}`, { token: t.token })
+    assert.equal(accepted.status, 409)
+    assert.equal(accepted.body.code, 'DOCUMENT_ACCEPTED')
+  })
+
   test('a tutor can download only their own documents; admin can download any', async () => {
     const a = await h.registerTutor(server)
     const b = await h.registerTutor(server)

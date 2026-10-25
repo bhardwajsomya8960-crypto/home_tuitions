@@ -10,7 +10,7 @@ const { AppError } = require('../errors')
 function createTutorsRouter({ authService, operations }) {
   const router = express.Router()
   const { people, portals, assignments, delivery, views } = operations
-  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_UPLOAD_BYTES, files: 1, fields: 2 } })
+  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_UPLOAD_BYTES, files: 1, fields: 4, fieldSize: 2048 } })
 
   router.post('/register', asyncHandler(async (req, res) => {
     const tutor = await people.registerTutor(req.body, authService)
@@ -34,7 +34,12 @@ function createTutorsRouter({ authService, operations }) {
       return next()
     })
   }, asyncHandler(async (req, res) => {
-    res.status(201).json(people.uploadDocument(req.user.id, req.body?.type, req.file))
+    res.status(201).json(people.uploadDocument(req.user.id, req.body?.type, req.file, { title: req.body?.title, description: req.body?.description }))
+  }))
+
+  router.delete('/me/documents/:docId', asyncHandler(async (req, res) => {
+    people.deleteDocument(req.user.id, req.params.docId)
+    res.status(204).end()
   }))
 
   router.get('/me/documents/:docId/file', asyncHandler(async (req, res) => {

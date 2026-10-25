@@ -42,7 +42,11 @@ export default function TutorReview({ tutorId, masters, onClose, onChanged }) {
     }
   }
 
-  const latestByType = type => tutor.documents.find(d => d.type === type)
+  // Every uploaded file, grouped by type in the master order; a placeholder row for empty types.
+  const documentRows = tutor ? masters.documentTypes.flatMap(type => {
+    const docs = tutor.documents.filter(d => d.type === type.value)
+    return docs.length ? docs.map(doc => ({ id: doc.id, type, doc })) : [{ id: type.value, type, doc: null }]
+  }) : []
 
   return (
     <Modal open={!!tutorId} title={tutor ? tutor.name : 'Tutor'} onClose={onClose} wide>
@@ -66,16 +70,20 @@ export default function TutorReview({ tutorId, masters, onClose, onChanged }) {
 
           <section>
             <h3 className="text-base mb-2 font-semibold">KYC documents</h3>
-            <SimpleTable flush={false} rows={masters.documentTypes.map(t => ({ ...t, id: t.value, doc: latestByType(t.value) }))} minWidth={640} columns={[
-              { key: 'type', header: 'Document', render: t => <span className="font-medium">{t.label}{t.required && <span className="text-red-600"> *</span>}</span> },
-              { key: 'file', header: 'File', render: t => (t.doc ? <span className="text-xs">{t.doc.originalName} · {Math.max(1, Math.round(t.doc.sizeBytes / 1024))} KB</span> : <span className="text-xs text-sage">Not uploaded</span>) },
-              { key: 'date', header: 'Uploaded', render: t => (t.doc ? formatDate(t.doc.createdAt) : '—') },
-              { key: 'status', header: 'Status', render: t => (t.doc ? <span className="flex flex-col items-start gap-1"><StatusBadge map={DOC_STATUS} value={t.doc.status} />{t.doc.rejectReason && <span className="text-xs text-red-700">{t.doc.rejectReason}</span>}</span> : '—') },
-              { key: 'act', header: '', align: 'right', sticky: true, render: t => t.doc && (
+            <SimpleTable flush={false} rows={documentRows} minWidth={700} columns={[
+              { key: 'type', header: 'Document', render: r => (
+                <span className="flex flex-col">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-sage">{r.type.label}{r.type.required && <span className="text-red-600"> *</span>}</span>
+                  {r.doc ? <><span className="font-medium">{r.doc.title || r.type.label}</span>{r.doc.description && <span className="text-xs text-sage">{r.doc.description}</span>}</> : <span className="text-sm text-sage">Not uploaded</span>}
+                </span>
+              ) },
+              { key: 'file', header: 'File', render: r => (r.doc ? <span className="flex flex-col text-xs"><span className="whitespace-nowrap">{r.doc.originalName} · {Math.max(1, Math.round(r.doc.sizeBytes / 1024))} KB</span><span className="text-sage">Uploaded {formatDate(r.doc.createdAt)}</span></span> : '—') },
+              { key: 'status', header: 'Status', render: r => (r.doc ? <span className="flex flex-col items-start gap-1"><StatusBadge map={DOC_STATUS} value={r.doc.status} />{r.doc.rejectReason && <span className="text-xs text-red-700">{r.doc.rejectReason}</span>}</span> : '—') },
+              { key: 'act', header: '', align: 'right', sticky: true, render: r => r.doc && (
                 <span className="inline-flex gap-2">
-                  <button type="button" className={btn.secondary} onClick={() => openProtectedFile(`/api/admin/documents/${t.doc.id}/file`, 'admin').catch(e => setError(e.message))}><FiEye aria-hidden="true" /> View</button>
-                  {t.doc.status !== 'accepted' && <button type="button" className={btn.success} disabled={busy} onClick={() => act(`/api/admin/documents/${t.doc.id}/review`, { status: 'accepted' }, `${t.label} accepted.`)}>Accept</button>}
-                  {t.doc.status !== 'rejected' && <button type="button" className={btn.danger} disabled={busy} onClick={() => { setRejecting(t.doc); setReason('') }}>Reject</button>}
+                  <button type="button" className={btn.secondary} onClick={() => openProtectedFile(`/api/admin/documents/${r.doc.id}/file`, 'admin').catch(e => setError(e.message))}><FiEye aria-hidden="true" /> View</button>
+                  {r.doc.status !== 'accepted' && <button type="button" className={btn.success} disabled={busy} onClick={() => act(`/api/admin/documents/${r.doc.id}/review`, { status: 'accepted' }, `${r.doc.title || r.type.label} accepted.`)}>Accept</button>}
+                  {r.doc.status !== 'rejected' && <button type="button" className={btn.danger} disabled={busy} onClick={() => { setRejecting(r.doc); setReason('') }}>Reject</button>}
                 </span>
               ) },
             ]} />
@@ -83,7 +91,7 @@ export default function TutorReview({ tutorId, masters, onClose, onChanged }) {
 
           <section className="space-y-3">
             <h3 className="text-base font-semibold">Account actions</h3>
-            {!tutor.requiredDocumentsAccepted && <p className="text-sm text-amber-800">Accept the photo, identity and qualification documents before verifying.</p>}
+            {!tutor.requiredDocumentsAccepted && <p className="text-sm text-amber-800">Accept at least one profile photo, identity document and qualification before verifying.</p>}
             {tutor.statusNotes && <p className="text-sm text-sage">Last note: {tutor.statusNotes}</p>}
             <TextInput label="Note" hint="Required to suspend or reject; shown to the tutor" value={notes} onChange={e => setNotes(e.target.value)} />
             <div className="flex flex-wrap gap-2">

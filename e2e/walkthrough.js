@@ -89,13 +89,25 @@ async function verifyPhone(page, phone) {
 
   const png = Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010806000000', 'hex')
   const pdf = Buffer.from('%PDF-1.4\n%e2e\n')
-  const inputs = tutor.locator('input[type=file]')
-  await inputs.nth(0).setInputFiles({ name: 'photo.png', mimeType: 'image/png', buffer: png })
+  // The photo is a single upload; the other sections take several named documents.
+  await tutor.locator('label', { hasText: 'Upload photo' }).locator('input[type=file]').setInputFiles({ name: 'photo.png', mimeType: 'image/png', buffer: png })
   await tutor.getByText('Uploaded. We will review it shortly.').waitFor()
-  await inputs.nth(1).setInputFiles({ name: 'aadhaar.pdf', mimeType: 'application/pdf', buffer: pdf })
-  await tutor.getByText('aadhaar.pdf').waitFor()
-  await inputs.nth(2).setInputFiles({ name: 'msc.pdf', mimeType: 'application/pdf', buffer: pdf })
-  await tutor.getByText('msc.pdf').waitFor()
+  const addDocument = async (button, name, description, file) => {
+    await tutor.getByRole('button', { name: button }).click()
+    const form = tutor.getByRole('dialog')
+    await form.getByRole('button', { name: 'Add', exact: true }).click()
+    await form.getByText(/^Enter the /).waitFor() // the name is required
+    await form.getByRole('textbox').first().fill(name)
+    if (description) await form.getByLabel('Description').fill(description)
+    await form.getByLabel('File').setInputFiles({ name: file, mimeType: 'application/pdf', buffer: pdf })
+    if (description) await shot(tutor, 'tutor-add-qualification')
+    await form.getByRole('button', { name: 'Add', exact: true }).click()
+    await tutor.getByText(file).waitFor()
+  }
+  await addDocument('Add identity document', 'Aadhaar card', '', 'aadhaar.pdf')
+  await addDocument('Add qualification', 'MSc Mathematics', 'Osmania University, 2019', 'msc.pdf')
+  await addDocument('Add qualification', 'B.Ed', '', 'bed.pdf')
+  await tutor.getByText('Osmania University, 2019').waitFor()
   await shot(tutor, 'tutor-verification-uploaded')
 
   // ---------- 2. Admin verifies and activates ----------
@@ -110,7 +122,7 @@ async function verifyPhone(page, phone) {
   await admin.getByRole('button', { name: 'Review' }).first().click()
   const dialog = admin.getByRole('dialog', { name: 'Lakshmi Rao' })
   await dialog.getByText('KYC documents').waitFor()
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 4; i++) {
     await dialog.getByRole('button', { name: 'Accept', exact: true }).first().click()
     await dialog.getByText(/accepted\./).waitFor()
   }

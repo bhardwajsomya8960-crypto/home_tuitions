@@ -112,13 +112,17 @@ function createOperationsRepository(db) {
     return db.prepare(`SELECT COUNT(*) AS n FROM ${table} ${where}`).get(...params).n
   }
 
+  function remove(table, id) {
+    return db.prepare(`DELETE FROM ${table} WHERE id = ?`).run(id).changes
+  }
+
   function findOne(table, filters) {
     return find(table, filters, { limit: 1 })[0] || null
   }
 
   return {
     transaction: fn => db.transaction(fn)(),
-    insert, get, update, find, findOne, count,
+    insert, get, update, remove, find, findOne, count,
 
     saveSetting(key, value, updatedAt, updatedBy) {
       db.prepare(`INSERT INTO settings (key, value, updated_at, updated_by) VALUES (?, ?, ?, ?)

@@ -129,9 +129,10 @@ async function registerTutor(server, over = {}) {
 const PNG = Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010806000000', 'hex')
 const PDF = Buffer.from('%PDF-1.4\n%test\n')
 
-async function uploadDocument(server, token, type, buffer, name) {
+async function uploadDocument(server, token, type, buffer, name, details = { title: `My ${type}` }) {
   const form = new FormData()
   form.append('type', type)
+  for (const [key, value] of Object.entries(details)) form.append(key, value)
   form.append('file', new Blob([buffer]), name)
   const res = await fetch(`${server.base}/api/tutors/me/documents`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form })
   return { status: res.status, body: await res.json() }

@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { FiBarChart2, FiBell, FiCalendar, FiUsers, FiClock, FiShield, FiCheck, FiX, FiHelpCircle, FiUpload, FiEye, FiMapPin, FiStar } from 'react-icons/fi'
+import { FiBarChart2, FiBell, FiCalendar, FiUsers, FiClock, FiShield, FiCheck, FiX, FiHelpCircle, FiUpload, FiEye, FiPlus, FiTrash2, FiMapPin, FiStar } from 'react-icons/fi'
 import AppShell from '../../../components/shell/AppShell'
 import DataTable from '../../../components/data/DataTable'
 import Modal from '../../../components/ui/Modal'
@@ -214,12 +214,14 @@ function Dashboard() {
           onSave={body => run(() => api('/api/tutors/me', { method: 'PATCH', body, role: 'tutor' }), 'Saved.')} />}
 
         {tab === 'verification' && masters && <VerificationTab tutor={tutor} masters={masters} busy={busy}
-          onUpload={(type, file) => {
+          onUpload={(type, file, details) => {
             const form = new FormData()
             form.append('type', type)
+            for (const [key, value] of Object.entries(details)) if (value) form.append(key, value)
             form.append('file', file)
-            return run(() => api('/api/tutors/me/documents', { method: 'POST', form, role: 'tutor' }), 'Uploaded. We will review it shortly.').catch(() => false)
-          }} />}
+            return run(() => api('/api/tutors/me/documents', { method: 'POST', form, role: 'tutor' }), 'Uploaded. We will review it shortly.')
+          }}
+          onRemove={id => run(() => api(`/api/tutors/me/documents/${id}`, { method: 'DELETE', role: 'tutor' }), 'Document removed.')} />}
       </div>
 
       {masters && (
@@ -349,8 +351,20 @@ function AvailabilityForm({ tutor, masters, busy, onSave }) {
   )
 }
 
-function VerificationTab({ tutor, masters, busy, onUpload }) {
-  const latest = type => tutor.documents.find(d => d.type === type)
+// Wording for each document section. Every type except the photo takes several named files.
+const DOC_SECTIONS = {
+  photo: { hint: 'A clear, recent photo of your face. JPG or PNG.' },
+  identity: { hint: 'Aadhaar, PAN, passport or driving licence. Add each one separately.', noun: 'identity document', nameLabel: 'Document name', placeholder: 'For example: Aadhaar card' },
+  qualification: { hint: 'Degrees, diplomas and teaching certificates. Add each one separately.', noun: 'qualification', nameLabel: 'Certificate name', placeholder: 'For example: MSc Mathematics' },
+  experience: { hint: 'Experience letters or certificates from schools or institutes.', noun: 'experience proof', nameLabel: 'Document name', placeholder: 'For example: Experience letter, ABC School' },
+}
+const fileSize = bytes => `${Math.max(1, Math.round(bytes / 1024))} KB`
+
+function VerificationTab({ tutor, masters, busy, onUpload, onRemove }) {
+  const [adding, setAdding] = useState(null)
+  const [removing, setRemoving] = useState(null)
+  const viewFile = doc => openProtectedFile(`/api/tutors/me/documents/${doc.id}/file`, 'tutor').catch(() => {})
+
   return (
     <div className="space-y-4">
       <Card title="Account status" actions={<StatusBadge map={TUTOR_STATUS} value={tutor.status} />}>
@@ -362,25 +376,87 @@ function VerificationTab({ tutor, masters, busy, onUpload }) {
         </ol>
         {tutor.statusNotes && <p className="mt-3 text-sm text-sage">Note from our team: {tutor.statusNotes}</p>}
       </Card>
-      <Card title="Documents" subtitle="PDF, JPG or PNG up to 5 MB. Photos must be JPG or PNG.">
-        <SimpleTable rows={masters.documentTypes.map(t => ({ ...t, id: t.value, doc: latest(t.value) }))} minWidth={720} columns={[
-          { key: 'type', header: 'Document', render: t => <span className="font-medium">{t.label}{t.required && <span className="text-red-600"> *</span>}</span> },
-          { key: 'file', header: 'File', render: t => (t.doc ? <span className="text-xs">{t.doc.originalName}</span> : <span className="text-xs text-sage">Not uploaded</span>) },
-          { key: 'date', header: 'Uploaded', render: t => (t.doc ? formatDate(t.doc.createdAt) : '—') },
-          { key: 'status', header: 'Status', render: t => (t.doc ? <span className="flex flex-col items-start gap-1"><StatusBadge map={DOC_STATUS} value={t.doc.status} />{t.doc.rejectReason && <span className="text-xs text-red-700">{t.doc.rejectReason}</span>}</span> : '—') },
-          { key: 'act', header: '', align: 'right', render: t => (
-            <span className="inline-flex gap-2">
-              {t.doc && <button type="button" className={btn.secondary} onClick={() => openProtectedFile(`/api/tutors/me/documents/${t.doc.id}/file`, 'tutor').catch(() => {})}><FiEye aria-hidden="true" /> View</button>}
-              <label className={`${btn.primary} cursor-pointer ${busy ? 'pointer-events-none opacity-50' : ''}`}>
-                <FiUpload aria-hidden="true" /> {t.doc ? 'Replace' : 'Upload'}
-                <input type="file" className="sr-only" accept={t.value === 'photo' ? 'image/jpeg,image/png' : 'application/pdf,image/jpeg,image/png'}
-                  onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; if (file) onUpload(t.value, file) }} />
-              </label>
-            </span>
-          ) },
-        ]} />
-      </Card>
+      <p className="text-sm text-sage">Files can be PDF, JPG or PNG, up to 5 MB each. Sections marked <span className="text-red-600">*</span> need at least one file.</p>
+
+      {masters.documentTypes.map(type => {
+        const section = DOC_SECTIONS[type.value] || {}
+        const docs = tutor.documents.filter(d => d.type === type.value)
+        const title = <>{type.label}{type.required && <span className="text-red-600"> *</span>}</>
+        const action = type.multiple
+          ? <button type="button" className={btn.primary} disabled={busy} onClick={() => setAdding(type)}><FiPlus aria-hidden="true" /> Add {section.noun || 'document'}</button>
+          : (
+            <label className={`${btn.primary} cursor-pointer ${busy ? 'pointer-events-none opacity-50' : ''}`}>
+              <FiUpload aria-hidden="true" /> {docs.length ? 'Replace photo' : 'Upload photo'}
+              <input type="file" className="sr-only" accept="image/jpeg,image/png"
+                onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; if (file) onUpload(type.value, file, {}).catch(() => {}) }} />
+            </label>
+          )
+        // The photo shows only the latest upload; other sections list every file.
+        const rows = type.multiple ? docs : docs.slice(0, 1)
+        return (
+          <Card key={type.value} title={title} subtitle={section.hint} actions={action}>
+            <SimpleTable rows={rows} minWidth={720} empty={type.multiple ? `No ${section.noun || 'document'} added yet.` : 'No photo uploaded yet.'} columns={[
+              { key: 'name', header: 'Name', render: d => <span className="flex flex-col"><span className="font-medium">{d.title || type.label}</span>{d.description && <span className="text-xs text-sage">{d.description}</span>}</span> },
+              { key: 'file', header: 'File', render: d => <span className="text-xs">{d.originalName} · {fileSize(d.sizeBytes)}</span> },
+              { key: 'date', header: 'Uploaded', render: d => formatDate(d.createdAt) },
+              { key: 'status', header: 'Status', render: d => <span className="flex flex-col items-start gap-1"><StatusBadge map={DOC_STATUS} value={d.status} />{d.rejectReason && <span className="text-xs text-red-700">{d.rejectReason}</span>}</span> },
+              { key: 'act', header: '', align: 'right', sticky: true, render: d => (
+                <span className="inline-flex gap-2">
+                  <button type="button" className={btn.secondary} onClick={() => viewFile(d)}><FiEye aria-hidden="true" /> View</button>
+                  {type.multiple && d.status !== 'accepted' && <button type="button" className={btn.danger} disabled={busy} onClick={() => setRemoving(d)} aria-label={`Remove ${d.title}`}><FiTrash2 aria-hidden="true" /> Remove</button>}
+                </span>
+              ) },
+            ]} />
+          </Card>
+        )
+      })}
+
+      <AddDocumentModal type={adding} section={adding ? DOC_SECTIONS[adding.value] || {} : {}} busy={busy} onClose={() => setAdding(null)}
+        onSubmit={(file, details) => onUpload(adding.value, file, details).then(() => setAdding(null))} />
+      <Modal open={!!removing} title="Remove document" onClose={() => setRemoving(null)}
+        footer={<><button type="button" className={btn.secondary} onClick={() => setRemoving(null)}>Cancel</button>
+          <button type="button" className={btn.danger} disabled={busy} onClick={() => onRemove(removing.id).then(() => setRemoving(null)).catch(() => {})}>Remove</button></>}>
+        {removing && <p className="text-sm">Remove <strong>{removing.title}</strong> ({removing.originalName})? You can add it again later.</p>}
+      </Modal>
     </div>
+  )
+}
+
+// Adds one named document: name (required), description (optional) and the file.
+function AddDocumentModal({ type, section, busy, onClose, onSubmit }) {
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [file, setFile] = useState(null)
+  const [error, setError] = useState('')
+  useEffect(() => { if (type) { setTitle(''); setDescription(''); setFile(null); setError('') } }, [type])
+
+  const submit = e => {
+    e.preventDefault()
+    if (title.trim().length < 2) return setError(`Enter the ${(section.nameLabel || 'document name').toLowerCase()}.`)
+    if (!file) return setError('Choose a file to upload.')
+    if (file.size > 5 * 1024 * 1024) return setError('Files must be 5 MB or smaller.')
+    setError('')
+    onSubmit(file, { title: title.trim(), description: description.trim() }).catch(err => setError(err.message))
+  }
+
+  return (
+    <Modal open={!!type} title={`Add ${section.noun || 'document'}`} onClose={onClose}
+      footer={<><button type="button" className={btn.secondary} onClick={onClose}>Cancel</button>
+        <button type="submit" form="add-document" className={btn.primary} disabled={busy}>{busy ? 'Uploading…' : 'Add'}</button></>}>
+      <form id="add-document" onSubmit={submit} className="space-y-4" noValidate>
+        <TextInput label={section.nameLabel || 'Document name'} required maxLength={120} value={title} onChange={e => { setTitle(e.target.value); setError('') }} placeholder={section.placeholder} />
+        <TextArea label="Description" hint="Optional. For example the university, board or year." rows={2} maxLength={500} value={description} onChange={e => setDescription(e.target.value)} />
+        <div>
+          <p className="mb-1.5 text-sm font-medium text-ink">File <span className="text-red-600">*</span></p>
+          <label className="flex cursor-pointer flex-wrap items-center gap-3 rounded-xl border border-dashed border-sand-300 bg-sand-50 px-4 py-3 text-sm hover:border-ink/40">
+            <span className={btn.secondary}><FiUpload aria-hidden="true" /> Choose file</span>
+            <span className={file ? 'font-medium text-ink' : 'text-sage'}>{file ? `${file.name} · ${fileSize(file.size)}` : 'PDF, JPG or PNG, up to 5 MB'}</span>
+            <input type="file" aria-label="File" className="sr-only" accept="application/pdf,image/jpeg,image/png" onChange={e => { setFile(e.target.files?.[0] || null); setError('') }} />
+          </label>
+        </div>
+        <Notice>{error}</Notice>
+      </form>
+    </Modal>
   )
 }
 

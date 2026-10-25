@@ -1,9 +1,9 @@
 import Link from 'next/link'
-import SiteHeader from '../../components/landing/SiteHeader'
-import { SiteFooter } from '../../components/landing/Sections'
-import CourseCard from '../../components/catalogue/CourseCard'
-import CatalogueUnavailable from '../../components/catalogue/CatalogueUnavailable'
-import { CatalogueUnavailableError, listCategories, listCourses } from '../../lib/catalogueApi'
+import SiteHeader from '@/features/website/components/landing/SiteHeader'
+import { SiteFooter } from '@/features/website/components/landing/Sections'
+import CourseCard from '@/features/website/components/catalogue/CourseCard'
+import CatalogueUnavailable from '@/features/website/components/catalogue/CatalogueUnavailable'
+import { CatalogueUnavailableError, listCategories, listCourses } from '@/features/website/api/catalogueApi'
 
 export const metadata = {
   title: 'Courses | Home & Online Tutor Hub',

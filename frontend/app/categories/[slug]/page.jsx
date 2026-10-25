@@ -1,10 +1,10 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import SiteHeader from '../../../components/landing/SiteHeader'
-import { SiteFooter } from '../../../components/landing/Sections'
-import CourseCard from '../../../components/catalogue/CourseCard'
-import CatalogueUnavailable from '../../../components/catalogue/CatalogueUnavailable'
-import { CatalogueUnavailableError, getCategory } from '../../../lib/catalogueApi'
+import SiteHeader from '@/features/website/components/landing/SiteHeader'
+import { SiteFooter } from '@/features/website/components/landing/Sections'
+import CourseCard from '@/features/website/components/catalogue/CourseCard'
+import CatalogueUnavailable from '@/features/website/components/catalogue/CatalogueUnavailable'
+import { CatalogueUnavailableError, getCategory } from '@/features/website/api/catalogueApi'
 
 export const revalidate = 60
 

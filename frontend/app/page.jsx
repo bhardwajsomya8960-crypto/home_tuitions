@@ -1,7 +1,7 @@
-import SiteHeader from '../components/landing/SiteHeader'
-import MotionRoot from '../components/landing/MotionRoot'
-import { Hero, LearningMatchSection, HowItWorks, HomeOrOnline, ForTutors, FinalCta, SiteFooter } from '../components/landing/Sections'
-import CategoryDiscovery from '../components/landing/CategoryDiscovery'
+import SiteHeader from '@/features/website/components/landing/SiteHeader'
+import MotionRoot from '@/features/website/components/landing/MotionRoot'
+import { Hero, LearningMatchSection, HowItWorks, HomeOrOnline, ForTutors, FinalCta, SiteFooter } from '@/features/website/components/landing/Sections'
+import CategoryDiscovery from '@/features/website/components/landing/CategoryDiscovery'
 
 // Rendered per request so the category section never freezes a build-time "unavailable" state.
 // The catalogue fetch inside CategoryDiscovery is cached for 60 seconds.

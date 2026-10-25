@@ -1,6 +1,6 @@
 import Link from 'next/link'
-import SiteHeader from '../components/landing/SiteHeader'
-import { SiteFooter } from '../components/landing/Sections'
+import SiteHeader from '@/features/website/components/landing/SiteHeader'
+import { SiteFooter } from '@/features/website/components/landing/Sections'
 
 export const metadata = {
   title: 'Page not found | Home & Online Tutor Hub',

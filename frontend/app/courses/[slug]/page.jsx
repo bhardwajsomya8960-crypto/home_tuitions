@@ -1,9 +1,9 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import SiteHeader from '../../../components/landing/SiteHeader'
-import { SiteFooter } from '../../../components/landing/Sections'
-import CatalogueUnavailable from '../../../components/catalogue/CatalogueUnavailable'
-import { CatalogueUnavailableError, getCourse } from '../../../lib/catalogueApi'
+import SiteHeader from '@/features/website/components/landing/SiteHeader'
+import { SiteFooter } from '@/features/website/components/landing/Sections'
+import CatalogueUnavailable from '@/features/website/components/catalogue/CatalogueUnavailable'
+import { CatalogueUnavailableError, getCourse } from '@/features/website/api/catalogueApi'
 
 export const revalidate = 60
 

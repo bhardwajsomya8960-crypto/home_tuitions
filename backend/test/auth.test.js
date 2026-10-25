@@ -3,10 +3,10 @@ const assert = require('node:assert/strict')
 const { configureAdminEnv, startTestServer, verifiedPhone, nextPhone, registerParent, parentBody } = require('./helpers')
 
 configureAdminEnv()
-const { createAuthService } = require('../src/services/authService')
+const { createAuthService } = require('../src/modules/auth/otp.service')
 
 let server
-before(async () => { server = await startTestServer() })
+before(async () => { server = await startTestServer('auth') })
 after(async () => { if (server) await server.close() })
 
 describe('one-time codes', () => {
@@ -116,7 +116,7 @@ describe('sign-in and registration', () => {
 
   test('without coordinates or a maps key the lead falls back to pincode matching', async () => {
     const { lead } = await registerParent(server, { latitude: undefined, longitude: undefined })
-    const stored = server.ops.ctx.repo.get('leads', lead.id)
+    const stored = await server.repo.get('Lead', lead.id)
     assert.equal(stored.latitude, null)
     assert.equal(stored.geocodeSource, 'pincode')
   })

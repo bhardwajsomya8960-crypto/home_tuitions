@@ -18,9 +18,21 @@ function configureAdminEnv() {
   process.env.UPLOADS_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'uploads-test-'))
 }
 
-function tempDbPath(name) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'catalogue-test-'))
-  return path.join(dir, `${name}.sqlite`)
+// Tests need a MongoDB server. Each test file gets its own database, dropped when it finishes.
+// Set MONGODB_TEST_URI to use another server (a replica set enables transactions, as on Atlas).
+const TEST_URI = process.env.MONGODB_TEST_URI || 'mongodb://127.0.0.1:27017/?directConnection=true'
+
+async function connectTestDb(name) {
+  const { connect } = require('../src/db/connection')
+  const dbName = `test_${name}_${process.pid}_${Date.now().toString(36)}`.slice(0, 60)
+  await connect(TEST_URI, { dbName })
+  return dbName
+}
+
+async function dropTestDb() {
+  const { mongoose, disconnect } = require('../src/db/connection')
+  if (mongoose.connection.readyState === 1) await mongoose.connection.db.dropDatabase()
+  await disconnect()
 }
 
 // Starts the app on an ephemeral port and returns a small JSON client.
@@ -50,14 +62,19 @@ async function startServer(app) {
   return { app, base, request, close: () => new Promise(r => server.close(r)) }
 }
 
-// Builds an app on a fresh in-memory database and starts it.
-async function startTestServer(options = {}) {
-  const { openDatabase } = require('../src/config/database')
+// Connects to a fresh test database, builds the app and starts it. `options` go to
+// createServices (for example a fixed clock: { now }). close() stops the server and drops the
+// database.
+async function startTestServer(name, options = {}) {
   const { createApp } = require('../src/app')
-  const db = openDatabase(':memory:')
-  const server = await startServer(createApp({ db, ...options }))
-  server.db = db
-  server.ops = server.app.locals.operationsService
+  const { createServices } = require('../src/modules')
+  await connectTestDb(name)
+  const services = createServices(options)
+  const server = await startServer(createApp({ services }))
+  const close = server.close
+  server.close = async () => { await close(); await dropTestDb() }
+  server.services = services
+  server.repo = services.ctx.repo
   return server
 }
 
@@ -151,7 +168,7 @@ async function activateTutor(server, admin, tutor) {
 }
 
 module.exports = {
-  ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_SECRET, configureAdminEnv, tempDbPath, startServer, startTestServer,
+  ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_SECRET, configureAdminEnv, connectTestDb, dropTestDb, startServer, startTestServer,
   adminToken, verifiedPhone, nextPhone, PLACES, parentBody, tutorBody, registerParent, registerTutor,
   uploadDocument, activateTutor, PNG, PDF,
 }

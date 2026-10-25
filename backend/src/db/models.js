@@ -1,0 +1,22 @@
+// Every collection, by model name. Requiring this file registers the schemas with Mongoose.
+module.exports = {
+  Parent: require('../modules/parents/parent.model'),
+  Student: require('../modules/parents/student.model'),
+  Tutor: require('../modules/tutors/tutor.model'),
+  TutorDocument: require('../modules/tutors/tutorDocument.model'),
+  Lead: require('../modules/leads/lead.model'),
+  LeadEvent: require('../modules/leads/leadEvent.model'),
+  MatchRun: require('../modules/matching/matchRun.model'),
+  Assignment: require('../modules/assignments/assignment.model'),
+  Demo: require('../modules/demos/demo.model'),
+  Enrolment: require('../modules/enrolments/enrolment.model'),
+  ClassSession: require('../modules/enrolments/classSession.model'),
+  Invoice: require('../modules/billing/invoice.model'),
+  Payment: require('../modules/billing/payment.model'),
+  Review: require('../modules/reviews/review.model'),
+  Setting: require('../modules/settings/setting.model'),
+  AuditLog: require('../modules/audit/auditLog.model'),
+  Category: require('../modules/catalogue/category.model'),
+  Course: require('../modules/catalogue/course.model'),
+  Counter: require('./counter.model'),
+}

@@ -11,39 +11,41 @@
 //
 // All test phones use the prefix 9900 so they are easy to spot.
 
-require('../src/config/loadEnv').loadEnv()
+// Uses MONGODB_URI (from .env or the environment). Running it again does nothing once the
+// test accounts exist.
 
-const { openDatabase } = require('../src/config/database')
-const { createOperationsRepository } = require('../src/repositories/operationsRepository')
-const crypto = require('crypto')
+require('../src/config/env').loadEnv()
 
-const db = openDatabase()
-// Availability is stored as [{ day, slot }]; this lets the data below stay readable.
+const { connect, disconnect } = require('../src/db/connection')
+const { createRepository } = require('../src/db/repository')
+const models = require('../src/db/models')
+const { newId: uuid } = require('../src/shared/utils/ids')
+
+// Weekly hours written as slots ({ mon: ['evening'] }) to keep the data below readable; they
+// are read back as time ranges (evening = 4–7 PM).
 const weekly = byDay => Object.entries(byDay).flatMap(([day, slots]) => slots.map(slot => ({ day, slot })))
-const repo = createOperationsRepository(db)
-const uuid = () => crypto.randomUUID()
 const now = new Date().toISOString()
+let repo
 
-console.log('🌱 Seeding test users...\n')
-
-// ── Helper ──────────────────────────────────────────────────────────
-function seed(table, record) {
-  try {
-    return repo.insert(table, record)
-  } catch (err) {
-    if (err.message && err.message.includes('UNIQUE')) {
-      console.log(`   ⏭  Skipping duplicate in ${table}: ${record.name || record.id}`)
-      return record
-    }
-    throw err
-  }
+async function seed(model, record) {
+  return repo.insert(model, record)
 }
+
+async function main() {
+await connect()
+repo = createRepository()
+if (await repo.findOne('Parent', { phone: '9900100001' })) {
+  console.log('Test users already exist; nothing to do.')
+  await disconnect()
+  return
+}
+console.log('🌱 Seeding test users...\n')
 
 // ── Parents ─────────────────────────────────────────────────────────
 const parent1Id = uuid()
 const parent2Id = uuid()
 
-const parent1 = seed('parents', {
+await seed('Parent', {
   id: parent1Id,
   name: 'Rajesh Kumar',
   phone: '9900100001',
@@ -60,7 +62,7 @@ const parent1 = seed('parents', {
 })
 console.log('✅ Parent 1: Rajesh Kumar (9900100001)')
 
-const parent2 = seed('parents', {
+await seed('Parent', {
   id: parent2Id,
   name: 'Priya Sharma',
   phone: '9900100002',
@@ -82,21 +84,21 @@ const student1Id = uuid()
 const student2Id = uuid()
 const student3Id = uuid()
 
-seed('students', {
+await seed('Student', {
   id: student1Id, parentId: parent1Id, name: 'Aarav Kumar',
   class: '8', board: 'CBSE', school: 'Delhi Public School',
   subjects: ['Mathematics', 'Science'], createdAt: now, updatedAt: now,
 })
 console.log('   📚 Student: Aarav Kumar (Class 8 CBSE)')
 
-seed('students', {
+await seed('Student', {
   id: student2Id, parentId: parent1Id, name: 'Ananya Kumar',
   class: '10', board: 'CBSE', school: 'Delhi Public School',
   subjects: ['Mathematics', 'Physics', 'Chemistry'], createdAt: now, updatedAt: now,
 })
 console.log('   📚 Student: Ananya Kumar (Class 10 CBSE)')
 
-seed('students', {
+await seed('Student', {
   id: student3Id, parentId: parent2Id, name: 'Rohan Sharma',
   class: '6', board: 'ICSE', school: 'Meridian International',
   subjects: ['English', 'Mathematics', 'Science'], createdAt: now, updatedAt: now,
@@ -108,7 +110,7 @@ const lead1Id = uuid()
 const lead2Id = uuid()
 const lead3Id = uuid()
 
-seed('leads', {
+await seed('Lead', {
   id: lead1Id, code: 'HT-L-000001', parentId: parent1Id, studentId: student1Id,
   source: 'website', mode: 'home',
   subjects: ['Mathematics', 'Science'], class: '8', board: 'CBSE',
@@ -121,7 +123,7 @@ seed('leads', {
 })
 console.log('   📋 Lead HT-L-000001 (Aarav, Maths+Science, qualified)')
 
-seed('leads', {
+await seed('Lead', {
   id: lead2Id, code: 'HT-L-000002', parentId: parent1Id, studentId: student2Id,
   source: 'website', mode: 'online',
   subjects: ['Physics', 'Chemistry'], class: '10', board: 'CBSE',
@@ -132,7 +134,7 @@ seed('leads', {
 })
 console.log('   📋 Lead HT-L-000002 (Ananya, Physics+Chem, new)')
 
-seed('leads', {
+await seed('Lead', {
   id: lead3Id, code: 'HT-L-000003', parentId: parent2Id, studentId: student3Id,
   source: 'referral', mode: 'home',
   subjects: ['English', 'Mathematics'], class: '6', board: 'ICSE',
@@ -150,7 +152,7 @@ const tutor1Id = uuid()
 const tutor2Id = uuid()
 const tutor3Id = uuid()
 
-seed('tutors', {
+await seed('Tutor', {
   id: tutor1Id,
   name: 'Rahul Verma',
   phone: '9900200001',
@@ -185,7 +187,7 @@ seed('tutors', {
 })
 console.log('✅ Tutor 1: Rahul Verma (9900200001) — verified')
 
-seed('tutors', {
+await seed('Tutor', {
   id: tutor2Id,
   name: 'Sneha Reddy',
   phone: '9900200002',
@@ -218,7 +220,7 @@ seed('tutors', {
 })
 console.log('✅ Tutor 2: Sneha Reddy (9900200002) — verified')
 
-seed('tutors', {
+await seed('Tutor', {
   id: tutor3Id,
   name: 'Vikram Iyer',
   phone: '9900200003',
@@ -261,9 +263,11 @@ const events = [
   { id: uuid(), leadId: lead3Id, type: 'status_changed', actor: 'admin', fromStatus: 'new', toStatus: 'contacted', createdAt: now },
 ]
 for (const evt of events) {
-  seed('lead_events', evt)
+  await seed('LeadEvent', evt)
 }
 console.log('   📝 Lead events seeded')
+// The seeded leads use codes HT-L-000001 to 000003; new leads continue from there.
+await models.Counter.updateOne({ _id: 'leads' }, { $max: { seq: 3 } }, { upsert: true })
 
 console.log('\n────────────────────────────────────────────')
 console.log('🎉 Test data seeded successfully!')
@@ -290,4 +294,10 @@ console.log('TIP: Set OTP_DEV_ECHO=true in .env.local to')
 console.log('     get the OTP code in the API response.')
 console.log('────────────────────────────────────────────\n')
 
-db.close()
+await disconnect()
+}
+
+main().catch(err => {
+  console.error(err)
+  process.exit(1)
+})

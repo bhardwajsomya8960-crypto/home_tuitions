@@ -2,13 +2,10 @@ const { test, before, after, describe } = require('node:test')
 const assert = require('node:assert/strict')
 const { execFileSync, spawnSync } = require('child_process')
 const path = require('path')
-const { configureAdminEnv, startServer, tempDbPath, ADMIN_EMAIL, ADMIN_PASSWORD, verifiedPhone, nextPhone, parentBody } = require('./helpers')
+const { configureAdminEnv, startTestServer, ADMIN_EMAIL, ADMIN_PASSWORD, verifiedPhone, nextPhone, parentBody } = require('./helpers')
 
 configureAdminEnv()
-const { openDatabase } = require('../src/config/database')
-const { createCatalogueRepository } = require('../src/repositories/catalogueRepository')
-const { createCatalogueService } = require('../src/services/catalogueService')
-const { createApp } = require('../src/app')
+const { mongoose } = require('../src/db/connection')
 
 let server
 let token
@@ -21,9 +18,7 @@ async function register(over = {}) {
 }
 
 before(async () => {
-  const db = openDatabase(':memory:')
-  const service = createCatalogueService({ repo: createCatalogueRepository(db) })
-  server = await startServer(createApp({ catalogueService: service, db }))
+  server = await startTestServer('registration')
   // Create one published course through the admin API, using the same code path as production.
   const login = await server.request('POST', '/api/admin/auth/login', { body: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD } })
   token = login.body.token
@@ -42,7 +37,7 @@ describe('parent registration with course context', () => {
   test('registration without course fields succeeds', async () => {
     const res = await register()
     assert.equal(res.status, 201)
-    const lead = server.app.locals.operationsService.ctx.repo.get('leads', res.body.lead.id)
+    const lead = (await server.repo.get('Lead', res.body.lead.id))
     assert.equal(lead.courseId, null)
     assert.equal(lead.courseSlug, null)
   })
@@ -50,7 +45,7 @@ describe('parent registration with course context', () => {
   test('a published course slug is validated and stored on the lead', async () => {
     const res = await register({ courseSlug: server.publishedCourse.slug })
     assert.equal(res.status, 201)
-    const lead = server.app.locals.operationsService.ctx.repo.get('leads', res.body.lead.id)
+    const lead = (await server.repo.get('Lead', res.body.lead.id))
     assert.equal(lead.courseId, server.publishedCourse.id)
     assert.equal(lead.courseSlug, server.publishedCourse.slug)
   })
@@ -58,15 +53,15 @@ describe('parent registration with course context', () => {
   test('a published course id is accepted and resolved to its slug', async () => {
     const res = await register({ courseId: server.publishedCourse.id })
     assert.equal(res.status, 201)
-    assert.equal(server.app.locals.operationsService.ctx.repo.get('leads', res.body.lead.id).courseSlug, server.publishedCourse.slug)
+    assert.equal((await server.repo.get('Lead', res.body.lead.id)).courseSlug, server.publishedCourse.slug)
   })
 
   test('an unpublished course is refused before any record is written', async () => {
-    const before = server.app.locals.operationsService.ctx.repo.count('parents')
+    const before = (await server.repo.count('Parent'))
     const res = await register({ courseSlug: server.draftCourse.slug })
     assert.equal(res.status, 400)
     assert.equal(res.body.code, 'INVALID_COURSE')
-    assert.equal(server.app.locals.operationsService.ctx.repo.count('parents'), before)
+    assert.equal((await server.repo.count('Parent')), before)
   })
 
   test('an unknown course is refused', async () => {
@@ -89,43 +84,43 @@ describe('parent registration with course context', () => {
 
 describe('seed script', () => {
   const script = path.join(__dirname, '..', 'scripts', 'seed-catalogue.js')
+  // The script runs as its own process against a separate database on the same server.
+  const host = () => mongoose.connection.getClient().options.hosts.map(h => `${h.host}:${h.port}`).join(',')
+  const seedDb = name => {
+    const dbName = `${mongoose.connection.name}_${name}`.slice(0, 60)
+    return { dbName, env: { ...process.env, MONGODB_URI: `mongodb://${host()}/${dbName}?directConnection=true` }, db: () => mongoose.connection.useDb(dbName, { useCache: true }).db }
+  }
 
   test('refuses to run without --sample', () => {
-    const result = spawnSync(process.execPath, [script], { env: { ...process.env, CATALOGUE_DB_PATH: tempDbPath('noflag') }, encoding: 'utf8' })
+    const result = spawnSync(process.execPath, [script], { env: seedDb('noflag').env, encoding: 'utf8' })
     assert.equal(result.status, 1)
     assert.match(result.stderr, /Refusing to seed/)
   })
 
-  test('is idempotent and does not overwrite admin edits', () => {
-    const file = tempDbPath('seed')
-    const env = { ...process.env, CATALOGUE_DB_PATH: file }
-    execFileSync(process.execPath, [script, '--sample'], { env })
-    const db = openDatabase(file)
-    const categoriesAfterFirst = db.prepare('SELECT COUNT(*) AS n FROM categories').get().n
-    const coursesAfterFirst = db.prepare('SELECT COUNT(*) AS n FROM courses').get().n
-    assert.equal(categoriesAfterFirst, 6)
-    assert.equal(coursesAfterFirst, 11)
+  test('is idempotent and does not overwrite admin edits', async () => {
+    const target = seedDb('seed')
+    execFileSync(process.execPath, [script, '--sample'], { env: target.env })
+    const db = target.db()
+    assert.equal(await db.collection('categories').countDocuments(), 6)
+    assert.equal(await db.collection('courses').countDocuments(), 11)
 
     // Simulate an administrator editing a sample record
-    db.prepare("UPDATE categories SET name = 'Edited by admin' WHERE slug = 'school-tuition'").run()
-    db.close()
+    await db.collection('categories').updateOne({ slug: 'school-tuition' }, { $set: { name: 'Edited by admin' } })
 
-    const second = execFileSync(process.execPath, [script, '--sample'], { env, encoding: 'utf8' })
+    const second = execFileSync(process.execPath, [script, '--sample'], { env: target.env, encoding: 'utf8' })
     assert.match(second, /0 created/)
-
-    const check = openDatabase(file)
-    assert.equal(check.prepare('SELECT COUNT(*) AS n FROM categories').get().n, 6)
-    assert.equal(check.prepare('SELECT COUNT(*) AS n FROM courses').get().n, 11)
-    assert.equal(check.prepare("SELECT name FROM categories WHERE slug = 'school-tuition'").get().name, 'Edited by admin')
-    check.close()
+    assert.equal(await db.collection('categories').countDocuments(), 6)
+    assert.equal(await db.collection('courses').countDocuments(), 11)
+    assert.equal((await db.collection('categories').findOne({ slug: 'school-tuition' })).name, 'Edited by admin')
+    await db.dropDatabase()
   })
 
-  test('seeded records are marked as sample content', () => {
-    const file = tempDbPath('marked')
-    execFileSync(process.execPath, [script, '--sample'], { env: { ...process.env, CATALOGUE_DB_PATH: file } })
-    const db = openDatabase(file)
-    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM courses WHERE source != 'sample'").get().n, 0)
-    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM courses WHERE status = 'draft'").get().n, 1)
-    db.close()
+  test('seeded records are marked as sample content', async () => {
+    const target = seedDb('marked')
+    execFileSync(process.execPath, [script, '--sample'], { env: target.env })
+    const db = target.db()
+    assert.equal(await db.collection('courses').countDocuments({ source: { $ne: 'sample' } }), 0)
+    assert.equal(await db.collection('courses').countDocuments({ status: 'draft' }), 1)
+    await db.dropDatabase()
   })
 })

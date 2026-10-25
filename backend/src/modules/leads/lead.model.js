@@ -1,0 +1,36 @@
+const { defineModel, types: t } = require('../../db/defineModel')
+
+// A tuition requirement (blueprint §12.1). `code` is the human reference, e.g. HT-L-000123.
+module.exports = defineModel('Lead', {
+  code: t.requiredString(),
+  parentId: t.requiredString(),
+  studentId: t.requiredString(),
+  source: t.requiredString(),
+  mode: t.enum(['home', 'online', 'hybrid'], { required: true }),
+  subjects: t.strings(),
+  class: t.requiredString(),
+  board: t.requiredString(),
+  preferredDays: t.strings(),
+  preferredSlots: t.strings(),
+  prefGender: t.string(),
+  prefLanguages: t.strings(),
+  budgetRange: t.string(),
+  startDate: t.string(),
+  urgency: t.string(),
+  specialRequirements: t.string(),
+  address: t.string(),
+  pincode: t.string(),
+  latitude: t.number(),
+  longitude: t.number(),
+  geocodeSource: t.string(),
+  status: t.requiredString({ default: 'new' }),
+  noTutorFound: t.bool(false),
+  lostReason: t.string(),
+  courseId: t.string(),
+  courseSlug: t.string(),
+  createdAt: t.timestamp({ required: true }),
+  updatedAt: t.timestamp({ required: true }),
+}, {
+  collection: 'leads',
+  indexes: [[{ code: 1 }, { unique: true }], [{ status: 1, createdAt: -1 }], [{ parentId: 1 }]],
+})

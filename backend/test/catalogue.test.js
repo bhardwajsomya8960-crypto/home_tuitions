@@ -1,25 +1,18 @@
 const { test, before, after, describe } = require('node:test')
 const assert = require('node:assert/strict')
-const fs = require('fs')
-const path = require('path')
-const { configureAdminEnv, tempDbPath, startServer, ADMIN_EMAIL, ADMIN_PASSWORD } = require('./helpers')
+const { configureAdminEnv, startTestServer, ADMIN_EMAIL, ADMIN_PASSWORD } = require('./helpers')
 
 configureAdminEnv()
-const { openDatabase } = require('../src/config/database')
-const { createCatalogueRepository } = require('../src/repositories/catalogueRepository')
-const { createCatalogueService } = require('../src/services/catalogueService')
-const { createApp } = require('../src/app')
-const { AppError } = require('../src/errors')
+const { createCatalogueRepository } = require('../src/modules/catalogue/catalogue.repository')
+const { createCatalogueService } = require('../src/modules/catalogue/catalogue.service')
+const { connect, disconnect } = require('../src/db/connection')
+const { AppError } = require('../src/shared/errors')
 
 let server
 let token
-let dbFile
 
 before(async () => {
-  dbFile = tempDbPath('catalogue')
-  const db = openDatabase(dbFile)
-  const service = createCatalogueService({ repo: createCatalogueRepository(db) })
-  server = await startServer(createApp({ catalogueService: service, db }))
+  server = await startTestServer('catalogue')
   const login = await server.request('POST', '/api/admin/auth/login', { body: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD } })
   token = login.body.token
 })
@@ -223,36 +216,26 @@ describe('public read API', () => {
 })
 
 describe('persistence across restarts', () => {
-  test('records written before a restart are still there afterwards', async () => {
-    const file = tempDbPath('restart')
-    const first = openDatabase(file)
-    const repoA = createCatalogueRepository(first)
-    const svcA = createCatalogueService({ repo: repoA })
+  test('records written before reconnecting are still there afterwards', async () => {
+    const svcA = createCatalogueService({ repo: createCatalogueRepository() })
     const cat = await svcA.createCategory({ name: 'Persisted Category', shortDescription: 'Kept' }, 'admin')
     await svcA.transitionCategory(cat.id, 'publish', 'admin')
-    first.close()
 
-    const second = openDatabase(file)
-    const svcB = createCatalogueService({ repo: createCatalogueRepository(second) })
+    const { mongoose } = require('../src/db/connection')
+    const { name } = mongoose.connection
+    const uri = mongoose.connection.getClient().options.hosts.map(h => `${h.host}:${h.port}`).join(',')
+    await disconnect()
+    await connect(`mongodb://${uri}/?directConnection=true`, { dbName: name })
+
+    const svcB = createCatalogueService({ repo: createCatalogueRepository() })
     const reread = await svcB.getPublicCategory(cat.slug)
     assert.equal(reread.name, 'Persisted Category')
-    second.close()
-  })
-
-  test('reopening a database does not re-run applied migrations', () => {
-    const file = tempDbPath('migrations')
-    openDatabase(file).close()
-    const db = openDatabase(file)
-    const rows = db.prepare('SELECT version FROM schema_migrations').all()
-    assert.deepEqual(rows.map(r => r.version), [1, 2, 3, 4])
-    db.close()
   })
 })
 
 describe('slug and service rules', () => {
   test('slug uniqueness is enforced by the database as well as the service', async () => {
-    const db = openDatabase(':memory:')
-    const repo = createCatalogueRepository(db)
+    const repo = createCatalogueRepository()
     const svc = createCatalogueService({ repo })
     await svc.createCategory({ name: 'Same Name', shortDescription: 'x' }, 'admin')
     await assert.rejects(
@@ -261,13 +244,7 @@ describe('slug and service rules', () => {
     )
     await assert.rejects(
       repo.insertCategory({ id: 'raw', slug: 'same-name', name: 'Raw', status: 'draft', source: 'admin', createdAt: 'x', updatedAt: 'x' }),
-      /UNIQUE constraint failed/
+      err => err.code === 11000
     )
-    db.close()
   })
-})
-
-test('a file-backed database is created on disk', () => {
-  assert.ok(fs.existsSync(dbFile))
-  assert.ok(path.isAbsolute(dbFile))
 })

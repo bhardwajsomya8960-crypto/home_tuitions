@@ -1,36 +1,37 @@
 {
-  "name": "home-tution-backend",
+  "name": "home-online-tutor-hub-api",
   "version": "1.0.0",
-  "description": "home tution - Backend API",
-  "main": "src/index.js",
+  "description": "Home & Online Tutor Hub - backend API (Express + MongoDB)",
+  "main": "src/server.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
     "test": "node --test test/*.test.js",
+    "db:local": "docker compose -f ../docker-compose.dev.yml up -d mongo",
     "seed:catalogue": "node scripts/seed-catalogue.js",
-    "admin:hash-password": "node scripts/hash-admin-password.js",
     "seed:test-users": "node scripts/seed-test-users.js",
+    "admin:hash-password": "node scripts/hash-admin-password.js",
     "setup:admin": "node scripts/setup-dev-admin.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1156.0",
     "axios": "^1.4.0",
     "bcryptjs": "^2.4.3",
-    "better-sqlite3": "^11.10.0",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "googleapis": "^118.0.0",
     "helmet": "^7.0.0",
     "jsonwebtoken": "^9.0.0",
+    "mongoose": "^8.24.7",
     "multer": "^2.0.2",
     "nodemailer": "^6.9.3",
     "uuid": "^9.0.0"
   },
   "devDependencies": {
-    "jest": "^29.5.0",
     "nodemon": "^2.0.22"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=20.0.0"
   }
 }

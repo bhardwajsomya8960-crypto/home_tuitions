@@ -4,14 +4,15 @@
 //   node scripts/seed-catalogue.js --sample
 //
 // Refuses to run without --sample so sample content is never added by accident.
-require('../src/config/loadEnv').loadEnv()
+// Uses MONGODB_URI (from .env or the environment).
+require('../src/config/env').loadEnv()
 
-const { getDatabase } = require('../src/config/database')
-const { createCatalogueRepository } = require('../src/repositories/catalogueRepository')
-const { validateFields, slugify } = require('../src/services/validation')
-const { categorySpec, courseSpec } = require('../src/services/catalogueSpecs')
-const { categories, courses } = require('../src/seed/catalogueSeed')
-const crypto = require('crypto')
+const { connect, disconnect } = require('../src/db/connection')
+const { createCatalogueRepository } = require('../src/modules/catalogue/catalogue.repository')
+const { validateFields } = require('../src/shared/validation')
+const { categorySpec, courseSpec } = require('../src/modules/catalogue/catalogue.validation')
+const { categories, courses } = require('../src/modules/catalogue/catalogue.seed')
+const { newId } = require('../src/shared/utils/ids')
 
 if (!process.argv.includes('--sample')) {
   console.error('Refusing to seed: pass --sample to add sample catalogue content.')
@@ -19,7 +20,8 @@ if (!process.argv.includes('--sample')) {
 }
 
 async function main() {
-  const repo = createCatalogueRepository(getDatabase())
+  await connect()
+  const repo = createCatalogueRepository()
   const stamp = new Date().toISOString()
   const idBySlug = {}
   let created = 0
@@ -31,7 +33,7 @@ async function main() {
     if (errors.length) throw new Error(`Invalid seed category ${slug}: ${JSON.stringify(errors)}`)
     const existing = await repo.getCategory({ slug })
     if (existing) { idBySlug[slug] = existing.id; skipped++; continue }
-    const id = crypto.randomUUID()
+    const id = newId()
     idBySlug[slug] = id
     await repo.insertCategory({
       id, shortDescription: '', description: '', iconKey: '', accentColour: '', coverImageUrl: '',
@@ -50,7 +52,7 @@ async function main() {
     if (!real.categoryId) throw new Error(`Seed course ${item.slug} references unknown category ${category}`)
     if (await repo.getCourse({ slug: item.slug })) { skipped++; continue }
     await repo.insertCourse({
-      id: crypto.randomUUID(), shortDescription: '', description: '', levelLabel: '', applicableFor: '', targetAudience: '',
+      id: newId(), shortDescription: '', description: '', levelLabel: '', applicableFor: '', targetAudience: '',
       subjects: [], learningObjectives: [], prerequisites: [], learningModes: [], coverImageUrl: '',
       displayOrder: 0, featured: false, seoTitle: '', seoDescription: '',
       ...real, slug: item.slug, status, source: 'sample',
@@ -60,6 +62,7 @@ async function main() {
   }
 
   console.log(`Catalogue seed complete: ${created} created, ${skipped} already present (left unchanged).`)
+  await disconnect()
 }
 
 main().catch(err => {

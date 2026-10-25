@@ -1,20 +1,14 @@
 const { test, before, after, describe } = require('node:test')
 const assert = require('node:assert/strict')
 const jwt = require('jsonwebtoken')
-const { configureAdminEnv, startServer, ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_SECRET } = require('./helpers')
+const { configureAdminEnv, startTestServer, ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_SECRET } = require('./helpers')
 
 configureAdminEnv()
-const { openDatabase } = require('../src/config/database')
-const { createCatalogueRepository } = require('../src/repositories/catalogueRepository')
-const { createCatalogueService } = require('../src/services/catalogueService')
-const { createApp } = require('../src/app')
 
 let server
 
 before(async () => {
-  const db = openDatabase(':memory:')
-  const service = createCatalogueService({ repo: createCatalogueRepository(db) })
-  server = await startServer(createApp({ catalogueService: service, db }))
+  server = await startTestServer('admin_auth')
 })
 after(async () => { if (server) await server.close() })
 

@@ -9,7 +9,7 @@ let admin
 const req = (m, u, o) => server.request(m, u, o)
 
 before(async () => {
-  server = await h.startTestServer()
+  server = await h.startTestServer('manual_assign')
   admin = await h.adminToken(server)
 })
 after(async () => { if (server) await server.close() })
@@ -17,7 +17,7 @@ after(async () => { if (server) await server.close() })
 // A verified (not yet active) tutor, as created by the test-user seed.
 async function verifiedTutor(over) {
   const t = await h.registerTutor(server, over)
-  server.ops.ctx.repo.update('tutors', t.tutor.id, { status: 'verified' })
+  await server.repo.update('Tutor', t.tutor.id, { status: 'verified' })
   return t
 }
 

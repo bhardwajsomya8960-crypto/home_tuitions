@@ -1,6 +1,6 @@
 const { test, describe } = require('node:test')
 const assert = require('node:assert/strict')
-const { scoreTutor, rankTutors, validateSettings, DEFAULT_SETTINGS } = require('../src/services/matchingService')
+const { scoreTutor, rankTutors, validateSettings, DEFAULT_SETTINGS } = require('../src/modules/matching/matching.engine')
 const { PLACES } = require('./helpers')
 
 const S = DEFAULT_SETTINGS
@@ -152,7 +152,7 @@ describe('settings validation', () => {
 })
 
 describe('availability helpers', () => {
-  const { withoutBooked, timeOffOn, toRanges } = require('../src/services/availability')
+  const { withoutBooked, timeOffOn, toRanges } = require('../src/modules/matching/availability')
 
   test('booked class slots are cut out of the tutor\'s hours', () => {
     const hours = [{ day: 'mon', start: '15:00', end: '20:00' }, { day: 'tue', start: '16:00', end: '19:00' }]

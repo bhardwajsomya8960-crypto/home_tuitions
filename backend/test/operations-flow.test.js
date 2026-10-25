@@ -3,12 +3,6 @@ const assert = require('node:assert/strict')
 const h = require('./helpers')
 
 h.configureAdminEnv()
-const { openDatabase } = require('../src/config/database')
-const { createApp } = require('../src/app')
-const { createCatalogueRepository } = require('../src/repositories/catalogueRepository')
-const { createCatalogueService } = require('../src/services/catalogueService')
-const { createOperationsRepository } = require('../src/repositories/operationsRepository')
-const { createOperationsService } = require('../src/services/operations')
 
 // A clock the tests can move forward, so offer expiry is deterministic.
 let clock = Date.parse('2026-11-02T04:30:00Z') // Monday 10:00 IST
@@ -19,11 +13,7 @@ let admin
 const req = (method, url, opts) => server.request(method, url, opts)
 
 before(async () => {
-  const db = openDatabase(':memory:')
-  const catalogueService = createCatalogueService({ repo: createCatalogueRepository(db) })
-  const operationsService = createOperationsService({ repo: createOperationsRepository(db), catalogueService, now: () => new Date(clock) })
-  server = await h.startServer(createApp({ db, catalogueService, operationsService }))
-  server.ops = operationsService
+  server = await h.startTestServer('operations_flow', { now: () => new Date(clock) })
   admin = await h.adminToken(server)
 })
 after(async () => { if (server) await server.close() })
@@ -155,7 +145,7 @@ describe('tutor onboarding and verification', () => {
 
   test('time off is stored in date order, and a tutor on leave today is not matched', async () => {
     const t = await activeTutor()
-    const today = server.ops.ctx.today()
+    const today = server.services.ctx.today()
     const timeOff = [{ from: '2027-01-10', to: '2027-01-12', reason: '  Family wedding ' }, { from: today, to: today }]
     const saved = await req('PATCH', '/api/tutors/me', { token: t.token, body: { timeOff } })
     assert.equal(saved.status, 200)
@@ -177,8 +167,8 @@ describe('lead to enrolment (blueprint §25)', () => {
 
   before(async () => {
     // Earlier tests may have left active tutors; suspend them so this ranking is self-contained.
-    for (const t of server.ops.ctx.repo.find('tutors', { status: 'active' })) {
-      server.ops.ctx.repo.update('tutors', t.id, { status: 'suspended' })
+    for (const t of await server.repo.find('Tutor', { status: 'active' })) {
+      await server.repo.update('Tutor', t.id, { status: 'suspended' })
     }
     near = await activeTutor({ name: 'Near Tutor', ...h.PLACES.begumpet })
     mid = await activeTutor({ name: 'Mid Tutor', ...h.PLACES.secunderabad })
@@ -229,7 +219,7 @@ describe('lead to enrolment (blueprint §25)', () => {
   })
 
   test('other tutors cannot act on the offer', async () => {
-    const offerId = server.ops.ctx.repo.findOne('assignments', { leadId, tutorId: near.tutor.id }).id
+    const offerId = (await server.repo.findOne('Assignment', { leadId, tutorId: near.tutor.id })).id
     const res = await req('POST', `/api/tutors/me/offers/${offerId}/accept`, { token: mid.token })
     assert.equal(res.status, 404)
   })
@@ -246,7 +236,7 @@ describe('lead to enrolment (blueprint §25)', () => {
   })
 
   test('a rejection needs a structured reason and moves to the next tutor', async () => {
-    const offerId = server.ops.ctx.repo.findOne('assignments', { leadId, tutorId: mid.tutor.id }).id
+    const offerId = (await server.repo.findOne('Assignment', { leadId, tutorId: mid.tutor.id })).id
     const noReason = await req('POST', `/api/tutors/me/offers/${offerId}/reject`, { token: mid.token, body: {} })
     assert.equal(noReason.status, 400)
     const other = await req('POST', `/api/tutors/me/offers/${offerId}/reject`, { token: mid.token, body: { reason: 'other' } })
@@ -258,7 +248,7 @@ describe('lead to enrolment (blueprint §25)', () => {
   })
 
   test('the tutor can ask for more information while the offer is open', async () => {
-    const offerId = server.ops.ctx.repo.findOne('assignments', { leadId, tutorId: far.tutor.id }).id
+    const offerId = (await server.repo.findOne('Assignment', { leadId, tutorId: far.tutor.id })).id
     const res = await req('POST', `/api/tutors/me/offers/${offerId}/request-info`, { token: far.token, body: { message: 'Is the student preparing for an exam?' } })
     assert.equal(res.status, 200)
     const ops = await req('GET', '/api/admin/operations', { token: admin })
@@ -266,7 +256,7 @@ describe('lead to enrolment (blueprint §25)', () => {
   })
 
   test('accepting reserves the tutor; contact details appear only after confirmation', async () => {
-    const offerId = server.ops.ctx.repo.findOne('assignments', { leadId, tutorId: far.tutor.id }).id
+    const offerId = (await server.repo.findOne('Assignment', { leadId, tutorId: far.tutor.id })).id
     const accepted = await req('POST', `/api/tutors/me/offers/${offerId}/accept`, { token: far.token })
     assert.equal(accepted.status, 200)
     assert.equal(accepted.body.status, 'accepted')
@@ -327,7 +317,7 @@ describe('lead to enrolment (blueprint §25)', () => {
     assert.equal(review.status, 201)
     const twice = await req('POST', `/api/parents/me/requests/${leadId}/review`, { token: parent.token, body: { rating: 1 } })
     assert.equal(twice.status, 409)
-    assert.equal(server.ops.ctx.repo.get('tutors', far.tutor.id).ratingAvg, 5)
+    assert.equal((await server.repo.get('Tutor', far.tutor.id)).ratingAvg, 5)
   })
 
   test('conversion creates the enrolment, first invoice and upcoming classes', async () => {
@@ -395,10 +385,10 @@ describe('lead to enrolment (blueprint §25)', () => {
 
   test('the dashboard reconciles with the stored records', async () => {
     const dash = await req('GET', '/api/admin/dashboard', { token: admin })
-    const repo = server.ops.ctx.repo
-    assert.equal(dash.body.leads.total, repo.count('leads'))
-    assert.equal(dash.body.leads.byStatus.converted, repo.count('leads', { status: 'converted' }))
-    assert.equal(dash.body.enrolments.active, repo.count('enrolments', { status: 'active' }))
+    const repo = server.repo
+    assert.equal(dash.body.leads.total, await repo.count('Lead'))
+    assert.equal(dash.body.leads.byStatus.converted, await repo.count('Lead', { status: 'converted' }))
+    assert.equal(dash.body.enrolments.active, await repo.count('Enrolment', { status: 'active' }))
     assert.equal(dash.body.finance.collected, 3000)
   })
 })
@@ -407,29 +397,30 @@ describe('concurrency and the no-tutor queue', () => {
   test('with simultaneous offers, the first acceptance wins and the rest are withdrawn', async () => {
     const put = await req('PUT', '/api/admin/settings', { token: admin, body: { maxSimultaneousOffers: 3 } })
     assert.equal(put.status, 200)
-    for (const t of server.ops.ctx.repo.find('tutors', { status: 'active' })) server.ops.ctx.repo.update('tutors', t.id, { status: 'suspended' })
+    for (const t of await server.repo.find('Tutor', { status: 'active' })) await server.repo.update('Tutor', t.id, { status: 'suspended' })
     const tutors = [await activeTutor(), await activeTutor(), await activeTutor()]
     const p = await h.registerParent(server)
     await req('POST', `/api/admin/leads/${p.lead.id}/match`, { token: admin })
     const offered = await req('POST', `/api/admin/leads/${p.lead.id}/offers`, { token: admin })
     assert.equal(offered.body.assignments.filter(a => a.status === 'offered').length, 3)
 
-    const ids = tutors.map(t => server.ops.ctx.repo.findOne('assignments', { leadId: p.lead.id, tutorId: t.tutor.id }).id)
+    const ids = []
+    for (const t of tutors) ids.push((await server.repo.findOne('Assignment', { leadId: p.lead.id, tutorId: t.tutor.id })).id)
     const results = await Promise.all(tutors.map((t, i) => req('POST', `/api/tutors/me/offers/${ids[i]}/accept`, { token: t.token })))
     assert.equal(results.filter(r => r.status === 200).length, 1)
     assert.equal(results.filter(r => r.status === 409).length, 2)
-    const final = server.ops.ctx.repo.find('assignments', { leadId: p.lead.id }).map(a => a.status).sort()
+    const final = (await server.repo.find('Assignment', { leadId: p.lead.id })).map(a => a.status).sort()
     assert.deepEqual(final, ['accepted', 'withdrawn', 'withdrawn'])
     await req('PUT', '/api/admin/settings', { token: admin, body: { maxSimultaneousOffers: 1 } })
   })
 
   test('when every tutor declines, the lead enters the no-tutor queue', async () => {
-    for (const t of server.ops.ctx.repo.find('tutors', { status: 'active' })) server.ops.ctx.repo.update('tutors', t.id, { status: 'suspended' })
+    for (const t of await server.repo.find('Tutor', { status: 'active' })) await server.repo.update('Tutor', t.id, { status: 'suspended' })
     const only = await activeTutor()
     const p = await h.registerParent(server)
     await req('POST', `/api/admin/leads/${p.lead.id}/match`, { token: admin })
     await req('POST', `/api/admin/leads/${p.lead.id}/offers`, { token: admin })
-    const offerId = server.ops.ctx.repo.findOne('assignments', { leadId: p.lead.id }).id
+    const offerId = (await server.repo.findOne('Assignment', { leadId: p.lead.id })).id
     await req('POST', `/api/tutors/me/offers/${offerId}/unavailable`, { token: only.token, body: {} })
     const ops = await req('GET', '/api/admin/operations', { token: admin })
     assert.ok(ops.body.noTutor.some(l => l.id === p.lead.id))
@@ -440,10 +431,10 @@ describe('concurrency and the no-tutor queue', () => {
 
   test('slots taken by a tutor\'s active students are not offered again (rule 3)', async () => {
     // The converted lead above booked Far Tutor for Tue and Thu evenings.
-    const far = server.ops.ctx.repo.findOne('tutors', { name: 'Far Tutor' })
-    server.ops.ctx.repo.update('tutors', far.id, { status: 'active' })
-    for (const t of server.ops.ctx.repo.find('tutors', { status: 'active' })) {
-      if (t.id !== far.id) server.ops.ctx.repo.update('tutors', t.id, { status: 'suspended' })
+    const far = await server.repo.findOne('Tutor', { name: 'Far Tutor' })
+    await server.repo.update('Tutor', far.id, { status: 'active' })
+    for (const t of await server.repo.find('Tutor', { status: 'active' })) {
+      if (t.id !== far.id) await server.repo.update('Tutor', t.id, { status: 'suspended' })
     }
     const p = await h.registerParent(server, { ...h.PLACES.kukatpally, preferredDays: ['tue', 'thu'], preferredSlots: ['evening'] })
     const busy = await req('POST', `/api/admin/leads/${p.lead.id}/match`, { token: admin })
@@ -478,7 +469,7 @@ describe('parents and staff', () => {
       token: p.token,
       body: { studentId: student.body.id, subjects: ['English'], mode: 'online', preferredDays: ['sat'], preferredSlots: ['morning'] },
     })
-    const events = server.ops.ctx.repo.find('lead_events', { leadId: dup.body.id }).map(e => e.type)
+    const events = (await server.repo.find('LeadEvent', { leadId: dup.body.id })).map(e => e.type)
     assert.ok(events.includes('duplicate_suspected'))
   })
 

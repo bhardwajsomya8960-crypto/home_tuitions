@@ -1,0 +1,27 @@
+const { defineModel, types: t } = require('../../db/defineModel')
+
+module.exports = defineModel('Course', {
+  slug: t.requiredString(),
+  name: t.requiredString(),
+  categoryId: t.requiredString(),
+  shortDescription: t.string({ default: '' }),
+  description: t.string({ default: '' }),
+  levelLabel: t.string({ default: '' }),
+  applicableFor: t.string({ default: '' }),
+  subjects: t.strings(),
+  learningObjectives: t.strings(),
+  prerequisites: t.strings(),
+  targetAudience: t.string({ default: '' }),
+  learningModes: t.strings(),
+  coverImageUrl: t.string({ default: '' }),
+  displayOrder: t.number({ default: 0 }),
+  featured: t.bool(false),
+  status: t.enum(['draft', 'published', 'archived'], { required: true }),
+  seoTitle: t.string({ default: '' }),
+  seoDescription: t.string({ default: '' }),
+  source: t.enum(['admin', 'sample'], { default: 'admin' }),
+  createdAt: t.timestamp({ required: true }),
+  updatedAt: t.timestamp({ required: true }),
+  createdBy: t.string(),
+  updatedBy: t.string(),
+}, { collection: 'courses', indexes: [[{ slug: 1 }, { unique: true }], [{ categoryId: 1 }], [{ status: 1, displayOrder: 1 }]] })

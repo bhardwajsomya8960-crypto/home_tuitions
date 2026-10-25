@@ -5,10 +5,12 @@ import DesktopSidebar from './DesktopSidebar'
 import MobileAppHeader from './MobileAppHeader'
 import MobileBottomNav from './MobileBottomNav'
 import ConnectionStatus from './ConnectionStatus'
+import ProfileMenu from './ProfileMenu'
 
 // Breakpoints: <768 mobile (app header + bottom tabs), 768-1023 tablet (icon sidebar),
 // >=1024 desktop (full sidebar). `collapsed` is null while the user has not toggled.
-export default function AppShell({ portalLabel, user, navItems, activeTab, onTabChange, onLogout, headerActions, children }) {
+// profileTab: the nav item the account menu's "profile" entry opens (omit when the portal has none).
+export default function AppShell({ portalLabel, user, navItems, activeTab, onTabChange, onLogout, profileTab, headerActions, children }) {
   const [collapsed, setCollapsed] = useState(null)
   const active = navItems.find(item => item.id === activeTab) || navItems[0]
 
@@ -19,23 +21,27 @@ export default function AppShell({ portalLabel, user, navItems, activeTab, onTab
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  const profileItem = profileTab && navItems.find(item => item.id === profileTab)
+  const account = size => (
+    <ProfileMenu user={user} size={size} onLogout={onLogout}
+      onProfile={profileItem ? () => handleNavigate(profileItem.id) : undefined} />
+  )
+
   return (
     <div className="min-h-screen bg-ivory text-ink">
       <ConnectionStatus />
 
       <DesktopSidebar
         brandLabel={portalLabel}
-        user={user}
         navItems={navItems}
         activeTab={active.id}
         onNavigate={handleNavigate}
         collapsed={collapsed}
         onToggleCollapsed={() => setCollapsed(prev => (prev === null ? true : !prev))}
-        onLogout={onLogout}
       />
 
       <div className={`${contentOffset} min-h-screen flex flex-col`}>
-        <MobileAppHeader portalLabel={portalLabel} title={active.label} onLogout={onLogout} />
+        <MobileAppHeader portalLabel={portalLabel} title={active.label} account={account('sm')} />
 
         {/* Desktop top navbar */}
         <header className="hidden md:flex h-[68px] items-center justify-between gap-4 bg-ivory/90 backdrop-blur border-b border-ink/10 px-6 lg:px-8 sticky top-0 z-30">
@@ -49,16 +55,7 @@ export default function AppShell({ portalLabel, user, navItems, activeTab, onTab
           </div>
           <div className="flex items-center gap-3 shrink-0">
             {headerActions}
-            <div className="text-right leading-tight">
-              <p className="text-sm font-semibold text-ink truncate max-w-[200px]">{user.name}</p>
-              <p className="text-xs text-sage truncate max-w-[200px]">{user.subtitle}</p>
-            </div>
-            <div
-              aria-hidden="true"
-              className="w-9 h-9 rounded-full border border-ink bg-lemon text-ink font-semibold flex items-center justify-center text-sm"
-            >
-              {user.name.charAt(0).toUpperCase()}
-            </div>
+            {account('md')}
           </div>
         </header>
 

@@ -81,7 +81,7 @@ function Dashboard() {
   const nav = NAV.map(n => (n.id === 'offers' ? { ...n, count: data.offers.length } : n.id === 'classes' ? { ...n, count: dueAttendance.length } : n.id === 'verification' && !isActive ? { ...n, count: 1 } : n))
 
   return (
-    <AppShell portalLabel="Tutor" user={{ name: tutor.name, subtitle: TUTOR_STATUS[tutor.status]?.label }} navItems={nav} activeTab={tab} onTabChange={setTab} onLogout={logout}>
+    <AppShell portalLabel="Tutor" user={{ name: tutor.name, subtitle: TUTOR_STATUS[tutor.status]?.label }} navItems={nav} profileTab="availability" activeTab={tab} onTabChange={setTab} onLogout={logout}>
       <div className="space-y-6">
         <Notice>{error}</Notice>
         <Notice tone="success">{message}</Notice>

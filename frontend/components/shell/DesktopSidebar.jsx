@@ -1,10 +1,10 @@
 'use client'
 
-import { FiChevronsLeft, FiChevronsRight, FiLogOut } from 'react-icons/fi'
+import { FiChevronsLeft, FiChevronsRight } from 'react-icons/fi'
 import Logo from '../landing/Logo'
 
 // collapsed: null = responsive (icons on tablet, full on desktop), true = icons only, false = full
-export default function DesktopSidebar({ brandLabel, user, navItems, activeTab, onNavigate, collapsed, onToggleCollapsed, onLogout }) {
+export default function DesktopSidebar({ brandLabel, navItems, activeTab, onNavigate, collapsed, onToggleCollapsed }) {
   const widthClass = collapsed === null ? 'md:w-16 lg:w-60' : collapsed ? 'md:w-16' : 'md:w-60'
   const labelClass = collapsed === null ? 'hidden lg:inline' : collapsed ? 'hidden' : 'inline'
   const brandClass = collapsed === null ? 'hidden lg:block' : collapsed ? 'hidden' : 'block'
@@ -46,27 +46,7 @@ export default function DesktopSidebar({ brandLabel, user, navItems, activeTab, 
         })}
       </nav>
 
-      <div className="p-2 border-t border-ivory/10 space-y-1">
-        <div className={`flex items-center gap-3 px-3 py-2 ${centerClass}`}>
-          <div aria-hidden="true" className="w-8 h-8 rounded-full bg-lavender text-ink font-semibold flex items-center justify-center text-xs shrink-0">
-            {user.name.charAt(0).toUpperCase()}
-          </div>
-          <div className={`min-w-0 ${brandClass}`}>
-            <p className="text-sm font-semibold text-ivory truncate">{user.name}</p>
-            <p className="text-xs text-ivory/60 truncate">{user.subtitle}</p>
-          </div>
-        </div>
-        {onLogout && (
-          <button
-            type="button"
-            onClick={onLogout}
-            title="Sign out"
-            className={`w-full flex items-center gap-3 px-3 py-2.5 min-h-[44px] rounded-lg text-sm text-coral hover:bg-ivory/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-coral ${centerClass}`}
-          >
-            <FiLogOut className="w-5 h-5" aria-hidden="true" />
-            <span className={labelClass}>Sign out</span>
-          </button>
-        )}
+      <div className="p-2 border-t border-ivory/10">
         <button
           type="button"
           onClick={onToggleCollapsed}

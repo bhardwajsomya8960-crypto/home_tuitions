@@ -22,6 +22,7 @@ describe('hard filters', () => {
   const cases = [
     ['inactive tutors', { status: 'verified' }, 'not active'],
     ['tutors who paused new leads', { acceptingLeads: false }, 'paused new leads'],
+    ['tutors on leave', { onLeaveUntil: '2026-11-05' }, 'on leave until 2026-11-05'],
     ['a different class', { classes: ['10'] }, 'does not teach this class'],
     ['no requested subject', { subjects: ['English'] }, 'does not teach the requested subjects'],
     ['online-only tutors for home leads', { modes: ['online'] }, 'does not offer home tuition'],
@@ -86,6 +87,14 @@ describe('scoring', () => {
     assert.equal(r.factors.availability, 50)
   })
 
+  test('hours count as free for a requested slot when they cover at least an hour of it', () => {
+    // Evening is 4–7 PM. Tue 5–7 PM covers two hours; Thu 6:30–9 PM covers only 30 minutes.
+    const hours = [{ day: 'tue', start: '17:00', end: '19:00' }, { day: 'thu', start: '18:30', end: '21:00' }]
+    assert.equal(scoreTutor(lead(), tutor({ availability: hours }), S).factors.availability, 50)
+    const split = [{ day: 'tue', start: '16:00', end: '16:30' }, { day: 'tue', start: '18:00', end: '18:30' }, { day: 'thu', start: '16:00', end: '19:00' }]
+    assert.equal(scoreTutor(lead(), tutor({ availability: split }), S).factors.availability, 100, 'two half hours add up to an hour')
+  })
+
   test('closer, better-rated tutors rank first and every result explains itself', () => {
     const near = tutor({ ...PLACES.begumpet, ratingAvg: 4.8, ratingCount: 10 })
     const mid = tutor({ ...PLACES.secunderabad, ratingAvg: 4.6, ratingCount: 10 })
@@ -139,5 +148,30 @@ describe('settings validation', () => {
     assert.ok(validateSettings({ ...S, weights: { ...S.weights, luck: 1 } }).some(p => p.includes('luck')))
     assert.ok(validateSettings({ ...S, offerTimeoutMinutes: 0 }).length > 0)
     assert.ok(validateSettings({ ...S, autoConfirmAssignments: 'yes' }).length > 0)
+  })
+})
+
+describe('availability helpers', () => {
+  const { withoutBooked, timeOffOn, toRanges } = require('../src/services/availability')
+
+  test('booked class slots are cut out of the tutor\'s hours', () => {
+    const hours = [{ day: 'mon', start: '15:00', end: '20:00' }, { day: 'tue', start: '16:00', end: '19:00' }]
+    assert.deepEqual(withoutBooked(hours, [{ day: 'mon', slot: 'evening' }]), [
+      { day: 'mon', start: '15:00', end: '16:00' }, { day: 'mon', start: '19:00', end: '20:00' }, { day: 'tue', start: '16:00', end: '19:00' },
+    ])
+  })
+
+  test('ranges are sorted and touching ranges merge', () => {
+    assert.deepEqual(toRanges([{ day: 'sat', start: '12:00', end: '14:00' }, { day: 'mon', start: '09:00', end: '10:00' }, { day: 'sat', start: '10:00', end: '12:00' }]), [
+      { day: 'mon', start: '09:00', end: '10:00' }, { day: 'sat', start: '10:00', end: '14:00' },
+    ])
+  })
+
+  test('time off covers its first and last day', () => {
+    const off = [{ from: '2026-12-24', to: '2026-12-26' }]
+    assert.equal(timeOffOn(off, '2026-12-23'), null)
+    assert.ok(timeOffOn(off, '2026-12-24'))
+    assert.ok(timeOffOn(off, '2026-12-26'))
+    assert.equal(timeOffOn(off, '2026-12-27'), null)
   })
 })

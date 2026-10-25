@@ -77,6 +77,14 @@ export const weekday = iso => new Date(`${iso}T00:00:00+05:30`).toLocaleDateStri
 export const daysText = days => (days || []).map(d => DAY_LABELS[d] || d).join(', ')
 export const slotsText = slots => (slots || []).map(s => SLOT_SHORT[s] || s).join(', ')
 export const scheduleText = schedule => (schedule || []).map(s => `${DAY_LABELS[s.day]} ${SLOT_SHORT[s.slot]}`).join(' · ')
+export const DAY_NAMES = { mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday' }
+// '16:30' → '4:30 PM'
+export const timeLabel = time => {
+  const [h, m] = time.split(':').map(Number)
+  return `${h % 12 || 12}${m ? `:${String(m).padStart(2, '0')}` : ''} ${h < 12 ? 'AM' : 'PM'}`
+}
+// Tutor hours [{ day, start, end }] → 'Mon 4 PM–7 PM · Sat 9 AM–1 PM'
+export const hoursText = hours => (hours || []).map(h => `${DAY_LABELS[h.day]} ${timeLabel(h.start)}–${timeLabel(h.end)}`).join(' · ')
 export const classLabel = c => (/^\d+$/.test(String(c)) ? `Class ${c}` : c)
 
 // Converts a datetime-local input value (IST wall clock) to an ISO string.

@@ -8,6 +8,7 @@ const PHONE_PATTERN = /^[6-9]\d{9}$/
 const PINCODE_PATTERN = /^[1-9]\d{5}$/
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
+const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/
 
 function slugify(value) {
   return String(value)
@@ -80,6 +81,38 @@ function checkValue(rule, value) {
         if (!item || typeof item !== 'object' || !rule.days.includes(item.day) || !rule.slots.includes(item.slot)) {
           return 'entries must be { day, slot } with known values'
         }
+      }
+      return null
+    }
+    case 'weeklyHours': {
+      // Tutor availability: [{ day, start: 'HH:MM', end: 'HH:MM' }], quarter hours, no overlaps on a day
+      if (!Array.isArray(value)) return 'must be a list'
+      if (value.length < (rule.minItems || 0)) return `must include at least ${rule.minItems}`
+      if (value.length > 35) return 'has too many entries'
+      const byDay = {}
+      for (const item of value) {
+        if (!item || typeof item !== 'object' || !rule.days.includes(item.day) || !TIME_PATTERN.test(item.start) || !TIME_PATTERN.test(item.end)) {
+          return 'entries must be { day, start, end } with times as HH:MM'
+        }
+        if (Number(item.start.slice(3)) % 15 || Number(item.end.slice(3)) % 15) return 'times must be on the quarter hour'
+        if (item.start >= item.end) return 'each end time must be after its start time'
+        ;(byDay[item.day] ||= []).push(item)
+      }
+      for (const ranges of Object.values(byDay)) {
+        ranges.sort((a, b) => a.start.localeCompare(b.start))
+        for (let i = 1; i < ranges.length; i++) if (ranges[i].start < ranges[i - 1].end) return 'times on the same day must not overlap'
+      }
+      return null
+    }
+    case 'timeOff': {
+      // [{ from, to, reason? }] with dates as YYYY-MM-DD
+      if (!Array.isArray(value)) return 'must be a list'
+      if (value.length > 30) return 'has too many entries'
+      for (const item of value) {
+        if (!item || typeof item !== 'object' || Object.keys(item).some(k => !['from', 'to', 'reason'].includes(k))) return 'entries must be { from, to, reason }'
+        if (![item.from, item.to].every(d => typeof d === 'string' && DATE_PATTERN.test(d) && !Number.isNaN(Date.parse(d)))) return 'dates must be YYYY-MM-DD'
+        if (item.to < item.from) return 'each end date must be on or after its start date'
+        if (item.reason !== undefined && (typeof item.reason !== 'string' || item.reason.length > 100)) return 'reasons must be text up to 100 characters'
       }
       return null
     }

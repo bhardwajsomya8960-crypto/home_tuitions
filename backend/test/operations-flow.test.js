@@ -134,12 +134,40 @@ describe('tutor onboarding and verification', () => {
 
   test('a tutor can update availability and pause new leads', async () => {
     const t = await h.registerTutor(server)
-    const res = await req('PATCH', '/api/tutors/me', { token: t.token, body: { availability: [{ day: 'mon', slot: 'night' }], acceptingLeads: false } })
+    const hours = [{ day: 'mon', start: '16:00', end: '18:00' }, { day: 'mon', start: '07:00', end: '08:30' }, { day: 'sat', start: '09:00', end: '13:00' }]
+    const res = await req('PATCH', '/api/tutors/me', { token: t.token, body: { availability: hours, acceptingLeads: false } })
     assert.equal(res.status, 200)
-    assert.deepEqual(res.body.availability, [{ day: 'mon', slot: 'night' }])
+    assert.deepEqual(res.body.availability, [hours[1], hours[0], hours[2]], 'sorted by day and start time')
     assert.equal(res.body.acceptingLeads, false)
+
+    for (const [bad, why] of [
+      [[{ day: 'mon', start: '18:00', end: '16:00' }], 'end before start'],
+      [[{ day: 'mon', start: '16:00', end: '18:00' }, { day: 'mon', start: '17:00', end: '19:00' }], 'overlapping'],
+      [[{ day: 'mon', start: '16:10', end: '18:00' }], 'not on the quarter hour'],
+      [[{ day: 'mon', slot: 'evening' }], 'old slot format'],
+      [[], 'no hours at all'],
+    ]) {
+      assert.equal((await req('PATCH', '/api/tutors/me', { token: t.token, body: { availability: bad } })).status, 400, why)
+    }
     const bad = await req('PATCH', '/api/tutors/me', { token: t.token, body: { status: 'active' } })
     assert.equal(bad.status, 400, 'tutors cannot change their own status')
+  })
+
+  test('time off is stored in date order, and a tutor on leave today is not matched', async () => {
+    const t = await activeTutor()
+    const today = server.ops.ctx.today()
+    const timeOff = [{ from: '2027-01-10', to: '2027-01-12', reason: '  Family wedding ' }, { from: today, to: today }]
+    const saved = await req('PATCH', '/api/tutors/me', { token: t.token, body: { timeOff } })
+    assert.equal(saved.status, 200)
+    assert.deepEqual(saved.body.timeOff, [{ from: today, to: today }, { from: '2027-01-10', to: '2027-01-12', reason: 'Family wedding' }])
+    const backwards = await req('PATCH', '/api/tutors/me', { token: t.token, body: { timeOff: [{ from: '2027-01-12', to: '2027-01-10' }] } })
+    assert.equal(backwards.status, 400)
+
+    const p = await h.registerParent(server)
+    const search = await req('GET', `/api/admin/leads/${p.lead.id}/tutor-search?q=${t.phone.slice(-5)}`, { token: admin })
+    const row = search.body.items.find(i => i.id === t.tutor.id)
+    assert.equal(row.eligible, false)
+    assert.match(row.reason, /on leave until/)
   })
 })
 

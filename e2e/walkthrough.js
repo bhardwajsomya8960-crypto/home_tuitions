@@ -72,8 +72,13 @@ async function verifyPhone(page, phone) {
 
   // Continue without availability shows the inline error
   await tutor.getByRole('button', { name: 'Continue' }).click()
-  await tutor.getByText('Choose at least one time you can teach').waitFor()
-  for (const s of ['Tue 4–7 PM', 'Thu 4–7 PM', 'Sat 8 AM–12 PM']) await tutor.getByRole('button', { name: s }).click()
+  await tutor.getByText('Turn on at least one day you can teach.').waitFor()
+  // A switch per day; a day that is turned on starts with 4–7 PM and can take more ranges.
+  for (const day of ['Tuesday', 'Thursday', 'Saturday']) await tutor.getByRole('switch', { name: `Available on ${day}` }).click()
+  await tutor.getByLabel('Saturday start time 1').selectOption('08:00')
+  await tutor.getByLabel('Saturday end time 1').selectOption('12:00')
+  await tutor.locator('li', { hasText: 'Saturday' }).getByRole('button', { name: 'Add more hours' }).click()
+  await tutor.getByLabel('Saturday end time 2').waitFor()
   await tutor.getByLabel('Expected fee from (₹ / month)').fill('2500')
   await tutor.getByLabel('Expected fee up to (₹ / month)').fill('3500')
   await shot(tutor, 'tutor-register-availability')
@@ -231,6 +236,16 @@ async function verifyPhone(page, phone) {
 
   // Tutor pauses new leads from the availability screen
   await tutor.goto(`${BASE}/tutor/dashboard?tab=availability`)
+  await tutor.getByRole('switch', { name: 'Available on Saturday' }).waitFor()
+  if ((await tutor.getByLabel(/^Saturday start time/).count()) !== 2) problems.push('Saturday hours were not saved as two ranges')
+  // Holidays are saved straight away
+  await tutor.getByLabel('First day').fill('2026-12-24')
+  await tutor.getByLabel('Last day').fill('2026-12-26')
+  await tutor.getByLabel('Reason').fill('Christmas holidays')
+  await tutor.getByRole('button', { name: 'Add time off' }).click()
+  await tutor.getByText('Time off added.').waitFor()
+  await tutor.getByText('Christmas holidays').waitFor()
+  await shot(tutor, 'tutor-availability')
   await tutor.getByRole('checkbox', { name: 'Send me new lead offers' }).uncheck()
   await tutor.getByRole('button', { name: 'Save changes' }).click()
   await tutor.getByText('Saved.').waitFor()

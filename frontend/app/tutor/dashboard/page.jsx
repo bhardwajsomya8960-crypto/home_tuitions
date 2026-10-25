@@ -8,7 +8,7 @@ import DataTable from '../../../components/data/DataTable'
 import Modal from '../../../components/ui/Modal'
 import SimpleTable from '../../../components/ui/SimpleTable'
 import Countdown from '../../../components/ui/Countdown'
-import SlotGrid from '../../../components/ui/SlotGrid'
+import WeeklyHours, { hoursProblem } from '../../../components/ui/WeeklyHours'
 import { StatusBadge } from '../../../components/ui/Badge'
 import { btn, Card, PageLoader, SummaryTable } from '../../../components/ui/Card'
 import { Checkbox, ChipGroup, Notice, TextArea, TextInput } from '../../../components/ui/Form'
@@ -211,7 +211,8 @@ function Dashboard() {
         )}
 
         {tab === 'availability' && masters && <AvailabilityForm tutor={tutor} masters={masters} busy={busy}
-          onSave={body => run(() => api('/api/tutors/me', { method: 'PATCH', body, role: 'tutor' }), 'Saved.')} />}
+          onSave={body => run(() => api('/api/tutors/me', { method: 'PATCH', body, role: 'tutor' }), 'Saved.')}
+          onSaveTimeOff={(timeOff, message) => run(() => api('/api/tutors/me', { method: 'PATCH', body: { timeOff }, role: 'tutor' }), message)} />}
 
         {tab === 'verification' && masters && <VerificationTab tutor={tutor} masters={masters} busy={busy}
           onUpload={(type, file, details) => {
@@ -302,7 +303,46 @@ function AttendanceModal({ session, busy, onClose, onSubmit }) {
   )
 }
 
-function AvailabilityForm({ tutor, masters, busy, onSave }) {
+const istToday = () => new Date(Date.now() + 330 * 60000).toISOString().slice(0, 10)
+const dayCount = (from, to) => Math.round((Date.parse(to) - Date.parse(from)) / 86400000) + 1
+
+// Holidays and leave. Saved straight away; while on leave the tutor is not offered new leads.
+function TimeOffCard({ timeOff, busy, onSave }) {
+  const today = istToday()
+  const upcoming = timeOff.filter(t => t.to >= today)
+  const [f, setF] = useState({ from: '', to: '', reason: '' })
+  const [error, setError] = useState('')
+  const add = () => {
+    if (!f.from || !f.to) return setError('Choose the first and last day.')
+    if (f.to < f.from) return setError('The last day must be on or after the first day.')
+    setError('')
+    const entry = { from: f.from, to: f.to, ...(f.reason.trim() ? { reason: f.reason.trim() } : {}) }
+    onSave([...upcoming, entry], 'Time off added.').then(() => setF({ from: '', to: '', reason: '' })).catch(err => setError(err.message))
+  }
+  const remove = entry => onSave(upcoming.filter(t => t !== entry), 'Time off removed.').catch(() => {})
+
+  return (
+    <Card title="Holidays and time off" subtitle="Add days you cannot teach, such as holidays, exams or travel. You will not get new lead offers on these days.">
+      <div className="space-y-4">
+        <SimpleTable rows={upcoming.map((t, i) => ({ ...t, id: `${t.from}-${i}`, entry: t }))} minWidth={520} empty="No upcoming time off." columns={[
+          { key: 'dates', header: 'Dates', render: t => <span className="font-medium">{t.from === t.to ? formatDate(t.from) : `${formatDate(t.from)} – ${formatDate(t.to)}`}</span> },
+          { key: 'days', header: 'Days', render: t => { const n = dayCount(t.from, t.to); return `${n} day${n === 1 ? '' : 's'}` } },
+          { key: 'reason', header: 'Reason', render: t => t.reason || <span className="text-sage">—</span> },
+          { key: 'act', header: '', align: 'right', render: t => <button type="button" className={btn.danger} disabled={busy} onClick={() => remove(t.entry)}><FiTrash2 aria-hidden="true" /> Remove</button> },
+        ]} />
+        <div className="grid items-end gap-3 sm:grid-cols-[1fr_1fr_2fr_auto]">
+          <TextInput label="First day" type="date" min={today} value={f.from} onChange={e => setF({ ...f, from: e.target.value, to: f.to && f.to < e.target.value ? e.target.value : f.to })} />
+          <TextInput label="Last day" type="date" min={f.from || today} value={f.to} onChange={e => setF({ ...f, to: e.target.value })} />
+          <TextInput label="Reason" hint="Optional" maxLength={100} value={f.reason} onChange={e => setF({ ...f, reason: e.target.value })} placeholder="For example: Diwali holidays" />
+          <button type="button" className={`${btn.primary} sm:mb-5`} disabled={busy} onClick={add}><FiPlus aria-hidden="true" /> Add time off</button>
+        </div>
+        <Notice>{error}</Notice>
+      </div>
+    </Card>
+  )
+}
+
+function AvailabilityForm({ tutor, masters, busy, onSave, onSaveTimeOff }) {
   const [f, setF] = useState(() => ({
     availability: tutor.availability, acceptingLeads: tutor.acceptingLeads, demoAvailable: tutor.demoAvailable,
     serviceRadiusKm: tutor.serviceRadiusKm, feeMin: tutor.feeMin ?? '', feeMax: tutor.feeMax ?? '', bio: tutor.bio,
@@ -311,7 +351,8 @@ function AvailabilityForm({ tutor, masters, busy, onSave }) {
   const [errors, setErrors] = useState({})
   const save = () => {
     const e = {}
-    if (!f.availability.length) e.availability = 'Choose at least one time'
+    const hours = hoursProblem(f.availability)
+    if (hours) e.availability = hours
     if (f.bio.trim().length < 50) e.bio = 'Write at least 50 characters'
     if (!f.subjects.length) e.subjects = 'Choose at least one subject'
     if (!f.classes.length) e.classes = 'Choose at least one class'
@@ -333,7 +374,10 @@ function AvailabilityForm({ tutor, masters, busy, onSave }) {
           {f.modes.includes('home') && <TextInput className="max-w-xs" label="Home tuition travel distance (km)" type="number" min={1} max={50} value={f.serviceRadiusKm} onChange={e => setF({ ...f, serviceRadiusKm: e.target.value })} error={errors.serviceRadiusKm} />}
         </div>
       </Card>
-      <Card title="When you can teach"><SlotGrid days={masters.days} slots={masters.slots} value={f.availability} onChange={v => setF({ ...f, availability: v })} error={errors.availability} /></Card>
+      <Card title="When you can teach" subtitle="We only offer you leads at times you are free. Classes you already teach are taken out automatically.">
+        <WeeklyHours days={masters.days} value={f.availability} onChange={v => setF({ ...f, availability: v })} error={errors.availability} />
+      </Card>
+      <TimeOffCard timeOff={tutor.timeOff || []} busy={busy} onSave={onSaveTimeOff} />
       <Card title="What you teach">
         <div className="space-y-4">
           <ChipGroup label="Subjects" options={masters.subjects} value={f.subjects} onChange={v => setF({ ...f, subjects: v })} error={errors.subjects} />

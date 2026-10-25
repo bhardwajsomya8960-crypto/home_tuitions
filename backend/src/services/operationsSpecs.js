@@ -83,7 +83,7 @@ const tutorProfileFields = {
   languages: { type: 'stringArray', required: true, minItems: 1, maxItems: 7, maxItemLength: 20, allowed: M.LANGUAGES },
   modes: { type: 'stringArray', required: true, minItems: 1, maxItems: 2, maxItemLength: 10, allowed: M.TUTOR_MODES },
   serviceRadiusKm: { type: 'number', min: 1, max: 50 },
-  availability: { type: 'slots', required: true, minItems: 1, days, slots },
+  availability: { type: 'weeklyHours', required: true, minItems: 1, days },
   feeMin: { type: 'int', min: 0, max: 100000 },
   feeMax: { type: 'int', min: 0, max: 100000 },
   bio: { type: 'string', required: true, min: 50, max: 1000 },
@@ -114,6 +114,7 @@ const tutorRegistrationSpec = {
 const tutorUpdateSpec = {
   ...tutorProfileFields,
   acceptingLeads: { type: 'bool' },
+  timeOff: { type: 'timeOff' },
 }
 
 const rejectOfferSpec = {

@@ -7,10 +7,12 @@
 // All methods are synchronous (better-sqlite3), so `transaction(fn)` can wrap several of them
 // atomically. The offer-accept path relies on this to stop two tutors accepting the same lead.
 
+const { toRanges } = require('../services/availability')
+
 const TABLES = {
   parents: { json: ['consent'], bool: [] },
   students: { json: ['subjects'], bool: [] },
-  tutors: { json: ['subjects', 'classes', 'boards', 'languages', 'modes', 'availability', 'consent'], bool: ['demo_available', 'accepting_leads'] },
+  tutors: { json: ['subjects', 'classes', 'boards', 'languages', 'modes', 'availability', 'time_off', 'consent'], bool: ['demo_available', 'accepting_leads'] },
   tutor_documents: { json: [], bool: [] },
   leads: { json: ['subjects', 'preferred_days', 'preferred_slots', 'pref_languages'], bool: ['no_tutor_found'] },
   lead_events: { json: [], bool: [] },
@@ -26,8 +28,9 @@ const TABLES = {
   audit_log: { json: ['details'], bool: [] },
 }
 
-// Weekly slot lists are stored as [{ day, slot }]. Older seed data used { mon: ['evening'] };
-// convert that on read so those records keep working.
+// Class schedules are stored as [{ day, slot }]; tutor availability as time ranges
+// [{ day, start, end }]. Older records used { mon: ['evening'] } or [{ day, slot }] for both;
+// convert those on read so they keep working.
 const SLOT_LIST_COLUMNS = ['availability', 'schedule']
 function toSlotList(value) {
   if (Array.isArray(value) || value === null || typeof value !== 'object') return Array.isArray(value) ? value : []
@@ -58,7 +61,7 @@ function createOperationsRepository(db) {
     for (const [column, value] of Object.entries(row)) {
       let v = value
       if (meta.json.includes(column)) v = value === null ? null : JSON.parse(value)
-      if (SLOT_LIST_COLUMNS.includes(column)) v = toSlotList(v)
+      if (SLOT_LIST_COLUMNS.includes(column)) v = column === 'availability' ? toRanges(toSlotList(v)) : toSlotList(v)
       else if (meta.bool.includes(column)) v = value === null ? null : !!value
       out[toCamel(column)] = v
     }

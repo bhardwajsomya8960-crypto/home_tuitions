@@ -2,7 +2,7 @@
 
 This maps each section of the blueprint (`docs/UI.md`) to what the code does now. **Built** means it works end to end on stored data and is covered by tests. **Partial** means part of the section is built; the gap is listed. **Not built** means nothing exists yet.
 
-Verified by: `npm test` in `backend/` (125 tests) and `e2e/walkthrough.js` (browser walkthrough of the full journey, see `e2e/README.md`).
+Verified by: `npm test` in `backend/` (131 tests) and `e2e/walkthrough.js` (browser walkthrough of the full journey, see `e2e/README.md`).
 
 ## Summary
 
@@ -22,7 +22,7 @@ Verified by: `npm test` in `backend/` (125 tests) and `e2e/walkthrough.js` (brow
 | §12.5–12.6 Enrolments, classes | Built | Conversion creates the enrolment, first invoice and two weeks of sessions (kept topped up). Pause/resume/end. Tutor records attendance, notes and homework; parent confirms the class. |
 | §12.7 Invoices | Partial | Pending / partial / paid / void with manual payments (UPI, bank, cash, cheque). No gateway, refunds, coupons, tax fields, receipts PDF or reminders. |
 | §12.8–12.9 Tickets, payouts | Not built | |
-| §13 Matching engine | Built | Hard filters (active, accepting leads, class, subject, mode, gender preference, slot overlap, tutor radius capped by the maximum), configurable distance bands, all seven weighted factors, explainable reasons, pincode fallback without coordinates, persisted match runs. Road distance (Distance Matrix) and PostGIS are not used; distance is straight-line. |
+| §13 Matching engine | Built | Tutors set weekly hours as time ranges per day (several per day allowed) plus holidays/time off; a tutor counts as free for a requested slot (e.g. evening 4–7 PM) when their hours cover at least an hour of it, and tutors on leave today are excluded. Hard filters (active, accepting leads, class, subject, mode, gender preference, slot overlap, tutor radius capped by the maximum), configurable distance bands, all seven weighted factors, explainable reasons, pincode fallback without coordinates, persisted match runs. Road distance (Distance Matrix) and PostGIS are not used; distance is straight-line. |
 | §13.6 Privacy | Built | Tutors see pincode and distance only until the assignment is confirmed; parents see the tutor's contact only after confirmation. Tested in API and browser. |
 | §14 Data model | Partial | Parents, students, tutors, documents, leads, lead events, match runs, assignments, demos, enrolments, class sessions, invoices, payments, reviews, settings, audit log. Not yet: users/roles table, call logs as a separate table (notes are lead events), tickets, payouts, notifications, LMS. |
 | §15 API | Partial | See "API" below. |
@@ -33,7 +33,7 @@ Verified by: `npm test` in `backend/` (125 tests) and `e2e/walkthrough.js` (brow
 | §21 Online / LMS | Not built | Online leads are matched and scheduled like home leads; there is no video, recordings, assignments or tests. |
 | §22 Ratings | Partial | Parents rate the tutor once after the demo and once during tuition; the average feeds matching. No complaints, SLA or quality score. |
 | §23 Security | Partial | Signed role tokens, OTP hashing/attempt limits/cooldown, admin rate limiting, input validation that rejects unknown fields, uploads checked by file signature and size, KYC files served only to the owner or admin (admin views are audited), configurable CORS. Not yet: admin 2FA, encryption at rest, malware scanning, retention policy, per-route rate limits beyond login. |
-| §24 Business rules | Built | Rules 1–10 are enforced and tested. Rule 1 is applied strictly: no tutor can opt into a wider radius yet. Rule 3: slots a tutor already teaches in are removed from their availability before matching. Duplicate enquiries (same parent, student and subject within 30 days) are flagged. |
+| §24 Business rules | Built | Rules 1–10 are enforced and tested. Rule 1 is applied strictly: no tutor can opt into a wider radius yet. Rule 3: the hours of classes a tutor already teaches are removed from their availability before matching. Duplicate enquiries (same parent, student and subject within 30 days) are flagged. |
 
 ## Screens
 

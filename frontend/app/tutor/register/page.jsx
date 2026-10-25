@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { FiMapPin } from 'react-icons/fi'
 import { BrandLockup } from '../../../components/landing/Logo'
 import PhoneVerify from '../../../components/ui/PhoneVerify'
-import SlotGrid from '../../../components/ui/SlotGrid'
+import WeeklyHours, { hoursProblem } from '../../../components/ui/WeeklyHours'
 import { Checkbox, ChipGroup, Notice, Select, TextArea, TextInput } from '../../../components/ui/Form'
 import { PageLoader } from '../../../components/ui/Card'
 import { api, setSession } from '../../../lib/api'
@@ -44,7 +44,8 @@ function validateStep(step, f) {
     }
   }
   if (step === 2) {
-    if (f.availability.length === 0) e.availability = 'Choose at least one time you can teach'
+    const hours = hoursProblem(f.availability)
+    if (hours) e.availability = hours
     if (f.modes.includes('home') && !(Number(f.serviceRadiusKm) >= 1 && Number(f.serviceRadiusKm) <= 50)) e.serviceRadiusKm = 'Enter 1 to 50 km'
     if (f.feeMin && f.feeMax && Number(f.feeMin) > Number(f.feeMax)) e.feeMax = 'Must be at least the minimum'
   }
@@ -214,7 +215,7 @@ export default function TutorRegisterPage() {
                 <TextInput label="How far will you travel for home tuition? (km)" type="number" min={1} max={50} value={f.serviceRadiusKm} onChange={e => set('serviceRadiusKm', e.target.value)} error={errors.serviceRadiusKm}
                   hint="You will only receive home leads within this distance." />
               )}
-              <SlotGrid days={dayOptions} slots={masters.slots} value={f.availability} onChange={v => set('availability', v)} error={errors.availability} />
+              <WeeklyHours days={dayOptions} value={f.availability} onChange={v => set('availability', v)} error={errors.availability} hint="Turn on the days you can teach and set your usual hours. You can add holidays later from your dashboard." />
               <div className="grid gap-4 sm:grid-cols-2">
                 <TextInput label="Expected fee from (₹ / month)" type="number" min={0} inputMode="numeric" hint="Optional" value={f.feeMin} onChange={e => set('feeMin', e.target.value)} />
                 <TextInput label="Expected fee up to (₹ / month)" type="number" min={0} inputMode="numeric" value={f.feeMax} onChange={e => set('feeMax', e.target.value)} error={errors.feeMax} />
@@ -232,7 +233,7 @@ export default function TutorRegisterPage() {
               <TextArea label="Achievements" hint="Optional" maxLength={1000} value={f.achievements} onChange={e => set('achievements', e.target.value)} />
               <div className="rounded-xl bg-sand-50 p-4 text-sm">
                 <p className="font-semibold text-ink">Summary</p>
-                <p className="mt-1 text-sage">{f.subjects.join(', ')} · {f.classes.map(classLabel).join(', ')} · {f.modes.map(m => MODE_LABELS[m]).join(' & ')} · {f.availability.length} weekly time slot(s)</p>
+                <p className="mt-1 text-sage">{f.subjects.join(', ')} · {f.classes.map(classLabel).join(', ')} · {f.modes.map(m => MODE_LABELS[m]).join(' & ')} · {new Set(f.availability.map(r => r.day)).size} teaching day(s) a week</p>
               </div>
               <fieldset className="space-y-3">
                 <legend className="sr-only">Consent</legend>

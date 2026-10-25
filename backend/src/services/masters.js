@@ -13,11 +13,11 @@ const LEAD_MODES = ['home', 'online', 'hybrid']
 const TUTOR_MODES = ['home', 'online']
 const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
 const SLOTS = [
-  { value: 'early_morning', label: 'Early morning (6–8 AM)' },
-  { value: 'morning', label: 'Morning (8 AM–12 PM)' },
-  { value: 'afternoon', label: 'Afternoon (12–4 PM)' },
-  { value: 'evening', label: 'Evening (4–7 PM)' },
-  { value: 'night', label: 'Night (7–9 PM)' },
+  { value: 'early_morning', label: 'Early morning (6–8 AM)', start: '06:00', end: '08:00' },
+  { value: 'morning', label: 'Morning (8 AM–12 PM)', start: '08:00', end: '12:00' },
+  { value: 'afternoon', label: 'Afternoon (12–4 PM)', start: '12:00', end: '16:00' },
+  { value: 'evening', label: 'Evening (4–7 PM)', start: '16:00', end: '19:00' },
+  { value: 'night', label: 'Night (7–9 PM)', start: '19:00', end: '21:00' },
 ]
 const BUDGET_RANGES = [
   { value: 'under_2000', label: 'Under ₹2,000 / month', min: 0, max: 2000 },

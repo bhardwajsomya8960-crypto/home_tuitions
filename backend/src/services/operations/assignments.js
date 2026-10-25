@@ -1,6 +1,7 @@
 const M = require('../masters')
 const specs = require('../operationsSpecs')
 const { rankTutors, scoreTutor, needsLocation } = require('../matchingService')
+const { timeOffOn, withoutBooked } = require('../availability')
 
 const MATCHABLE = ['new', 'contacted', 'qualified', 'matching', 'tutor_offered', 'demo_completed']
 const OPEN = 'offered'
@@ -28,16 +29,17 @@ function createAssignments(ctx) {
     return stats
   }
 
-  // Business rule 3: slots a tutor already teaches in (active enrolments) are not free.
-  function withoutBookedSlots(tutor) {
-    const booked = new Set(repo.find('enrolments', { tutorId: tutor.id, status: 'active' })
-      .flatMap(e => e.schedule.map(s => `${s.day}:${s.slot}`)))
-    return booked.size ? { ...tutor, availability: tutor.availability.filter(a => !booked.has(`${a.day}:${a.slot}`)) } : tutor
+  // Prepares a tutor for matching. Business rule 3: hours a tutor already teaches in (active
+  // enrolments) are not free. A tutor on leave today is marked so matching can skip them.
+  function forMatching(tutor) {
+    const booked = repo.find('enrolments', { tutorId: tutor.id, status: 'active' }).flatMap(e => e.schedule)
+    const leave = timeOffOn(tutor.timeOff, ctx.today())
+    return { ...tutor, availability: withoutBooked(tutor.availability, booked), onLeaveUntil: leave ? leave.to : null }
   }
 
   function rank(lead) {
     const settings = ctx.settings()
-    const tutors = repo.find('tutors', { status: 'active' }).map(withoutBookedSlots)
+    const tutors = repo.find('tutors', { status: 'active' }).map(forMatching)
     return { settings, ...rankTutors(lead, tutors, settings, { budget: budgetFor(lead), statsByTutor: offerStats() }) }
   }
 
@@ -258,7 +260,7 @@ function createAssignments(ctx) {
         .map(t => {
           const assignable = MANUALLY_ASSIGNABLE.includes(t.status)
           // Score as if active and taking leads, so the remaining filters still explain the fit.
-          const fit = scoreTutor(lead, withoutBookedSlots({ ...t, status: 'active', acceptingLeads: true }), settings, { budget: budgetFor(lead), stats: stats[t.id] })
+          const fit = scoreTutor(lead, forMatching({ ...t, status: 'active', acceptingLeads: true }), settings, { budget: budgetFor(lead), stats: stats[t.id] })
           return {
             id: t.id, name: t.name, phone: t.phone, status: t.status, acceptingLeads: t.acceptingLeads,
             subjects: t.subjects, classes: t.classes, modes: t.modes, pincode: t.pincode, experienceYears: t.experienceYears,
@@ -293,7 +295,7 @@ function createAssignments(ctx) {
         if (mode === 'offer' && repo.find('assignments', { leadId, tutorId, status: OPEN }).length) {
           throw ctx.conflict('ALREADY_OFFERED', `${tutor.name} already has an open offer for this lead`)
         }
-        const fit = scoreTutor(lead, withoutBookedSlots({ ...tutor, status: 'active', acceptingLeads: true }), ctx.settings(), { budget: budgetFor(lead), stats: offerStats()[tutorId] })
+        const fit = scoreTutor(lead, forMatching({ ...tutor, status: 'active', acceptingLeads: true }), ctx.settings(), { budget: budgetFor(lead), stats: offerStats()[tutorId] })
         const note = typeof reason === 'string' ? reason.trim() : ''
         if (!fit.eligible && note.length < 3) {
           throw ctx.invalid([{ field: 'reason', message: `${tutor.name} does not meet the requirement (${fit.reason}). Add a reason to assign anyway.` }])

@@ -8,7 +8,7 @@ import { StatusBadge } from '../ui/Badge'
 import { btn, Details, PageLoader } from '../ui/Card'
 import { Notice, TextInput } from '../ui/Form'
 import { api, openProtectedFile } from '../../lib/api'
-import { classLabel, DOC_STATUS, formatDate, MODE_LABELS, rupees, scheduleText, TUTOR_STATUS } from '../../lib/format'
+import { classLabel, DOC_STATUS, formatDate, MODE_LABELS, hoursText, rupees, TUTOR_STATUS } from '../../lib/format'
 
 const ACTION_LABELS = { start_review: 'Start review', verify: 'Verify', activate: 'Activate', suspend: 'Suspend', reject: 'Reject' }
 const NEEDS_NOTE = ['suspend', 'reject']
@@ -62,7 +62,7 @@ export default function TutorReview({ tutorId, masters, onClose, onChanged }) {
             ['Subjects', tutor.subjects.join(', ')], ['Classes', tutor.classes.map(classLabel).join(', ')], ['Boards', tutor.boards.join(', ')],
             ['Languages', tutor.languages.join(', ')], ['Modes', tutor.modes.map(m => MODE_LABELS[m]).join(', ')], ['Travel radius', `${tutor.serviceRadiusKm} km`],
             ['Address', `${tutor.address}, ${tutor.pincode}`], ['Location', tutor.latitude != null ? `${tutor.latitude.toFixed(4)}, ${tutor.longitude.toFixed(4)}` : 'Pincode only'],
-            ['Fees', tutor.feeMin || tutor.feeMax ? `${rupees(tutor.feeMin)} – ${rupees(tutor.feeMax)} / month` : ''], ['Availability', scheduleText(tutor.availability)],
+            ['Fees', tutor.feeMin || tutor.feeMax ? `${rupees(tutor.feeMin)} – ${rupees(tutor.feeMax)} / month` : ''], ['Weekly hours', hoursText(tutor.availability)], ['Time off', (tutor.timeOff || []).map(t => `${t.from === t.to ? formatDate(t.from) : `${formatDate(t.from)} – ${formatDate(t.to)}`}${t.reason ? ` (${t.reason})` : ''}`).join(' · ') || 'None'],
             ['Offers', `${tutor.offerStats.total} received · ${tutor.offerStats.accepted} accepted · ${tutor.offerStats.declined} declined · ${tutor.offerStats.expired} expired`],
             ['Rating', tutor.ratingCount ? `${tutor.ratingAvg.toFixed(1)} from ${tutor.ratingCount}` : 'No reviews'],
           ]} />

@@ -2,12 +2,12 @@
 
 import { DAY_LABELS, SLOT_SHORT } from '../../lib/format'
 
-// Weekly availability grid: days across, time slots down. value = [{ day, slot }].
+// Weekly slot grid (used for class schedules): days across, time slots down. value = [{ day, slot }].
 export default function SlotGrid({ days, slots, value: rawValue, onChange, label = 'Weekly availability', hint = 'Tap each time you can usually teach.', error }) {
   const value = Array.isArray(rawValue) ? rawValue : []
   const has = (day, slot) => value.some(v => v.day === day && v.slot === slot)
   const toggle = (day, slot) => onChange(has(day, slot) ? value.filter(v => !(v.day === day && v.slot === slot)) : [...value, { day, slot }])
-  const on = 'bg-ink text-white border-ink'
+  const on = 'border-ink/60 bg-lemon text-ink'
 
   return (
     <fieldset>
@@ -36,7 +36,7 @@ export default function SlotGrid({ days, slots, value: rawValue, onChange, label
                           aria-pressed={active}
                           aria-label={`${DAY_LABELS[day]} ${SLOT_SHORT[slot]}`}
                           onClick={() => toggle(day, slot)}
-                          className={`h-10 w-full rounded-md border text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-ink ${active ? on : 'border-sand-200 bg-white text-sage-soft hover:bg-sand-50'}`}
+                          className={`h-8 w-full rounded-full border text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-ink ${active ? on : 'border-sand-200 bg-white text-sage-soft hover:bg-sand-50'}`}
                         >
                           {active ? '✓' : ''}
                         </button>

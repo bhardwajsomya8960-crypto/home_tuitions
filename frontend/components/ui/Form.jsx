@@ -102,7 +102,7 @@ export function Checkbox({ label, checked, onChange, error, children }) {
   return (
     <div>
       <label htmlFor={id} className="flex cursor-pointer items-start gap-3 text-sm text-ink/80">
-        <input id={id} type="checkbox" checked={!!checked} onChange={e => onChange(e.target.checked)} className="mt-0.5 h-5 w-5 shrink-0 rounded border-sand-300" aria-invalid={!!error} />
+        <input id={id} type="checkbox" checked={!!checked} onChange={e => onChange(e.target.checked)} className="mt-0.5 h-5 w-5 shrink-0 rounded border-sand-300 accent-sage" aria-invalid={!!error} />
         <span>{label || children}</span>
       </label>
       {error && <p role="alert" className="ml-8 mt-1 text-xs font-medium text-red-600">{error}</p>}

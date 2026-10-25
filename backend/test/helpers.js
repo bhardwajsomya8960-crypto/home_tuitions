@@ -102,7 +102,7 @@ const tutorBody = (over = {}) => ({
   address: '1 Tutor Lane, Begumpet', ...PLACES.begumpet,
   subjects: ['Mathematics', 'Science'], classes: ['7', '8', '9'], boards: ['CBSE'], languages: ['English', 'Hindi'],
   modes: ['home', 'online'], serviceRadiusKm: 8,
-  availability: [{ day: 'tue', slot: 'evening' }, { day: 'thu', slot: 'evening' }, { day: 'sat', slot: 'morning' }],
+  availability: [{ day: 'tue', start: '16:00', end: '19:00' }, { day: 'thu', start: '16:00', end: '19:00' }, { day: 'sat', start: '08:00', end: '12:00' }],
   feeMin: 2500, feeMax: 3500,
   bio: 'I have taught middle-school mathematics for five years and focus on building strong fundamentals.',
   demoAvailable: true, consent: { terms: true, communication: true, location: true },

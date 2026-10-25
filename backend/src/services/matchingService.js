@@ -1,4 +1,5 @@
 const geoService = require('./geoService')
+const { isFreeFor, toRanges } = require('./availability')
 
 // Admin-editable matching settings (blueprint §13, Appendix C). Weights are whole percentages
 // and must add up to 100. Stored in the settings table; these are the defaults.
@@ -79,6 +80,7 @@ function bandScore(distanceKm, bands) {
 function exclusionReason(lead, tutor, settings, distanceKm) {
   if (tutor.status !== 'active') return 'not active'
   if (!tutor.acceptingLeads) return 'paused new leads'
+  if (tutor.onLeaveUntil) return `on leave until ${tutor.onLeaveUntil}`
   if (!tutor.classes.includes(String(lead.class))) return 'does not teach this class'
   if (!lead.subjects.some(s => tutor.subjects.includes(s))) return 'does not teach the requested subjects'
   if (lead.mode === 'home' && !tutor.modes.includes('home')) return 'does not offer home tuition'
@@ -104,13 +106,18 @@ function canTeachAtHome(lead, tutor, settings, km) {
 }
 
 // Requested (day, slot) pairs the tutor is free for. A request of days × slots is treated as
-// every combination of the two.
+// every combination of the two; see availability.js for when hours count as free for a slot.
 function slotOverlap(lead, tutor) {
-  const wanted = []
-  for (const day of lead.preferredDays) for (const slot of lead.preferredSlots) wanted.push(`${day}:${slot}`)
-  const free = new Set((tutor.availability || []).map(a => `${a.day}:${a.slot}`))
-  const matched = wanted.filter(k => free.has(k)).length
-  return { matched, wanted: wanted.length }
+  const ranges = toRanges(tutor.availability)
+  let matched = 0
+  let wanted = 0
+  for (const day of lead.preferredDays) {
+    for (const slot of lead.preferredSlots) {
+      wanted++
+      if (isFreeFor(ranges, day, slot)) matched++
+    }
+  }
+  return { matched, wanted }
 }
 
 // Distance in km, or null when it cannot be worked out. Falls back to "same pincode" when

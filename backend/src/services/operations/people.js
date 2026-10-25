@@ -226,6 +226,11 @@ function createPeople(ctx, { geo, catalogueService, uploadsDir }) {
       const feeMin = v.feeMin ?? tutor.feeMin
       const feeMax = v.feeMax ?? tutor.feeMax
       if (feeMin != null && feeMax != null && feeMin > feeMax) throw ctx.invalid([{ field: 'feeMax', message: 'must be at least the minimum fee' }])
+      if (v.timeOff) {
+        v.timeOff = v.timeOff
+          .map(t => ({ from: t.from, to: t.to, ...(t.reason?.trim() ? { reason: t.reason.trim() } : {}) }))
+          .sort((a, b) => a.from.localeCompare(b.from))
+      }
       repo.update('tutors', tutorId, { ...v, updatedAt: ctx.iso() })
       ctx.audit(`tutor:${tutorId}`, 'tutor.update', 'tutor', tutorId, { fields: Object.keys(v) })
       return self.getTutor(tutorId)

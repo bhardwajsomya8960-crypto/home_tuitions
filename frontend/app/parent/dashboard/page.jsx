@@ -67,8 +67,7 @@ function Dashboard() {
   const nav = NAV.map(n => (n.id === 'requests' ? { ...n, count: pendingOutcome.length } : n.id === 'fees' ? { ...n, count: due.length } : n))
 
   return (
-    <AppShell portalLabel="Parent" user={{ name: data.parent.name, subtitle: `+91 ${data.parent.phone}` }} navItems={nav} profileTab="profile" activeTab={tab} onTabChange={setTab} onLogout={logout}
-      headerActions={<button type="button" onClick={() => setNewRequest(true)} className={btn.primary}><FiPlus aria-hidden="true" /> New request</button>}>
+    <AppShell portalLabel="Parent" user={{ name: data.parent.name, subtitle: `+91 ${data.parent.phone}` }} navItems={nav} profileTab="profile" activeTab={tab} onTabChange={setTab} onLogout={logout}>
       <div className="space-y-6">
         <Notice>{error}</Notice>
         <Notice tone="success">{message}</Notice>
@@ -82,7 +81,6 @@ function Dashboard() {
               { label: 'Amount due', value: rupees(data.stats.amountDue), tone: data.stats.amountDue ? 'orange' : undefined },
             ]} />
 
-            <button type="button" onClick={() => setNewRequest(true)} className={`${btn.primary} w-full md:hidden`}><FiPlus aria-hidden="true" /> New tuition request</button>
 
             {attention.length > 0 && (
               <Card title="Needs your attention">

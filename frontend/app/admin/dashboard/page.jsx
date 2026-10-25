@@ -61,10 +61,7 @@ function Console() {
 
   return (
     <AppShell portalLabel="Operations" user={{ name: 'Administrator', subtitle: 'Admin' }} navItems={nav} activeTab={tab} onTabChange={setTab} onLogout={logout}
-      headerActions={<>
-        <button type="button" className={btn.secondary} onClick={bump} aria-label="Refresh"><FiRefreshCw aria-hidden="true" /></button>
-        <button type="button" className={btn.primary} onClick={() => setNewLead(true)}><FiPlus aria-hidden="true" /> New lead</button>
-      </>}>
+      headerActions={<button type="button" className={btn.secondary} onClick={bump} aria-label="Refresh"><FiRefreshCw aria-hidden="true" /></button>}>
       <div className="space-y-6">
         <Notice>{error}</Notice>
         <Notice tone="success">{message}</Notice>

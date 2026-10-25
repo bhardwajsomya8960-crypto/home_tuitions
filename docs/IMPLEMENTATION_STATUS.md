@@ -2,7 +2,7 @@
 
 This maps each section of the blueprint (`docs/UI.md`) to what the code does now. **Built** means it works end to end on stored data and is covered by tests. **Partial** means part of the section is built; the gap is listed. **Not built** means nothing exists yet.
 
-Verified by: `npm test` in `backend/` (117 tests) and `e2e/walkthrough.js` (browser walkthrough of the full journey, see `e2e/README.md`).
+Verified by: `npm test` in `backend/` (123 tests) and `e2e/walkthrough.js` (browser walkthrough of the full journey, see `e2e/README.md`).
 
 ## Summary
 
@@ -16,7 +16,8 @@ Verified by: `npm test` in `backend/` (117 tests) and `e2e/walkthrough.js` (brow
 | §11.3 Staff-entered lead | Built | Reuses the parent account when the number is known. |
 | §12.1 Lead lifecycle | Built | All 12 statuses. Manual transitions are restricted to an allowed list; matching, offers, demos and conversion move leads through their own actions. Every change is logged. |
 | §12.2 Tutor verification | Built | pending → documents_submitted (automatic when required documents are uploaded) → under_review → verified (requires accepted photo, identity and qualification) → active; suspended and rejected need a reason. |
-| §12.3 Offers | Built | Timed offers, auto-expiry and re-offer (30-second sweeper plus on every read), first acceptance wins, other open offers withdrawn, confirm/release. |
+| §12.3 Offers | Built | Staff can also search tutors by name or phone in a lead and assign one directly (confirmed at once) or send them an offer; a tutor who fails the filters needs a recorded reason. |
+| §12.3 Offers (automatic) | Built | Timed offers, auto-expiry and re-offer (30-second sweeper plus on every read), first acceptance wins, other open offers withdrawn, confirm/release. |
 | §12.4 Demos | Built | Schedule (confirms the tutor), reschedule, complete, outcome (staff or parent), parent/tutor no-show with escalation after a configurable count, cancel. Parent can request a reschedule. |
 | §12.5–12.6 Enrolments, classes | Built | Conversion creates the enrolment, first invoice and two weeks of sessions (kept topped up). Pause/resume/end. Tutor records attendance, notes and homework; parent confirms the class. |
 | §12.7 Invoices | Partial | Pending / partial / paid / void with manual payments (UPI, bank, cash, cheque). No gateway, refunds, coupons, tax fields, receipts PDF or reminders. |

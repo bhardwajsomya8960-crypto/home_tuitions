@@ -11,7 +11,7 @@ import { ChipGroup, Notice, Select, TextArea, TextInput } from '../ui/Form'
 import { api } from '../../lib/api'
 import { optionLabel } from '../../lib/useMasters'
 import {
-  classLabel, daysText, DEMO_STATUS, formatDate, formatDateTime, istLocalToIso, LEAD_STATUS, MODE_LABELS,
+  TUTOR_STATUS, scheduleText, classLabel, daysText, DEMO_STATUS, formatDate, formatDateTime, istLocalToIso, LEAD_STATUS, MODE_LABELS,
   OFFER_STATUS, rupees, slotsText,
 } from '../../lib/format'
 import Countdown from '../ui/Countdown'
@@ -84,13 +84,15 @@ export default function LeadWorkspace({ leadId, masters, onClose, onChanged }) {
             onRelease={id => act(`/api/admin/assignments/${id}/release`, { note: 'Released by operations' }, 'Tutor released.')}
             onExpire={load} />
 
+          <AssignByName lead={lead} busy={busy} onAssign={body => act(`/api/admin/leads/${lead.id}/assign`, body, body.mode === 'direct' ? 'Tutor assigned and confirmed. Contact details shared.' : 'Offer sent to the tutor.')} />
+
           <DemoSection lead={lead} masters={masters} busy={busy} act={act} />
 
           {lead.status === 'demo_completed' && <ConvertForm lead={lead} masters={masters} busy={busy} onSubmit={body => act(`/api/admin/leads/${lead.id}/convert`, body, 'Converted. Enrolment, first invoice and classes created.')} />}
           {lead.enrolment && (
-            <section className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm">
-              <p className="font-semibold text-green-900">Enrolment {lead.enrolment.status}</p>
-              <p>{rupees(lead.enrolment.feeAmount)} · {lead.enrolment.plan} · from {formatDate(lead.enrolment.startDate)}</p>
+            <section>
+              <h3 className="mb-2 text-base font-semibold">Enrolment</h3>
+              <Details items={[['Status', lead.enrolment.status], ['Fee', `${rupees(lead.enrolment.feeAmount)} · ${lead.enrolment.plan}`], ['Started', formatDate(lead.enrolment.startDate)], ['Schedule', scheduleText(lead.enrolment.schedule)]]} />
             </section>
           )}
 
@@ -140,13 +142,14 @@ function MatchingSection({ lead, busy, onRun, onOfferNext, onOffer, onConfirm, o
   const canOffer = ['matching', 'tutor_offered'].includes(lead.status) && lead.latestMatch
   const offeredIds = new Set(lead.assignments.map(a => a.tutorId))
   const results = lead.latestMatch?.results || []
+  const anyLeftToOffer = results.some(r => !offeredIds.has(r.tutorId))
   return (
     <section className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-base font-semibold">Tutor matching</h3>
         <div className="flex flex-wrap gap-2">
           {canMatch && <button type="button" className={btn.secondary} disabled={busy} onClick={onRun}><FiPlay aria-hidden="true" /> {lead.latestMatch ? 'Re-run matching' : 'Run matching'}</button>}
-          {canOffer && <button type="button" className={btn.primary} disabled={busy} onClick={onOfferNext}><FiSend aria-hidden="true" /> Offer to next tutor</button>}
+          {canOffer && anyLeftToOffer && <button type="button" className={btn.primary} disabled={busy} onClick={onOfferNext}><FiSend aria-hidden="true" /> Offer to next tutor</button>}
         </div>
       </div>
       {lead.latestMatch && (
@@ -173,7 +176,7 @@ function MatchingSection({ lead, busy, onRun, onOfferNext, onOffer, onConfirm, o
           </table>
         </div>
       )}
-      {lead.latestMatch && results.length === 0 && <Notice tone="warning">No tutor meets the requirement. Consider switching to online, widening the time slots, or recruiting tutors in this area.</Notice>}
+      {lead.latestMatch && results.length === 0 && !lead.assignments.some(a => ['accepted', 'confirmed'].includes(a.status)) && <Notice tone="warning">No tutor meets the requirement. Assign a tutor by name below, or consider switching to online, widening the time slots, or recruiting tutors in this area.</Notice>}
 
       {lead.assignments.length > 0 && (
         <div>
@@ -307,6 +310,73 @@ function History({ lead, busy, onNote }) {
         { key: 'note', header: 'Note', render: e => <span className="text-xs">{e.note || '—'}</span> },
         { key: 'by', header: 'By', render: e => <span className="text-xs text-gray-500">{e.actor.split(':')[0]}</span> },
       ]} />
+    </section>
+  )
+}
+
+// Staff pick a tutor by name (blueprint §10.5 "manual assign"). Results show how each tutor fits;
+// choosing one who fails the filters needs a reason, which is kept in the lead history.
+const ASSIGNABLE_LEAD = ['new', 'contacted', 'qualified', 'matching', 'tutor_offered', 'demo_completed', 'on_hold']
+
+function AssignByName({ lead, busy, onAssign }) {
+  const [q, setQ] = useState('')
+  const [results, setResults] = useState(null)
+  const [error, setError] = useState('')
+  const [choice, setChoice] = useState(null)
+  const [reason, setReason] = useState('')
+  const hasTutor = lead.assignments.some(a => ['accepted', 'confirmed'].includes(a.status))
+
+  useEffect(() => {
+    const term = q.trim()
+    if (term.length < 2) { setResults(null); setError(''); return undefined }
+    const t = setTimeout(() => {
+      api(`/api/admin/leads/${lead.id}/tutor-search?q=${encodeURIComponent(term)}`, { role: 'admin' })
+        .then(r => { setResults(r.items); setError('') })
+        .catch(e => setError(e.message))
+    }, 300)
+    return () => clearTimeout(t)
+  }, [q, lead.id, lead.updatedAt])
+
+  if (hasTutor || !ASSIGNABLE_LEAD.includes(lead.status)) return null
+
+  const submit = () => onAssign({ tutorId: choice.tutor.id, mode: choice.mode, ...(reason.trim() ? { reason: reason.trim() } : {}) })
+    .then(ok => { if (ok) { setChoice(null); setReason(''); setQ('') } })
+
+  return (
+    <section className="space-y-3">
+      <h3 className="text-base font-semibold">Assign a tutor by name</h3>
+      <TextInput type="search" placeholder="Search tutor by name, phone or email" value={q} onChange={e => setQ(e.target.value)} aria-label="Search tutors" hint="Verified tutors can be assigned even if matching did not pick them." />
+      <Notice>{error}</Notice>
+      {results && (
+        <SimpleTable flush={false} rows={results} minWidth={820} empty="No tutor matches that search" columns={[
+          { key: 'tutor', header: 'Tutor', render: t => <span><span className="font-medium">{t.name}</span><br /><span className="text-xs text-gray-500">+91 {t.phone}</span></span> },
+          { key: 'teaches', header: 'Teaches', render: t => <span className="text-xs">{t.subjects.join(', ')}<br />{t.classes.map(classLabel).join(', ')}</span> },
+          { key: 'area', header: 'Mode / area', render: t => <span className="text-xs">{t.modes.map(m => MODE_LABELS[m]).join(', ')}<br />{t.pincode}{t.distanceKm != null ? ` · ${t.distanceKm} km` : ''}</span> },
+          { key: 'status', header: 'Status', render: t => <StatusBadge map={TUTOR_STATUS} value={t.status} /> },
+          { key: 'fit', header: 'Fit for this lead', render: t => (t.eligible
+            ? <span className="font-semibold text-green-700">Score {t.score}</span>
+            : <span className="text-xs font-medium text-amber-800">{t.reason}</span>) },
+          { key: 'act', header: '', align: 'right', sticky: true, render: t => (t.assignable ? (
+            <span className="inline-flex gap-2">
+              <button type="button" className={btn.success} disabled={busy} onClick={() => { setChoice({ tutor: t, mode: 'direct' }); setReason('') }}>Assign now</button>
+              <button type="button" className={btn.secondary} disabled={busy} onClick={() => { setChoice({ tutor: t, mode: 'offer' }); setReason('') }}>Send offer</button>
+            </span>
+          ) : <span className="text-xs text-gray-500">Verify first</span>) },
+        ]} />
+      )}
+      <Modal open={!!choice} title={choice ? `${choice.mode === 'direct' ? 'Assign' : 'Send offer to'} ${choice.tutor.name}` : ''} onClose={() => setChoice(null)}
+        footer={<><button type="button" className={btn.secondary} onClick={() => setChoice(null)}>Cancel</button>
+          <button type="button" className={btn.primary} disabled={busy || (choice && !choice.tutor.eligible && reason.trim().length < 3)} onClick={submit}>{choice?.mode === 'direct' ? 'Assign and confirm' : 'Send offer'}</button></>}>
+        {choice && (
+          <div className="space-y-4 text-sm">
+            <p>{choice.mode === 'direct'
+              ? 'The tutor is confirmed straight away and contact details are shared with both sides. Any open offers on this lead are withdrawn.'
+              : 'The tutor gets a timed offer and can accept or decline.'}</p>
+            {!choice.tutor.eligible && <Notice tone="warning">This tutor does not meet the requirement: {choice.tutor.reason}. Add a reason to continue.</Notice>}
+            <TextArea label="Reason" required={!choice.tutor.eligible} hint={choice.tutor.eligible ? 'Optional. Saved in the lead history.' : 'Saved in the lead history.'} rows={2} value={reason} onChange={e => setReason(e.target.value)} />
+          </div>
+        )}
+      </Modal>
     </section>
   )
 }

@@ -33,6 +33,8 @@ function createAdminRouter({ operations }) {
     assignments.offerNext(req.params.id, ACTOR, { tutorIds })
     return admin.leadDetail(req.params.id)
   }))
+  router.get('/leads/:id/tutor-search', json(req => ({ items: assignments.searchTutorsForLead(req.params.id, req.query.q) })))
+  router.post('/leads/:id/assign', json(req => { assignments.assignManually(req.params.id, req.body, ACTOR); return admin.leadDetail(req.params.id) }))
   router.post('/assignments/:id/confirm', json(req => admin.leadDetail(assignments.confirm(req.params.id, ACTOR).leadId)))
   router.post('/assignments/:id/release', json(req => admin.leadDetail(assignments.release(req.params.id, ACTOR, req.body?.note).leadId)))
 

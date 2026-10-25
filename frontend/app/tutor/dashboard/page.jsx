@@ -10,7 +10,7 @@ import SimpleTable from '../../../components/ui/SimpleTable'
 import Countdown from '../../../components/ui/Countdown'
 import SlotGrid from '../../../components/ui/SlotGrid'
 import { StatusBadge } from '../../../components/ui/Badge'
-import { btn, Card, PageLoader, StatCard } from '../../../components/ui/Card'
+import { btn, Card, PageLoader, SummaryTable } from '../../../components/ui/Card'
 import { Checkbox, ChipGroup, Notice, TextArea, TextInput } from '../../../components/ui/Form'
 import { api, openProtectedFile } from '../../../lib/api'
 import { usePortal } from '../../../lib/usePortal'
@@ -90,12 +90,12 @@ function Dashboard() {
           <>
             {!isActive && <VerificationBanner tutor={tutor} onOpen={() => setTab('verification')} />}
             {isActive && !tutor.acceptingLeads && <Notice tone="warning">You have paused new leads. <button type="button" className="font-semibold underline" onClick={() => setTab('availability')}>Resume</button></Notice>}
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 md:gap-4">
-              <StatCard label="Open offers" value={data.stats.openOffers} icon={FiBell} tone={data.stats.openOffers ? 'orange' : 'blue'} />
-              <StatCard label="Active students" value={data.stats.activeStudents} icon={FiUsers} tone="green" />
-              <StatCard label="Classes taught" value={data.stats.classesCompleted} icon={FiCalendar} tone="purple" />
-              <StatCard label="Rating" value={data.stats.ratingCount ? data.stats.ratingAvg.toFixed(1) : '—'} hint={data.stats.ratingCount ? `${data.stats.ratingCount} review(s)` : 'No reviews yet'} icon={FiStar} />
-            </div>
+            <SummaryTable items={[
+              { label: 'Open offers', value: data.stats.openOffers, tone: data.stats.openOffers ? 'orange' : undefined },
+              { label: 'Active students', value: data.stats.activeStudents },
+              { label: 'Classes taught', value: data.stats.classesCompleted },
+              { label: 'Rating', value: data.stats.ratingCount ? data.stats.ratingAvg.toFixed(1) : '—', hint: data.stats.ratingCount ? `${data.stats.ratingCount} review(s)` : 'No reviews yet' },
+            ]} />
             {data.offers.length > 0 && (
               <Card title="Offers waiting for you" actions={<button type="button" className={btn.link} onClick={() => setTab('offers')}>Respond</button>}>
                 <SimpleTable rows={data.offers} minWidth={720} columns={[

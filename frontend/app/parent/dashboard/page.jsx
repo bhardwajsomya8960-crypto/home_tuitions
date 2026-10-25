@@ -8,7 +8,7 @@ import DataTable from '../../../components/data/DataTable'
 import Modal from '../../../components/ui/Modal'
 import SimpleTable from '../../../components/ui/SimpleTable'
 import { StatusBadge } from '../../../components/ui/Badge'
-import { btn, Card, Details, PageLoader, StatCard } from '../../../components/ui/Card'
+import { btn, Card, Details, PageLoader, SummaryTable } from '../../../components/ui/Card'
 import { ChipGroup, Notice, Select, TextArea, TextInput } from '../../../components/ui/Form'
 import { api } from '../../../lib/api'
 import { usePortal } from '../../../lib/usePortal'
@@ -75,12 +75,12 @@ function Dashboard() {
 
         {tab === 'overview' && (
           <>
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 md:gap-4">
-              <StatCard label="Students" value={data.stats.students} icon={FiBook} />
-              <StatCard label="Active tuitions" value={data.stats.activeEnrolments} icon={FiUser} tone="green" />
-              <StatCard label="Open requests" value={data.stats.openRequests} icon={FiFileText} tone="purple" />
-              <StatCard label="Amount due" value={rupees(data.stats.amountDue)} icon={FiDollarSign} tone={data.stats.amountDue ? 'orange' : 'green'} />
-            </div>
+            <SummaryTable items={[
+              { label: 'Students', value: data.stats.students },
+              { label: 'Active tuitions', value: data.stats.activeEnrolments },
+              { label: 'Open requests', value: data.stats.openRequests },
+              { label: 'Amount due', value: rupees(data.stats.amountDue), tone: data.stats.amountDue ? 'orange' : undefined },
+            ]} />
 
             <button type="button" onClick={() => setNewRequest(true)} className={`${btn.primary} w-full md:hidden`}><FiPlus aria-hidden="true" /> New tuition request</button>
 
@@ -201,13 +201,17 @@ function RequestDetail({ request: r, masters, busy, act }) {
           ]} />
 
           {r.tutor && (
-            <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-blue-800">{r.tutor.confirmed ? 'Your tutor' : 'Tutor available (awaiting our confirmation)'}</p>
-              <p className="mt-1 text-lg font-semibold">{r.tutor.name}</p>
-              <p className="text-sm text-gray-600">{r.tutor.qualification} · {r.tutor.experienceYears} years · {r.tutor.languages.join(', ')}</p>
-              {r.tutor.ratingCount > 0 && <p className="mt-1 flex items-center gap-1 text-sm"><FiStar className="h-4 w-4 fill-current text-yellow-500" aria-hidden="true" /> {r.tutor.ratingAvg.toFixed(1)} ({r.tutor.ratingCount})</p>}
-              <p className="mt-2 text-sm text-gray-700">{r.tutor.bio}</p>
-              {r.tutor.phone && <p className="mt-2 text-sm"><strong>Contact:</strong> <a className="underline" href={`tel:+91${r.tutor.phone}`}>+91 {r.tutor.phone}</a></p>}
+            <div>
+              <h3 className="mb-2 text-sm font-semibold">{r.tutor.confirmed ? 'Your tutor' : 'Tutor available (awaiting our confirmation)'}</h3>
+              <Details items={[
+                ['Name', r.tutor.name],
+                ['Qualification', r.tutor.qualification],
+                ['Experience', `${r.tutor.experienceYears} years`],
+                ['Languages', r.tutor.languages.join(', ')],
+                ['Rating', r.tutor.ratingCount > 0 ? <span key="r" className="inline-flex items-center gap-1"><FiStar className="h-4 w-4 fill-current text-yellow-500" aria-hidden="true" /> {r.tutor.ratingAvg.toFixed(1)} ({r.tutor.ratingCount})</span> : 'No reviews yet'],
+                ['About', r.tutor.bio],
+                ['Contact', r.tutor.phone ? <a key="c" className="underline" href={`tel:+91${r.tutor.phone}`}>+91 {r.tutor.phone}</a> : 'Shared after confirmation'],
+              ]} />
             </div>
           )}
 
@@ -238,10 +242,12 @@ function RequestDetail({ request: r, masters, busy, act }) {
           )}
 
           {r.enrolment && (
-            <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm">
-              <p className="font-semibold text-green-900">Tuition {r.enrolment.status}</p>
-              <p className="text-green-900">{rupees(r.enrolment.feeAmount)} · {r.enrolment.plan.replace('_', ' ')} · from {formatDate(r.enrolment.startDate)}</p>
-              <p className="text-green-900">{scheduleText(r.enrolment.schedule)}</p>
+            <div>
+              <h3 className="mb-2 text-sm font-semibold">Tuition</h3>
+              <Details items={[
+                ['Status', r.enrolment.status], ['Fee', `${rupees(r.enrolment.feeAmount)} · ${r.enrolment.plan.replace('_', ' ')}`],
+                ['Started', formatDate(r.enrolment.startDate)], ['Schedule', scheduleText(r.enrolment.schedule)],
+              ]} />
             </div>
           )}
 

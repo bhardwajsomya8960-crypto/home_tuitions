@@ -9,7 +9,7 @@ import Modal from '../../../components/ui/Modal'
 import SimpleTable from '../../../components/ui/SimpleTable'
 import Countdown from '../../../components/ui/Countdown'
 import { StatusBadge } from '../../../components/ui/Badge'
-import { btn, Card, PageLoader, StatCard } from '../../../components/ui/Card'
+import { btn, Card, PageLoader, SummaryTable } from '../../../components/ui/Card'
 import { ChipGroup, Notice, Select, TextArea, TextInput } from '../../../components/ui/Form'
 import LeadWorkspace from '../../../components/admin/LeadWorkspace'
 import TutorReview from '../../../components/admin/TutorReview'
@@ -91,16 +91,16 @@ function Overview({ dash, goto }) {
   const max = Math.max(1, ...pipeline.map(s => dash.leads.byStatus[s]))
   return (
     <>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 md:gap-4">
-        <StatCard label="Leads" value={dash.leads.total} hint={`${dash.leads.byStatus.new} new`} icon={FiUsers} />
-        <StatCard label="Conversion rate" value={`${dash.conversionRate}%`} hint={`${dash.leads.byStatus.converted} converted`} icon={FiBarChart2} tone="green" />
-        <StatCard label="Active tutors" value={dash.tutors.byStatus.active || 0} hint={`${dash.tutors.awaitingReview} awaiting review`} icon={FiUserCheck} tone="purple" />
-        <StatCard label="Active enrolments" value={dash.enrolments.active} icon={FiActivity} tone="blue" />
-        <StatCard label="Collected" value={rupees(dash.finance.collected)} icon={FiDollarSign} tone="green" />
-        <StatCard label="Outstanding" value={rupees(dash.finance.outstanding)} hint={dash.finance.overdue ? `${rupees(dash.finance.overdue)} overdue` : 'Nothing overdue'} icon={FiDollarSign} tone={dash.finance.overdue ? 'red' : 'orange'} />
-        <StatCard label="Open offers" value={dash.operations.openOffers} hint={`${dash.operations.awaitingConfirmation} awaiting confirmation`} icon={FiActivity} tone="orange" />
-        <StatCard label="No tutor found" value={dash.operations.noTutorQueue} hint={`${dash.operations.upcomingDemos} demos in the next 7 days`} icon={FiAlertTriangle} tone={dash.operations.noTutorQueue ? 'red' : 'blue'} />
-      </div>
+      <SummaryTable items={[
+        { label: 'Leads', value: dash.leads.total, hint: `${dash.leads.byStatus.new} new` },
+        { label: 'Conversion rate', value: `${dash.conversionRate}%`, hint: `${dash.leads.byStatus.converted} converted` },
+        { label: 'Active tutors', value: dash.tutors.byStatus.active || 0, hint: `${dash.tutors.awaitingReview} awaiting review` },
+        { label: 'Active enrolments', value: dash.enrolments.active },
+        { label: 'Collected', value: rupees(dash.finance.collected) },
+        { label: 'Outstanding', value: rupees(dash.finance.outstanding), hint: dash.finance.overdue ? `${rupees(dash.finance.overdue)} overdue` : 'Nothing overdue', tone: dash.finance.overdue ? 'red' : undefined },
+        { label: 'Open offers', value: dash.operations.openOffers, hint: `${dash.operations.awaitingConfirmation} awaiting confirmation`, tone: dash.operations.awaitingConfirmation ? 'orange' : undefined },
+        { label: 'No tutor found', value: dash.operations.noTutorQueue, hint: `${dash.operations.upcomingDemos} demos in the next 7 days`, tone: dash.operations.noTutorQueue ? 'red' : undefined },
+      ]} />
       <Card title="Lead pipeline" actions={<button type="button" className={btn.link} onClick={() => goto('leads')}>View leads</button>}>
         <SimpleTable rows={pipeline.map(st => ({ id: st, count: dash.leads.byStatus[st] }))} minWidth={480} columns={[
           { key: 'stage', header: 'Stage', render: r => <StatusBadge map={LEAD_STATUS} value={r.id} /> },

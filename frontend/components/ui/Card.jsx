@@ -17,22 +17,6 @@ export function Card({ title, subtitle, actions, children, className = '' }) {
   )
 }
 
-export function StatCard({ label, value, hint, icon: Icon, tone = 'blue' }) {
-  const tones = { blue: 'text-blue-600 bg-blue-50', green: 'text-green-600 bg-green-50', purple: 'text-purple-600 bg-purple-50', orange: 'text-orange-600 bg-orange-50', red: 'text-red-600 bg-red-50' }
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm md:p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm text-gray-600">{label}</p>
-          <p className="mt-1 text-2xl font-bold text-gray-900 md:text-3xl">{value}</p>
-          {hint && <p className="mt-1 text-xs text-gray-500">{hint}</p>}
-        </div>
-        {Icon && <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${tones[tone]}`}><Icon className="h-5 w-5" aria-hidden="true" /></span>}
-      </div>
-    </div>
-  )
-}
-
 export function EmptyState({ title, children, action }) {
   return (
     <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
@@ -53,17 +37,49 @@ export function PageLoader({ label = 'Loading…' }) {
   )
 }
 
-// Small definition list for detail panels.
+// Field/value table for record details (no card grids).
 export function Details({ items }) {
+  const rows = items.filter(Boolean)
   return (
-    <dl className="grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
-      {items.filter(Boolean).map(([label, value]) => (
-        <div key={label} className="min-w-0">
-          <dt className="text-xs text-gray-500">{label}</dt>
-          <dd className="break-words font-medium text-gray-900">{value || '—'}</dd>
-        </div>
-      ))}
-    </dl>
+    <div className="overflow-x-auto rounded-lg border border-gray-200">
+      <table className="w-full text-left text-sm">
+        <tbody className="divide-y divide-gray-100">
+          {rows.map(([label, value]) => (
+            <tr key={label} className="align-top">
+              <th scope="row" className="w-2/5 whitespace-nowrap bg-gray-50 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-gray-500 sm:w-1/3">{label}</th>
+              <td className="break-words px-4 py-2.5 font-medium text-gray-900">{value || '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+// Key figures as one table: a column per metric, values below. Replaces stat tiles.
+// items: [{ label, value, hint?, tone? }]   tone 'red' | 'orange' highlights a value that needs attention
+export function SummaryTable({ items, title = 'Summary' }) {
+  const toneClass = { red: 'text-red-700', orange: 'text-amber-700' }
+  return (
+    <section aria-label={title} className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+      <table className="w-full text-left text-sm" style={{ minWidth: items.length * 140 }}>
+        <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <tr className="border-b border-gray-200">
+            {items.map(i => <th key={i.label} scope="col" className="whitespace-nowrap px-4 py-2.5">{i.label}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          <tr className="align-top">
+            {items.map(i => (
+              <td key={i.label} className="px-4 py-3">
+                <span className={`block text-xl font-bold tabular-nums md:text-2xl ${toneClass[i.tone] || 'text-gray-900'}`}>{i.value}</span>
+                {i.hint && <span className="mt-0.5 block text-xs text-gray-500">{i.hint}</span>}
+              </td>
+            ))}
+          </tr>
+        </tbody>
+      </table>
+    </section>
   )
 }
 

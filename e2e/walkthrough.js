@@ -6,6 +6,7 @@ const path = require('path')
 const fs = require('fs')
 
 const BASE = process.env.E2E_BASE_URL || 'http://localhost:3055'
+const API = process.env.E2E_API_URL || 'http://localhost:5055'
 const OUT = process.env.E2E_OUT_DIR || path.join(__dirname, 'output')
 const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL || 'admin@example.com'
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD || 'admin-password-123'
@@ -235,6 +236,30 @@ async function verifyPhone(page, phone) {
   await shot(admin, 'admin-finance-paid')
   await admin.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: /Audit log/ }).click()
   await admin.getByText('payment.record').waitFor()
+  // ---------- 9. Assign a tutor by name when matching finds nobody ----------
+  const adminToken = await admin.evaluate(() => JSON.parse(localStorage.getItem('ht.session.admin')).token)
+  const created = await (await fetch(`${API}/api/admin/leads`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+    body: JSON.stringify({ name: 'Walk-in Parent', phone: '9800000009', relationship: 'Parent', studentName: 'Diya', studentClass: '11', board: 'CBSE', subjects: ['Mathematics'], mode: 'online', preferredDays: ['tue'], preferredSlots: ['evening'], source: 'bda' }),
+  })).json()
+  await admin.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: /Leads/ }).click()
+  await admin.getByRole('button', { name: created.code }).click()
+  const manual = admin.getByRole('dialog', { name: new RegExp(created.code) })
+  await manual.getByRole('button', { name: 'Run matching' }).click()
+  await manual.getByText(/No tutor meets the requirement/).waitFor()
+  if (await manual.getByRole('button', { name: 'Offer to next tutor' }).count()) problems.push('Offer button shown with nobody to offer')
+  await manual.getByRole('searchbox', { name: 'Search tutors' }).fill('Lakshmi')
+  await manual.getByText('does not teach this class').waitFor()
+  await manual.getByRole('button', { name: 'Assign now' }).click()
+  const assignDialog = admin.getByRole('dialog', { name: 'Assign Lakshmi Rao' })
+  if (await assignDialog.getByRole('button', { name: 'Assign and confirm' }).isEnabled()) problems.push('Override allowed without a reason')
+  await assignDialog.getByLabel('Reason').fill('Parent requested Lakshmi; she teaches Class 11 too')
+  await assignDialog.getByRole('button', { name: 'Assign and confirm' }).click()
+  await manual.getByText('Tutor assigned and confirmed.', { exact: false }).waitFor()
+  await manual.getByText('manual assignment').first().waitFor()
+  await shot(admin, 'admin-manual-assign')
+  await manual.getByRole('button', { name: 'Close', exact: true }).click()
+
   await admin.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: /Matching rules/ }).click()
   await admin.getByLabel('Distance (%)').fill('40')
   await admin.getByText('Total: 110% (must be 100%)').waitFor()

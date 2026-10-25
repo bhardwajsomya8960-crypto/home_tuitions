@@ -1,9 +1,13 @@
 const M = require('../masters')
 const specs = require('../operationsSpecs')
-const { rankTutors, needsLocation } = require('../matchingService')
+const { rankTutors, scoreTutor, needsLocation } = require('../matchingService')
 
 const MATCHABLE = ['new', 'contacted', 'qualified', 'matching', 'tutor_offered', 'demo_completed']
 const OPEN = 'offered'
+// Staff may assign a tutor by hand once their documents are verified (business rule 2),
+// even before they are activated for automatic offers.
+const MANUALLY_ASSIGNABLE = ['verified', 'active']
+const MANUAL_MODES = ['direct', 'offer']
 
 function createAssignments(ctx) {
   const { repo } = ctx
@@ -235,6 +239,94 @@ function createAssignments(ctx) {
       ctx.audit(actor, 'assignment.release', 'assignment', a.id)
       if (['tutor_accepted', 'demo_completed'].includes(lead.status)) ctx.moveLead(lead, 'matching', actor, { note: 'Looking for another tutor' })
       return repo.get('assignments', a.id)
+    },
+
+    // ---- Manual assignment (staff search by name) -------------------------------------
+    // Finds tutors by name, phone or email and says how each one fits this lead: the match score
+    // when they pass every filter, otherwise the reason they would not be matched automatically.
+    searchTutorsForLead(leadId, query) {
+      const lead = ctx.require('leads', leadId, 'Lead')
+      const q = typeof query === 'string' ? query.trim().toLowerCase().slice(0, 80) : ''
+      if (q.length < 2) throw ctx.invalid([{ field: 'q', message: 'Type at least 2 characters' }])
+      const digits = q.replace(/\D/g, '')
+      const settings = ctx.settings()
+      const stats = offerStats()
+      const already = offeredTutorIds(leadId)
+      return repo.find('tutors', {}, { orderBy: 'name ASC' })
+        .filter(t => t.name.toLowerCase().includes(q) || t.email.toLowerCase().includes(q) || (digits.length >= 3 && t.phone.includes(digits)))
+        .slice(0, 20)
+        .map(t => {
+          const assignable = MANUALLY_ASSIGNABLE.includes(t.status)
+          // Score as if active and taking leads, so the remaining filters still explain the fit.
+          const fit = scoreTutor(lead, withoutBookedSlots({ ...t, status: 'active', acceptingLeads: true }), settings, { budget: budgetFor(lead), stats: stats[t.id] })
+          return {
+            id: t.id, name: t.name, phone: t.phone, status: t.status, acceptingLeads: t.acceptingLeads,
+            subjects: t.subjects, classes: t.classes, modes: t.modes, pincode: t.pincode, experienceYears: t.experienceYears,
+            assignable, previouslyOffered: already.has(t.id),
+            eligible: assignable && fit.eligible, score: fit.eligible ? fit.score : null, distanceKm: fit.distanceKm ?? null,
+            reason: !assignable ? `tutor is ${t.status.replace(/_/g, ' ')}` : fit.eligible ? null : fit.reason,
+          }
+        })
+    },
+
+    // Assigns a chosen tutor. "direct" confirms them straight away (for example, agreed on a
+    // call); "offer" sends a timed offer they accept or decline. A tutor who fails the matching
+    // filters can still be chosen, but staff must give a reason, which is recorded.
+    assignManually(leadId, body, actor) {
+      const { tutorId, mode, reason } = body || {}
+      const errors = []
+      if (typeof tutorId !== 'string' || !tutorId) errors.push({ field: 'tutorId', message: 'Choose a tutor' })
+      if (!MANUAL_MODES.includes(mode)) errors.push({ field: 'mode', message: 'must be direct or offer' })
+      if (reason !== undefined && (typeof reason !== 'string' || reason.length > 500)) errors.push({ field: 'reason', message: 'must be text up to 500 characters' })
+      if (errors.length) throw ctx.invalid(errors)
+
+      return repo.transaction(() => {
+        const lead = ctx.require('leads', leadId, 'Lead')
+        if (self.activeAssignment(leadId)) throw ctx.conflict('ALREADY_ASSIGNED', 'This lead already has a tutor. Release them first.')
+        if (!MATCHABLE.includes(lead.status) && lead.status !== 'on_hold') {
+          throw ctx.conflict('LEAD_NOT_ASSIGNABLE', `A lead in status "${lead.status}" cannot be assigned`)
+        }
+        const tutor = ctx.require('tutors', tutorId, 'Tutor')
+        if (!MANUALLY_ASSIGNABLE.includes(tutor.status)) {
+          throw ctx.conflict('TUTOR_NOT_VERIFIED', `${tutor.name} is ${tutor.status.replace(/_/g, ' ')}. Only verified tutors can be assigned.`)
+        }
+        if (mode === 'offer' && repo.find('assignments', { leadId, tutorId, status: OPEN }).length) {
+          throw ctx.conflict('ALREADY_OFFERED', `${tutor.name} already has an open offer for this lead`)
+        }
+        const fit = scoreTutor(lead, withoutBookedSlots({ ...tutor, status: 'active', acceptingLeads: true }), ctx.settings(), { budget: budgetFor(lead), stats: offerStats()[tutorId] })
+        const note = typeof reason === 'string' ? reason.trim() : ''
+        if (!fit.eligible && note.length < 3) {
+          throw ctx.invalid([{ field: 'reason', message: `${tutor.name} does not meet the requirement (${fit.reason}). Add a reason to assign anyway.` }])
+        }
+
+        const stamp = ctx.now()
+        const iso = stamp.toISOString()
+        const reasons = [`Assigned manually by staff${note ? `: ${note}` : ''}`, ...(fit.eligible ? fit.reasons : [`Override: ${fit.reason}`])]
+        const base = {
+          id: ctx.newId(), leadId, tutorId, matchRunId: null, rank: null,
+          score: fit.eligible ? fit.score : 0, distanceKm: fit.distanceKm ?? null, factors: fit.factors || {}, reasons,
+          offeredAt: iso, createdAt: iso, updatedAt: iso,
+        }
+        let assignment
+        if (mode === 'direct') {
+          // Other tutors waiting on this lead are told it has been filled.
+          for (const a of openOffers(leadId)) repo.update('assignments', a.id, { status: 'withdrawn', updatedAt: iso }, { status: OPEN })
+          assignment = repo.insert('assignments', { ...base, status: 'confirmed', expiresAt: iso, respondedAt: iso, confirmedAt: iso })
+          const moved = ctx.moveLead(lead, 'tutor_accepted', actor, { type: 'manual_assignment', note: `${tutor.name} assigned by staff${note ? `: ${note}` : ''}` })
+          if (!moved) throw ctx.conflict('STALE', 'The lead changed while you were assigning. Reload and try again.')
+          ctx.event(leadId, 'assignment_confirmed', actor, { note: 'Tutor confirmed; contact details shared' })
+        } else {
+          const expires = new Date(stamp.getTime() + ctx.settings().offerTimeoutMinutes * 60000).toISOString()
+          assignment = repo.insert('assignments', { ...base, status: OPEN, expiresAt: expires })
+          ctx.event(leadId, 'offer_sent', actor, { note: `Offered to ${tutor.name} by staff${note ? `: ${note}` : ''}` })
+          if (lead.status !== 'tutor_offered') {
+            if (!ctx.moveLead(lead, 'tutor_offered', actor, { note: 'Manual offer sent' })) throw ctx.conflict('STALE', 'The lead changed while you were assigning. Reload and try again.')
+          }
+        }
+        repo.update('leads', leadId, { noTutorFound: false, updatedAt: iso })
+        ctx.audit(actor, `assignment.manual_${mode}`, 'assignment', assignment.id, { leadId, tutorId, eligible: fit.eligible, reason: note || null })
+        return assignment
+      })
     },
 
     // The current accepted/confirmed assignment for a lead, if any.

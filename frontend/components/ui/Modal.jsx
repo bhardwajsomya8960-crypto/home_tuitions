@@ -34,7 +34,7 @@ export default function Modal({ open, title, onClose, children, footer, wide = f
   if (!open) return null
   return (
     <div className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center sm:p-4">
-      <button type="button" aria-label="Close dialog" data-close className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <button type="button" aria-label="Close dialog" data-close className="absolute inset-0 bg-ink/50" onClick={onClose} />
       <div
         ref={ref}
         role="dialog"
@@ -43,14 +43,14 @@ export default function Modal({ open, title, onClose, children, footer, wide = f
         className={`relative flex max-h-[92vh] w-full flex-col rounded-t-2xl bg-white shadow-xl sm:rounded-2xl ${wide ? 'sm:max-w-3xl' : 'sm:max-w-lg'}`}
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="flex items-center justify-between gap-3 border-b px-5 py-4">
-          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-          <button type="button" data-close onClick={onClose} aria-label="Close" className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100">
+        <div className="flex items-center justify-between gap-3 border-b border-ink/10 bg-ivory px-5 py-4 sm:rounded-t-2xl rounded-t-2xl">
+          <h2 className="text-lg font-bold text-ink">{title}</h2>
+          <button type="button" data-close onClick={onClose} aria-label="Close" className="flex h-10 w-10 items-center justify-center rounded-lg text-sage hover:bg-sand-100">
             <FiX className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
-        {footer && <div className="flex flex-wrap justify-end gap-2 border-t px-5 py-3">{footer}</div>}
+        {footer && <div className="flex flex-wrap justify-end gap-2 border-t border-ink/10 bg-ivory px-5 py-3 sm:rounded-b-2xl">{footer}</div>}
       </div>
     </div>
   )

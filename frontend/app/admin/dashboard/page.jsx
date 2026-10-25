@@ -107,8 +107,8 @@ function Overview({ dash, goto }) {
           { key: 'count', header: 'Leads', align: 'right', render: r => <span className="font-semibold tabular-nums">{r.count}</span> },
           { key: 'share', header: 'Share of all leads', render: r => (
             <span className="flex items-center gap-3">
-              <span className="h-2 w-40 overflow-hidden rounded-full bg-gray-100"><span className="block h-full rounded-full bg-blue-600" style={{ width: `${(r.count / max) * 100}%` }} /></span>
-              <span className="text-xs tabular-nums text-gray-600">{dash.leads.total ? Math.round((r.count / dash.leads.total) * 100) : 0}%</span>
+              <span className="h-2 w-40 overflow-hidden rounded-full bg-sand-100"><span className="block h-full rounded-full bg-ink" style={{ width: `${(r.count / max) * 100}%` }} /></span>
+              <span className="text-xs tabular-nums text-sage">{dash.leads.total ? Math.round((r.count / dash.leads.total) * 100) : 0}%</span>
             </span>
           ) },
         ]} />
@@ -134,8 +134,8 @@ function LeadsTab({ version, masters, onOpen, onNew }) {
           { key: 'mode', label: 'modes', get: r => r.mode, options: masters.leadModes.map(m => ({ value: m, label: MODE_LABELS[m] })) },
         ]}
         columns={[
-          { key: 'code', header: 'Lead', sortable: true, sortValue: r => r.code, render: r => <button type="button" className="font-semibold text-blue-700 hover:underline" onClick={() => onOpen(r.id)}>{r.code}</button> },
-          { key: 'parent', header: 'Parent / student', render: r => <span><span className="font-medium">{r.parentName}</span><br /><span className="text-xs text-gray-500">{r.studentName} · {classLabel(r.class)} {r.board}</span></span> },
+          { key: 'code', header: 'Lead', sortable: true, sortValue: r => r.code, render: r => <button type="button" className="font-semibold text-ink underline decoration-lemon decoration-2 underline-offset-4 hover:decoration-ink" onClick={() => onOpen(r.id)}>{r.code}</button> },
+          { key: 'parent', header: 'Parent / student', render: r => <span><span className="font-medium">{r.parentName}</span><br /><span className="text-xs text-sage">{r.studentName} · {classLabel(r.class)} {r.board}</span></span> },
           { key: 'subjects', header: 'Subjects', render: r => r.subjects.join(', ') },
           { key: 'where', header: 'Mode / area', render: r => `${MODE_LABELS[r.mode]}${r.pincode ? ` · ${r.pincode}` : ''}` },
           { key: 'status', header: 'Status', render: r => <span className="flex flex-col items-start gap-1"><StatusBadge map={LEAD_STATUS} value={r.status} />{r.noTutorFound && <span className="text-xs font-semibold text-red-700">No tutor</span>}</span> },
@@ -168,7 +168,7 @@ function OperationsTab({ version, onOpenLead, onConfirm, busy, onExpire }) {
       <Card title={`No tutor found (${data.noTutor.length})`} subtitle="Expand the search, switch to online or recruit">
         <SimpleTable rows={data.noTutor} empty="Every lead has candidates" columns={[
           leadCol,
-          { key: 'parent', header: 'Parent / student', render: l => <span>{l.parentName}<br /><span className="text-xs text-gray-500">{l.studentName}</span></span> },
+          { key: 'parent', header: 'Parent / student', render: l => <span>{l.parentName}<br /><span className="text-xs text-sage">{l.studentName}</span></span> },
           { key: 'need', header: 'Requirement', render: l => `${classLabel(l.class)} ${l.board} · ${l.subjects.join(', ')}` },
           { key: 'where', header: 'Mode / area', render: l => `${MODE_LABELS[l.mode]}${l.pincode ? ` · ${l.pincode}` : ''}` },
           { key: 'status', header: 'Status', render: l => <StatusBadge map={LEAD_STATUS} value={l.status} /> },
@@ -197,7 +197,7 @@ function OperationsTab({ version, onOpenLead, onConfirm, busy, onExpire }) {
       <Card title={`Escalations (${data.escalations.length})`} subtitle="Repeated missed demos">
         <SimpleTable rows={data.escalations} empty="No escalations" columns={[
           leadCol,
-          { key: 'parent', header: 'Parent', render: l => <span>{l.parentName}<br /><span className="text-xs text-gray-500">+91 {l.parentPhone}</span></span> },
+          { key: 'parent', header: 'Parent', render: l => <span>{l.parentName}<br /><span className="text-xs text-sage">+91 {l.parentPhone}</span></span> },
           { key: 'need', header: 'Requirement', render: l => `${classLabel(l.class)} · ${l.subjects.join(', ')}` },
           { key: 'status', header: 'Status', render: l => <StatusBadge map={LEAD_STATUS} value={l.status} /> },
           { key: 'act', header: '', align: 'right', render: l => open(l.id) },
@@ -226,7 +226,7 @@ function TutorsTab({ version, onOpen }) {
       searchText={r => `${r.name} ${r.phone} ${r.email} ${r.pincode} ${r.subjects.join(' ')}`}
       filters={[{ key: 'status', label: 'statuses', get: r => r.status, options: Object.entries(TUTOR_STATUS).map(([value, v]) => ({ value, label: v.label })) }]}
       columns={[
-        { key: 'name', header: 'Tutor', sortable: true, sortValue: r => r.name, render: r => <button type="button" className="text-left font-semibold text-blue-700 hover:underline" onClick={() => onOpen(r.id)}>{r.name}<br /><span className="text-xs font-normal text-gray-500">+91 {r.phone}</span></button> },
+        { key: 'name', header: 'Tutor', sortable: true, sortValue: r => r.name, render: r => <button type="button" className="text-left font-semibold text-ink underline decoration-lemon decoration-2 underline-offset-4 hover:decoration-ink" onClick={() => onOpen(r.id)}>{r.name}<br /><span className="text-xs font-normal text-sage">+91 {r.phone}</span></button> },
         { key: 'teaches', header: 'Teaches', render: r => <span className="text-xs">{r.subjects.join(', ')}<br />{r.classes.map(classLabel).join(', ')}</span> },
         { key: 'mode', header: 'Mode / area', render: r => `${r.modes.map(m => MODE_LABELS[m]).join(', ')} · ${r.pincode}` },
         { key: 'exp', header: 'Experience', sortable: true, sortValue: r => r.experienceYears, render: r => `${r.experienceYears} yrs` },
@@ -256,7 +256,7 @@ function FinanceTab({ version, masters, run, busy, onChanged }) {
           { key: 'overdue', label: 'invoices', get: r => (r.overdue ? 'overdue' : 'current'), options: [{ value: 'overdue', label: 'Overdue only' }, { value: 'current', label: 'Not overdue' }] }]}
         columns={[
           { key: 'number', header: 'Invoice', render: r => <span className="font-medium">{r.number}</span> },
-          { key: 'who', header: 'Parent / student', render: r => <span>{r.parentName}<br /><span className="text-xs text-gray-500">{r.studentName}</span></span> },
+          { key: 'who', header: 'Parent / student', render: r => <span>{r.parentName}<br /><span className="text-xs text-sage">{r.studentName}</span></span> },
           { key: 'period', header: 'Period', render: r => r.periodLabel },
           { key: 'amount', header: 'Amount', align: 'right', sortable: true, sortValue: r => r.amount, render: r => rupees(r.amount) },
           { key: 'outstanding', header: 'Outstanding', align: 'right', sortable: true, sortValue: r => r.outstanding, render: r => rupees(r.outstanding) },
@@ -276,7 +276,7 @@ function FinanceTab({ version, masters, run, busy, onChanged }) {
         filters={[{ key: 'status', label: 'statuses', get: r => r.status, options: Object.entries(ENROLMENT_STATUS).map(([value, v]) => ({ value, label: v.label })) }]}
         columns={[
           { key: 'lead', header: 'Lead', render: r => r.leadCode },
-          { key: 'student', header: 'Student / tutor', render: r => <span>{r.studentName}<br /><span className="text-xs text-gray-500">with {r.tutorName}</span></span> },
+          { key: 'student', header: 'Student / tutor', render: r => <span>{r.studentName}<br /><span className="text-xs text-sage">with {r.tutorName}</span></span> },
           { key: 'plan', header: 'Plan', render: r => `${rupees(r.feeAmount)} · ${r.plan.replace('_', ' ')}` },
           { key: 'schedule', header: 'Schedule', render: r => <span className="text-xs">{scheduleText(r.schedule)}</span> },
           { key: 'start', header: 'Start', render: r => formatDate(r.startDate) },
@@ -312,7 +312,7 @@ function PaymentModal({ invoice, masters, busy, onClose, onSubmit }) {
       footer={<><button type="button" className={btn.secondary} onClick={onClose}>Cancel</button><button type="button" className={btn.primary} disabled={busy || !f.amount} onClick={submit}>Record</button></>}>
       {invoice && (
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">{invoice.parentName} · outstanding {rupees(invoice.outstanding)}</p>
+          <p className="text-sm text-sage">{invoice.parentName} · outstanding {rupees(invoice.outstanding)}</p>
           <div className="grid gap-4 sm:grid-cols-2">
             <TextInput label="Amount (₹)" required type="number" min={1} max={invoice.outstanding} value={f.amount} onChange={e => setF({ ...f, amount: e.target.value })} error={errors.amount} />
             <TextInput label="Paid on" required type="date" max={today} value={f.paidOn} onChange={e => setF({ ...f, paidOn: e.target.value })} error={errors.paidOn} />
@@ -336,7 +336,7 @@ function InvoiceModal({ enrolment, busy, onClose, onSubmit }) {
         <button type="button" className={btn.primary} disabled={busy || !f.amount || !f.periodLabel || !f.dueDate} onClick={() => onSubmit({ amount: Number(f.amount), periodLabel: f.periodLabel, dueDate: f.dueDate }).catch(err => setErrors(err.fieldErrors ? err.fieldErrors() : {}))}>Create invoice</button></>}>
       {enrolment && (
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">{enrolment.studentName} with {enrolment.tutorName}</p>
+          <p className="text-sm text-sage">{enrolment.studentName} with {enrolment.tutorName}</p>
           <TextInput label="Period" required placeholder="Fees for Dec 2026" value={f.periodLabel} onChange={e => setF({ ...f, periodLabel: e.target.value })} error={errors.periodLabel} />
           <div className="grid gap-4 sm:grid-cols-2">
             <TextInput label="Amount (₹)" required type="number" min={1} value={f.amount} onChange={e => setF({ ...f, amount: e.target.value })} error={errors.amount} />
@@ -368,15 +368,15 @@ function AuditTab({ version }) {
     <Card title="Audit log" subtitle={`${data.total} recorded actions. Entries cannot be edited or deleted.`}>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="bg-gray-50 text-xs uppercase text-gray-500"><tr><th className="px-3 py-2">When</th><th className="px-3 py-2">Who</th><th className="px-3 py-2">Action</th><th className="px-3 py-2">Record</th><th className="px-3 py-2">Details</th></tr></thead>
-          <tbody className="divide-y divide-gray-100">
+          <thead className="bg-sand-50 text-xs uppercase text-sage"><tr><th className="px-3 py-2">When</th><th className="px-3 py-2">Who</th><th className="px-3 py-2">Action</th><th className="px-3 py-2">Record</th><th className="px-3 py-2">Details</th></tr></thead>
+          <tbody className="divide-y divide-sand-100">
             {data.items.map(a => (
               <tr key={a.id} className="align-top">
                 <td className="whitespace-nowrap px-3 py-2 text-xs">{formatDateTime(a.createdAt)}</td>
                 <td className="px-3 py-2 text-xs">{a.actor.split(':')[0]}</td>
                 <td className="px-3 py-2 font-medium">{a.action}</td>
                 <td className="px-3 py-2 text-xs">{a.entity}</td>
-                <td className="px-3 py-2"><code className="block max-w-md truncate text-xs text-gray-600" title={a.details ? JSON.stringify(a.details) : ''}>{a.details ? JSON.stringify(a.details) : '—'}</code></td>
+                <td className="px-3 py-2"><code className="block max-w-md truncate text-xs text-sage" title={a.details ? JSON.stringify(a.details) : ''}>{a.details ? JSON.stringify(a.details) : '—'}</code></td>
               </tr>
             ))}
           </tbody>

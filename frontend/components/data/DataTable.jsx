@@ -74,22 +74,22 @@ export default function DataTable({
   const isEmpty = total === 0
 
   return (
-    <section className="bg-white rounded-xl border border-gray-200 shadow-sm">
-      <div className="flex flex-col gap-3 border-b border-gray-200 p-4 md:flex-row md:items-center md:justify-between md:px-5">
+    <section className="bg-white rounded-2xl border border-ink/10 shadow-sm">
+      <div className="flex flex-col gap-3 border-b border-sand-200 p-4 md:flex-row md:items-center md:justify-between md:px-5">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-          <p className="text-sm text-gray-500">{rows.length} {noun} in total</p>
+          <h3 className="text-lg font-semibold text-ink">{title}</h3>
+          <p className="text-sm text-sage">{rows.length} {noun} in total</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <label className="relative flex-1 min-w-[180px] md:w-64">
             <span className="sr-only">{searchPlaceholder}</span>
-            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" aria-hidden="true" />
+            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-sage-soft pointer-events-none" aria-hidden="true" />
             <input
               type="search"
               value={query}
               onChange={e => changeQuery(e.target.value)}
               placeholder={searchPlaceholder}
-              className="w-full h-9 pl-9 pr-3 rounded-md border border-gray-300 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              className="w-full h-9 pl-9 pr-3 rounded-md border border-sand-300 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ink"
             />
           </label>
           {filters.map(f => (
@@ -98,7 +98,7 @@ export default function DataTable({
               aria-label={`Filter by ${f.label}`}
               value={filterValues[f.key] || ''}
               onChange={e => changeFilter(f.key, e.target.value)}
-              className="h-9 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              className="h-9 rounded-md border border-sand-300 bg-white px-2 text-sm text-ink/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-ink"
             >
               <option value="">All {f.label}</option>
               {f.options.map(o => (
@@ -111,16 +111,16 @@ export default function DataTable({
       </div>
 
       {isEmpty ? (
-        <div className="flex flex-col items-center gap-2 px-4 py-12 text-center text-gray-500">
-          <FiInbox className="w-8 h-8 text-gray-300" aria-hidden="true" />
+        <div className="flex flex-col items-center gap-2 px-4 py-12 text-center text-sage">
+          <FiInbox className="w-8 h-8 text-sand-300" aria-hidden="true" />
           <p className="text-sm">{hasRows ? noMatchMessage : emptyMessage}</p>
         </div>
       ) : (
         <>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px] text-left text-sm">
-              <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                <tr className="border-b border-gray-200">
+              <thead className="bg-sand-50 text-xs font-semibold uppercase tracking-wide text-sage">
+                <tr className="border-b border-sand-200">
                   {columns.map(col => {
                     const isSorted = sort?.key === col.key
                     const ariaSort = isSorted ? (sort.dir === 1 ? 'ascending' : 'descending') : undefined
@@ -129,13 +129,13 @@ export default function DataTable({
                         key={col.key}
                         scope="col"
                         aria-sort={col.sortable ? ariaSort || 'none' : undefined}
-                        className={`whitespace-nowrap px-4 py-3 ${col.align === 'right' ? 'text-right' : ''} ${col.className || ''} ${col.sticky ? `${PIN} bg-gray-50` : ''}`}
+                        className={`whitespace-nowrap px-4 py-3 ${col.align === 'right' ? 'text-right' : ''} ${col.className || ''} ${col.sticky ? `${PIN} bg-sand-50` : ''}`}
                       >
                         {col.sortable ? (
                           <button
                             type="button"
                             onClick={() => toggleSort(col.key)}
-                            className="inline-flex items-center gap-1 rounded hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                            className="inline-flex items-center gap-1 rounded hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink"
                           >
                             {col.header}
                             {isSorted && (sort.dir === 1
@@ -148,9 +148,9 @@ export default function DataTable({
                   })}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-sand-100">
                 {pageRows.map(row => (
-                  <tr key={rowKey(row)} className="hover:bg-gray-50">
+                  <tr key={rowKey(row)} className="hover:bg-sand-50">
                     {columns.map(col => (
                       <td key={col.key} className={`px-4 py-3.5 align-middle ${col.align === 'right' ? 'text-right' : ''} ${col.cellClassName || ''} ${col.sticky ? `${PIN} bg-white` : ''}`}>
                         {col.render(row)}

@@ -49,11 +49,11 @@ export default function LeadWorkspace({ leadId, masters, onClose, onChanged }) {
     <Modal open={!!leadId} title={lead ? `${lead.code} · ${lead.student?.name}` : 'Lead'} onClose={onClose} wide>
       {!lead ? (error ? <Notice>{error}</Notice> : <PageLoader />) : (
         <div className="space-y-6">
-          <div className="sticky -top-4 z-10 -mx-5 -mt-4 space-y-2 border-b border-gray-100 bg-white px-5 pb-3 pt-4">
+          <div className="sticky -top-4 z-10 -mx-5 -mt-4 space-y-2 border-b border-sand-100 bg-white px-5 pb-3 pt-4">
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge map={LEAD_STATUS} value={lead.status} />
               {lead.noTutorFound && <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">No tutor found</span>}
-              <span className="text-xs text-gray-500">Source: {lead.source} · Created {formatDateTime(lead.createdAt)}</span>
+              <span className="text-xs text-sage">Source: {lead.source} · Created {formatDateTime(lead.createdAt)}</span>
             </div>
             <Notice>{error}</Notice>
             <Notice tone="success">{notice}</Notice>
@@ -153,23 +153,23 @@ function MatchingSection({ lead, busy, onRun, onOfferNext, onOffer, onConfirm, o
         </div>
       </div>
       {lead.latestMatch && (
-        <p className="text-xs text-gray-500">Last run {formatDateTime(lead.latestMatch.createdAt)} · {results.length} eligible · {lead.latestMatch.excludedCount} excluded by filters · weights {Object.entries(lead.latestMatch.settings.weights).map(([k, v]) => `${FACTOR_LABELS[k]} ${v}%`).join(', ')}</p>
+        <p className="text-xs text-sage">Last run {formatDateTime(lead.latestMatch.createdAt)} · {results.length} eligible · {lead.latestMatch.excludedCount} excluded by filters · weights {Object.entries(lead.latestMatch.settings.weights).map(([k, v]) => `${FACTOR_LABELS[k]} ${v}%`).join(', ')}</p>
       )}
       {results.length > 0 && (
-        <div className="overflow-x-auto rounded-lg border border-gray-200">
+        <div className="overflow-x-auto rounded-lg border border-sand-200">
           <table className="w-full min-w-[720px] text-left text-sm">
-            <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+            <thead className="bg-sand-50 text-xs uppercase text-sage">
               <tr><th className="px-3 py-2">#</th><th className="px-3 py-2">Tutor</th><th className="px-3 py-2 text-right">Score</th><th className="px-3 py-2">Distance</th><th className="px-3 py-2">Breakdown</th><th className="px-3 py-2" /></tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-sand-100">
               {results.map(r => (
                 <tr key={r.tutorId} className="align-top">
                   <td className="px-3 py-2 font-medium">{r.rank}</td>
-                  <td className="px-3 py-2"><p className="font-medium">{r.tutorName}</p><ul className="mt-1 text-xs text-gray-500">{r.reasons.map(x => <li key={x}>{x}</li>)}</ul></td>
+                  <td className="px-3 py-2"><p className="font-medium">{r.tutorName}</p><ul className="mt-1 text-xs text-sage">{r.reasons.map(x => <li key={x}>{x}</li>)}</ul></td>
                   <td className="px-3 py-2 text-right text-lg font-bold">{r.score}</td>
                   <td className="px-3 py-2">{r.distanceKm != null ? `${r.distanceKm} km${r.distanceEstimated ? ' (est.)' : ''}` : 'Online'}</td>
-                  <td className="px-3 py-2 text-xs text-gray-600">{Object.entries(r.factors).map(([k, v]) => <span key={k} className="mr-2 inline-block">{FACTOR_LABELS[k]} {v}</span>)}</td>
-                  <td className="px-3 py-2 text-right">{canOffer && !offeredIds.has(r.tutorId) ? <button type="button" className={btn.link} disabled={busy} onClick={() => onOffer(r.tutorId)}>Offer</button> : offeredIds.has(r.tutorId) ? <span className="text-xs text-gray-500">Offered</span> : null}</td>
+                  <td className="px-3 py-2 text-xs text-sage">{Object.entries(r.factors).map(([k, v]) => <span key={k} className="mr-2 inline-block">{FACTOR_LABELS[k]} {v}</span>)}</td>
+                  <td className="px-3 py-2 text-right">{canOffer && !offeredIds.has(r.tutorId) ? <button type="button" className={btn.link} disabled={busy} onClick={() => onOffer(r.tutorId)}>Offer</button> : offeredIds.has(r.tutorId) ? <span className="text-xs text-sage">Offered</span> : null}</td>
                 </tr>
               ))}
             </tbody>
@@ -237,7 +237,7 @@ function DemoSection({ lead, masters, busy, act }) {
                     <button type="button" className={btn.secondary} disabled={busy} onClick={() => act(`/api/admin/demos/${d.id}/no-show`, { party: 'tutor' }, 'Recorded tutor no-show.')}>Tutor no-show</button>
                   </span>
                   <span className="flex gap-1.5">
-                    <input type="datetime-local" aria-label="New time" min={minLocal} value={moveTo[d.id] || ''} onChange={e => setMoveTo({ ...moveTo, [d.id]: e.target.value })} className="min-h-[40px] flex-1 rounded-lg border border-gray-300 px-2 text-sm" />
+                    <input type="datetime-local" aria-label="New time" min={minLocal} value={moveTo[d.id] || ''} onChange={e => setMoveTo({ ...moveTo, [d.id]: e.target.value })} className="min-h-[40px] flex-1 rounded-lg border border-sand-300 px-2 text-sm" />
                     <button type="button" className={btn.secondary} disabled={busy || !moveTo[d.id]} onClick={() => act(`/api/admin/demos/${d.id}/reschedule`, { scheduledAt: istLocalToIso(moveTo[d.id]) }, 'Demo moved.')}>Move</button>
                   </span>
                 </div>
@@ -252,9 +252,9 @@ function DemoSection({ lead, masters, busy, act }) {
         ]} />
       )}
       {lead.status === 'tutor_accepted' && (
-        <div className="flex flex-wrap items-end gap-2 rounded-lg bg-gray-50 p-3">
+        <div className="flex flex-wrap items-end gap-2 rounded-lg bg-sand-50 p-3">
           <label className="text-sm font-medium">When (IST)
-            <input type="datetime-local" min={minLocal} value={when} onChange={e => setWhen(e.target.value)} className="mt-1 block min-h-[44px] rounded-lg border border-gray-300 px-2" />
+            <input type="datetime-local" min={minLocal} value={when} onChange={e => setWhen(e.target.value)} className="mt-1 block min-h-[44px] rounded-lg border border-sand-300 px-2" />
           </label>
           <Select label="Mode" className="w-32" value={mode} onChange={e => setMode(e.target.value)} options={(lead.mode === 'online' ? ['online'] : ['home', 'online']).map(m => ({ value: m, label: MODE_LABELS[m] }))} placeholder="Mode" />
           <TextInput label="Note / link" className="min-w-[180px] flex-1" value={note} onChange={e => setNote(e.target.value)} placeholder="Meeting link or landmark" />
@@ -279,7 +279,7 @@ function ConvertForm({ lead, masters, busy, onSubmit }) {
   const confirmed = lead.assignments.some(a => a.status === 'confirmed')
   if (!confirmed) return <Notice tone="warning">The tutor was released. Run matching again to find another tutor.</Notice>
   return (
-    <section className="space-y-3 rounded-lg border border-blue-200 bg-blue-50/40 p-4">
+    <section className="space-y-3 rounded-lg border border-lavender bg-lavender/30 p-4">
       <h3 className="text-base font-semibold">Convert to enrolment</h3>
       {demo?.outcome && demo.outcome !== 'interested' && <Notice tone="warning">Demo outcome is “{optionLabel(masters.demoOutcomes, demo.outcome)}”. Convert only if the parent has agreed.</Notice>}
       <div className="grid gap-3 sm:grid-cols-3">
@@ -308,7 +308,7 @@ function History({ lead, busy, onNote }) {
         { key: 'event', header: 'Event', render: e => <span className="font-medium">{e.type.replace(/_/g, ' ')}</span> },
         { key: 'change', header: 'Status change', render: e => (e.toStatus && e.fromStatus ? <span className="whitespace-nowrap text-xs">{LEAD_STATUS[e.fromStatus]?.label} → {LEAD_STATUS[e.toStatus]?.label}</span> : '—') },
         { key: 'note', header: 'Note', render: e => <span className="text-xs">{e.note || '—'}</span> },
-        { key: 'by', header: 'By', render: e => <span className="text-xs text-gray-500">{e.actor.split(':')[0]}</span> },
+        { key: 'by', header: 'By', render: e => <span className="text-xs text-sage">{e.actor.split(':')[0]}</span> },
       ]} />
     </section>
   )
@@ -349,7 +349,7 @@ function AssignByName({ lead, busy, onAssign }) {
       <Notice>{error}</Notice>
       {results && (
         <SimpleTable flush={false} rows={results} minWidth={820} empty="No tutor matches that search" columns={[
-          { key: 'tutor', header: 'Tutor', render: t => <span><span className="font-medium">{t.name}</span><br /><span className="text-xs text-gray-500">+91 {t.phone}</span></span> },
+          { key: 'tutor', header: 'Tutor', render: t => <span><span className="font-medium">{t.name}</span><br /><span className="text-xs text-sage">+91 {t.phone}</span></span> },
           { key: 'teaches', header: 'Teaches', render: t => <span className="text-xs">{t.subjects.join(', ')}<br />{t.classes.map(classLabel).join(', ')}</span> },
           { key: 'area', header: 'Mode / area', render: t => <span className="text-xs">{t.modes.map(m => MODE_LABELS[m]).join(', ')}<br />{t.pincode}{t.distanceKm != null ? ` · ${t.distanceKm} km` : ''}</span> },
           { key: 'status', header: 'Status', render: t => <StatusBadge map={TUTOR_STATUS} value={t.status} /> },
@@ -361,7 +361,7 @@ function AssignByName({ lead, busy, onAssign }) {
               <button type="button" className={btn.success} disabled={busy} onClick={() => { setChoice({ tutor: t, mode: 'direct' }); setReason('') }}>Assign now</button>
               <button type="button" className={btn.secondary} disabled={busy} onClick={() => { setChoice({ tutor: t, mode: 'offer' }); setReason('') }}>Send offer</button>
             </span>
-          ) : <span className="text-xs text-gray-500">Verify first</span>) },
+          ) : <span className="text-xs text-sage">Verify first</span>) },
         ]} />
       )}
       <Modal open={!!choice} title={choice ? `${choice.mode === 'direct' ? 'Assign' : 'Send offer to'} ${choice.tutor.name}` : ''} onClose={() => setChoice(null)}

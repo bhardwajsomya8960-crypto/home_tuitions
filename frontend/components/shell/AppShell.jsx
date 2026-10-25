@@ -20,7 +20,7 @@ export default function AppShell({ portalLabel, user, navItems, activeTab, onTab
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-ivory text-ink">
       <ConnectionStatus />
 
       <DesktopSidebar
@@ -38,24 +38,24 @@ export default function AppShell({ portalLabel, user, navItems, activeTab, onTab
         <MobileAppHeader portalLabel={portalLabel} title={active.label} onLogout={onLogout} />
 
         {/* Desktop top navbar */}
-        <header className="hidden md:flex h-[68px] items-center justify-between gap-4 bg-white border-b border-gray-200 px-6 lg:px-8 sticky top-0 z-30">
+        <header className="hidden md:flex h-[68px] items-center justify-between gap-4 bg-ivory/90 backdrop-blur border-b border-ink/10 px-6 lg:px-8 sticky top-0 z-30">
           <div className="min-w-0">
-            <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-gray-500">
+            <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-sage">
               <span className="truncate">{portalLabel}</span>
               <span aria-hidden="true">/</span>
-              <span aria-current="page" className="text-gray-700 font-medium truncate">{active.label}</span>
+              <span aria-current="page" className="text-ink/80 font-medium truncate">{active.label}</span>
             </nav>
-            <h1 className="text-lg font-semibold text-gray-900 truncate">{active.label}</h1>
+            <h1 className="text-lg font-bold tracking-tight text-ink truncate">{active.label}</h1>
           </div>
           <div className="flex items-center gap-3 shrink-0">
             {headerActions}
             <div className="text-right leading-tight">
-              <p className="text-sm font-semibold text-gray-900 truncate max-w-[200px]">{user.name}</p>
-              <p className="text-xs text-gray-500 truncate max-w-[200px]">{user.subtitle}</p>
+              <p className="text-sm font-semibold text-ink truncate max-w-[200px]">{user.name}</p>
+              <p className="text-xs text-sage truncate max-w-[200px]">{user.subtitle}</p>
             </div>
             <div
               aria-hidden="true"
-              className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 font-semibold flex items-center justify-center text-sm"
+              className="w-9 h-9 rounded-full border border-ink bg-lemon text-ink font-semibold flex items-center justify-center text-sm"
             >
               {user.name.charAt(0).toUpperCase()}
             </div>

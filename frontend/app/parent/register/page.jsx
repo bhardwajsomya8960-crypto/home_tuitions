@@ -157,7 +157,7 @@ function ParentRegisterForm() {
         <div className="w-full max-w-md rounded-2xl border border-ink/10 bg-white p-8 text-center shadow-sm">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-mint text-2xl" aria-hidden="true">✓</div>
           <h1 className="text-2xl font-bold">Request received</h1>
-          <p className="mt-2 text-gray-600">Your request number is <strong>{done.lead.code}</strong>. Our team will confirm the details and start looking for tutors near you.</p>
+          <p className="mt-2 text-sage">Your request number is <strong>{done.lead.code}</strong>. Our team will confirm the details and start looking for tutors near you.</p>
           <button type="button" onClick={() => router.push('/parent/dashboard')} className={`${primary} mt-6 w-full`}>Go to my dashboard</button>
         </div>
       </div>
@@ -167,13 +167,13 @@ function ParentRegisterForm() {
   const slotOptions = masters.slots
   const dayOptions = masters.days.map(d => ({ value: d, label: DAY_LABELS[d] }))
   const Section = ({ index, title, rows }) => (
-    <div className="rounded-xl border border-gray-200 p-4">
+    <div className="rounded-xl border border-sand-200 p-4">
       <div className="mb-2 flex items-center justify-between">
         <h3 className="text-base font-semibold">{title}</h3>
         <button type="button" onClick={() => setStep(index)} className="inline-flex min-h-[40px] items-center gap-1 text-sm font-semibold text-ink underline-offset-2 hover:underline"><FiEdit2 className="h-4 w-4" aria-hidden="true" /> Edit</button>
       </div>
       <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-        {rows.filter(([, v]) => v).map(([k, v]) => <div key={k}><dt className="text-xs text-gray-500">{k}</dt><dd className="font-medium">{v}</dd></div>)}
+        {rows.filter(([, v]) => v).map(([k, v]) => <div key={k}><dt className="text-xs text-sage">{k}</dt><dd className="font-medium">{v}</dd></div>)}
       </dl>
     </div>
   )
@@ -184,14 +184,14 @@ function ParentRegisterForm() {
         <Link href="/" className="mb-6 flex items-center justify-center gap-2.5"><Logo /><span className="text-lg font-bold">Home Tuition</span></Link>
         <div className="mb-6 text-center">
           <h1 className="text-3xl font-bold sm:text-4xl">Find a tutor for your child</h1>
-          <p className="mt-2 text-gray-600">Four short steps. It takes about three minutes.</p>
+          <p className="mt-2 text-sage">Four short steps. It takes about three minutes.</p>
         </div>
 
         <ol className="mb-6 grid grid-cols-4 gap-2" aria-label="Progress">
           {STEPS.map((label, i) => (
             <li key={label} aria-current={i === step ? 'step' : undefined}>
               <div className={`h-2 rounded-full ${i <= step ? 'bg-ink' : 'bg-ink/15'}`} />
-              <p className={`mt-1.5 hidden text-xs sm:block ${i === step ? 'font-semibold' : 'text-gray-500'}`}>{i + 1}. {label}</p>
+              <p className={`mt-1.5 hidden text-xs sm:block ${i === step ? 'font-semibold' : 'text-sage'}`}>{i + 1}. {label}</p>
             </li>
           ))}
         </ol>
@@ -203,38 +203,38 @@ function ParentRegisterForm() {
           {step === 0 && (
             <>
               <h2 className="text-xl font-bold">Your details</h2>
-              <TextInput label="Full name" required autoComplete="name" value={f.name} onChange={e => set('name', e.target.value)} error={errors.name} accent="ink" />
-              <PhoneVerify role="parent" purpose="register" phone={f.phone} onPhoneChange={v => setF(p => ({ ...p, phone: v, phoneToken: '' }))} verified={!!f.phoneToken} onVerified={({ phoneToken }) => set('phoneToken', phoneToken)} accent="ink" />
+              <TextInput label="Full name" required autoComplete="name" value={f.name} onChange={e => set('name', e.target.value)} error={errors.name} />
+              <PhoneVerify role="parent" purpose="register" phone={f.phone} onPhoneChange={v => setF(p => ({ ...p, phone: v, phoneToken: '' }))} verified={!!f.phoneToken} onVerified={({ phoneToken }) => set('phoneToken', phoneToken)} />
               {errors.phone && <p role="alert" className="-mt-3 text-xs font-medium text-red-600">{errors.phone}</p>}
-              <TextInput label="Email" type="email" autoComplete="email" hint="Optional. For receipts and updates." value={f.email} onChange={e => set('email', e.target.value)} error={errors.email} accent="ink" />
-              <ChipGroup label="Relationship to the student" required single options={masters.relationships} value={f.relationship} onChange={v => set('relationship', v)} error={errors.relationship} accent="ink" />
+              <TextInput label="Email" type="email" autoComplete="email" hint="Optional. For receipts and updates." value={f.email} onChange={e => set('email', e.target.value)} error={errors.email} />
+              <ChipGroup label="Relationship to the student" required single options={masters.relationships} value={f.relationship} onChange={v => set('relationship', v)} error={errors.relationship} />
             </>
           )}
 
           {step === 1 && (
             <>
               <h2 className="text-xl font-bold">About the student</h2>
-              <TextInput label="Student's name" required value={f.studentName} onChange={e => set('studentName', e.target.value)} error={errors.studentName} accent="ink" />
+              <TextInput label="Student's name" required value={f.studentName} onChange={e => set('studentName', e.target.value)} error={errors.studentName} />
               <div className="grid gap-4 sm:grid-cols-2">
-                <Select label="Class / grade" required options={masters.classes.map(c => ({ value: c, label: classLabel(c) }))} value={f.studentClass} onChange={e => set('studentClass', e.target.value)} error={errors.studentClass} accent="ink" />
-                <Select label="Board" required options={masters.boards} value={f.board} onChange={e => set('board', e.target.value)} error={errors.board} accent="ink" />
+                <Select label="Class / grade" required options={masters.classes.map(c => ({ value: c, label: classLabel(c) }))} value={f.studentClass} onChange={e => set('studentClass', e.target.value)} error={errors.studentClass} />
+                <Select label="Board" required options={masters.boards} value={f.board} onChange={e => set('board', e.target.value)} error={errors.board} />
               </div>
-              <ChipGroup label="Subjects" required hint="Choose all that apply" options={masters.subjects} value={f.subjects} onChange={v => set('subjects', v)} error={errors.subjects} accent="ink" />
-              <TextInput label="Current school" hint="Optional" value={f.school} onChange={e => set('school', e.target.value)} accent="ink" />
+              <ChipGroup label="Subjects" required hint="Choose all that apply" options={masters.subjects} value={f.subjects} onChange={v => set('subjects', v)} error={errors.subjects} />
+              <TextInput label="Current school" hint="Optional" value={f.school} onChange={e => set('school', e.target.value)} />
             </>
           )}
 
           {step === 2 && (
             <>
               <h2 className="text-xl font-bold">Tuition needs</h2>
-              <ChipGroup label="Learning mode" required single options={masters.leadModes.map(m => ({ value: m, label: MODE_LABELS[m] }))} value={f.mode} onChange={v => set('mode', v)} error={errors.mode} accent="ink"
+              <ChipGroup label="Learning mode" required single options={masters.leadModes.map(m => ({ value: m, label: MODE_LABELS[m] }))} value={f.mode} onChange={v => set('mode', v)} error={errors.mode}
                 hint={f.mode === 'hybrid' ? 'Some classes at home, some online' : undefined} />
               {f.mode && f.mode !== 'online' && (
                 <div className="space-y-4 rounded-xl bg-ivory p-4">
-                  <TextArea label="Address where classes will happen" required rows={2} autoComplete="street-address" value={f.address} onChange={e => set('address', e.target.value)} error={errors.address} accent="ink"
+                  <TextArea label="Address where classes will happen" required rows={2} autoComplete="street-address" value={f.address} onChange={e => set('address', e.target.value)} error={errors.address}
                     hint="Tutors see only your pincode until you approve them." />
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <TextInput label="Pincode" required inputMode="numeric" maxLength={6} autoComplete="postal-code" value={f.pincode} onChange={e => set('pincode', e.target.value.replace(/\D/g, ''))} error={errors.pincode} accent="ink" />
+                    <TextInput label="Pincode" required inputMode="numeric" maxLength={6} autoComplete="postal-code" value={f.pincode} onChange={e => set('pincode', e.target.value.replace(/\D/g, ''))} error={errors.pincode} />
                     <div className="flex items-end">
                       <button type="button" onClick={useMyLocation} disabled={locating} className={`${secondary} w-full gap-2 text-sm`}>
                         <FiMapPin className="h-4 w-4" aria-hidden="true" /> {locating ? 'Locating…' : f.latitude !== undefined ? 'Location added ✓' : 'Use my current location'}
@@ -242,20 +242,20 @@ function ParentRegisterForm() {
                     </div>
                   </div>
                   {f.latitude !== undefined && (
-                    <p className="text-xs text-gray-600">We'll use this location only to find tutors near you. <button type="button" className="font-semibold underline" onClick={() => setF(p => ({ ...p, latitude: undefined, longitude: undefined, consent: { ...p.consent, location: false } }))}>Remove</button></p>
+                    <p className="text-xs text-sage">We'll use this location only to find tutors near you. <button type="button" className="font-semibold underline" onClick={() => setF(p => ({ ...p, latitude: undefined, longitude: undefined, consent: { ...p.consent, location: false } }))}>Remove</button></p>
                   )}
                 </div>
               )}
-              <ChipGroup label="Preferred days" required options={dayOptions} value={f.preferredDays} onChange={v => set('preferredDays', v)} error={errors.preferredDays} accent="ink" />
-              <ChipGroup label="Preferred times" required options={slotOptions} value={f.preferredSlots} onChange={v => set('preferredSlots', v)} error={errors.preferredSlots} accent="ink" />
+              <ChipGroup label="Preferred days" required options={dayOptions} value={f.preferredDays} onChange={v => set('preferredDays', v)} error={errors.preferredDays} />
+              <ChipGroup label="Preferred times" required options={slotOptions} value={f.preferredSlots} onChange={v => set('preferredSlots', v)} error={errors.preferredSlots} />
               <div className="grid gap-4 sm:grid-cols-2">
-                <Select label="Monthly budget" options={masters.budgetRanges} value={f.budgetRange} onChange={e => set('budgetRange', e.target.value)} placeholder="Not sure yet" accent="ink" />
-                <Select label="How soon?" options={masters.urgency} value={f.urgency} onChange={e => set('urgency', e.target.value)} placeholder="No rush" accent="ink" />
-                <TextInput label="Preferred start date" type="date" min={today} value={f.startDate} onChange={e => set('startDate', e.target.value)} accent="ink" />
-                <Select label="Tutor gender preference" options={['No preference', 'Female', 'Male']} value={f.prefGender} onChange={e => set('prefGender', e.target.value)} placeholder="No preference" accent="ink" />
+                <Select label="Monthly budget" options={masters.budgetRanges} value={f.budgetRange} onChange={e => set('budgetRange', e.target.value)} placeholder="Not sure yet" />
+                <Select label="How soon?" options={masters.urgency} value={f.urgency} onChange={e => set('urgency', e.target.value)} placeholder="No rush" />
+                <TextInput label="Preferred start date" type="date" min={today} value={f.startDate} onChange={e => set('startDate', e.target.value)} />
+                <Select label="Tutor gender preference" options={['No preference', 'Female', 'Male']} value={f.prefGender} onChange={e => set('prefGender', e.target.value)} placeholder="No preference" />
               </div>
-              <ChipGroup label="Tutor language preference" hint="Optional" options={masters.languages} value={f.prefLanguages} onChange={v => set('prefLanguages', v)} accent="ink" />
-              <TextArea label="Anything else the tutor should know?" hint="Optional: learning needs, exam goals, timings" maxLength={1000} value={f.specialRequirements} onChange={e => set('specialRequirements', e.target.value)} accent="ink" />
+              <ChipGroup label="Tutor language preference" hint="Optional" options={masters.languages} value={f.prefLanguages} onChange={v => set('prefLanguages', v)} />
+              <TextArea label="Anything else the tutor should know?" hint="Optional: learning needs, exam goals, timings" maxLength={1000} value={f.specialRequirements} onChange={e => set('specialRequirements', e.target.value)} />
             </>
           )}
 
@@ -286,7 +286,7 @@ function ParentRegisterForm() {
 
           <Notice>{serverError}</Notice>
 
-          <div className="flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-between">
+          <div className="flex flex-col-reverse gap-3 border-t border-sand-100 pt-5 sm:flex-row sm:justify-between">
             {step > 0 ? <button type="button" onClick={() => setStep(s => s - 1)} className={secondary}>Back</button> : <span />}
             {step < 3
               ? <button type="button" onClick={next} className={primary}>Continue</button>
@@ -294,7 +294,7 @@ function ParentRegisterForm() {
           </div>
         </div>
 
-        <p className="mt-6 text-center text-sm text-gray-600">
+        <p className="mt-6 text-center text-sm text-sage">
           Already registered? <Link href="/login?role=parent" className="font-semibold text-ink underline decoration-lemon decoration-4 underline-offset-4">Sign in</Link>
         </p>
       </div>

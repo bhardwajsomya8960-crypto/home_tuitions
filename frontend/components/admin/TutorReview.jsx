@@ -48,7 +48,7 @@ export default function TutorReview({ tutorId, masters, onClose, onChanged }) {
     <Modal open={!!tutorId} title={tutor ? tutor.name : 'Tutor'} onClose={onClose} wide>
       {!tutor ? (error ? <Notice>{error}</Notice> : <PageLoader />) : (
         <div className="space-y-6">
-          <div className="flex flex-wrap items-center gap-2"><StatusBadge map={TUTOR_STATUS} value={tutor.status} /><span className="text-xs text-gray-500">Registered {formatDate(tutor.createdAt)}</span></div>
+          <div className="flex flex-wrap items-center gap-2"><StatusBadge map={TUTOR_STATUS} value={tutor.status} /><span className="text-xs text-sage">Registered {formatDate(tutor.createdAt)}</span></div>
           <Notice>{error}</Notice>
           <Notice tone="success">{notice}</Notice>
 
@@ -62,13 +62,13 @@ export default function TutorReview({ tutorId, masters, onClose, onChanged }) {
             ['Offers', `${tutor.offerStats.total} received · ${tutor.offerStats.accepted} accepted · ${tutor.offerStats.declined} declined · ${tutor.offerStats.expired} expired`],
             ['Rating', tutor.ratingCount ? `${tutor.ratingAvg.toFixed(1)} from ${tutor.ratingCount}` : 'No reviews'],
           ]} />
-          <div><p className="text-xs text-gray-500">Bio</p><p className="text-sm">{tutor.bio}</p></div>
+          <div><p className="text-xs text-sage">Bio</p><p className="text-sm">{tutor.bio}</p></div>
 
           <section>
             <h3 className="text-base mb-2 font-semibold">KYC documents</h3>
             <SimpleTable flush={false} rows={masters.documentTypes.map(t => ({ ...t, id: t.value, doc: latestByType(t.value) }))} minWidth={640} columns={[
               { key: 'type', header: 'Document', render: t => <span className="font-medium">{t.label}{t.required && <span className="text-red-600"> *</span>}</span> },
-              { key: 'file', header: 'File', render: t => (t.doc ? <span className="text-xs">{t.doc.originalName} · {Math.max(1, Math.round(t.doc.sizeBytes / 1024))} KB</span> : <span className="text-xs text-gray-500">Not uploaded</span>) },
+              { key: 'file', header: 'File', render: t => (t.doc ? <span className="text-xs">{t.doc.originalName} · {Math.max(1, Math.round(t.doc.sizeBytes / 1024))} KB</span> : <span className="text-xs text-sage">Not uploaded</span>) },
               { key: 'date', header: 'Uploaded', render: t => (t.doc ? formatDate(t.doc.createdAt) : '—') },
               { key: 'status', header: 'Status', render: t => (t.doc ? <span className="flex flex-col items-start gap-1"><StatusBadge map={DOC_STATUS} value={t.doc.status} />{t.doc.rejectReason && <span className="text-xs text-red-700">{t.doc.rejectReason}</span>}</span> : '—') },
               { key: 'act', header: '', align: 'right', sticky: true, render: t => t.doc && (
@@ -84,7 +84,7 @@ export default function TutorReview({ tutorId, masters, onClose, onChanged }) {
           <section className="space-y-3">
             <h3 className="text-base font-semibold">Account actions</h3>
             {!tutor.requiredDocumentsAccepted && <p className="text-sm text-amber-800">Accept the photo, identity and qualification documents before verifying.</p>}
-            {tutor.statusNotes && <p className="text-sm text-gray-600">Last note: {tutor.statusNotes}</p>}
+            {tutor.statusNotes && <p className="text-sm text-sage">Last note: {tutor.statusNotes}</p>}
             <TextInput label="Note" hint="Required to suspend or reject; shown to the tutor" value={notes} onChange={e => setNotes(e.target.value)} />
             <div className="flex flex-wrap gap-2">
               {tutor.allowedActions.map(a => (

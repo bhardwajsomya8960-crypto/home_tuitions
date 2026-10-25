@@ -29,8 +29,8 @@ export default function MobileBottomNav({ navItems, activeTab, onNavigate }) {
   }
 
   const tabClass = (isActive) =>
-    `flex-1 min-h-[56px] flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-lg ${
-      isActive ? 'text-blue-600' : 'text-gray-500'
+    `flex-1 min-h-[56px] flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-ink rounded-lg ${
+      isActive ? 'text-ink font-semibold' : 'text-sage'
     }`
 
   return (
@@ -40,7 +40,7 @@ export default function MobileBottomNav({ navItems, activeTab, onNavigate }) {
           <button
             type="button"
             aria-label="Close more menu"
-            className="absolute inset-0 bg-black/40"
+            className="absolute inset-0 bg-ink/50"
             onClick={() => setSheetOpen(false)}
           />
           <div
@@ -48,15 +48,15 @@ export default function MobileBottomNav({ navItems, activeTab, onNavigate }) {
             role="dialog"
             aria-modal="true"
             aria-label="More sections"
-            className="relative bg-white rounded-t-2xl p-4 pb-8 space-y-1 max-h-[70vh] overflow-y-auto"
+            className="relative bg-ivory rounded-t-2xl p-4 pb-8 space-y-1 max-h-[70vh] overflow-y-auto"
             style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))' }}
           >
             <div className="flex items-center justify-between mb-2">
-              <p className="font-semibold text-gray-900">More</p>
+              <p className="font-semibold text-ink">More</p>
               <button
                 type="button"
                 onClick={() => setSheetOpen(false)}
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-sage hover:bg-sand-100"
                 aria-label="Close"
               >
                 <FiX className="w-5 h-5" aria-hidden="true" />
@@ -72,7 +72,7 @@ export default function MobileBottomNav({ navItems, activeTab, onNavigate }) {
                   onClick={() => select(item.id)}
                   aria-current={isActive ? 'page' : undefined}
                   className={`w-full min-h-[52px] flex items-center gap-3 px-3 rounded-lg text-left text-base font-medium ${
-                    isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
+                    isActive ? 'bg-lemon text-ink' : 'text-ink/80 hover:bg-sand-100'
                   }`}
                 >
                   <Icon className="w-5 h-5" aria-hidden="true" />
@@ -86,7 +86,7 @@ export default function MobileBottomNav({ navItems, activeTab, onNavigate }) {
 
       <nav
         aria-label="Primary"
-        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t"
+        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-ivory border-t border-ink/10"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="flex items-stretch px-2">
@@ -101,7 +101,7 @@ export default function MobileBottomNav({ navItems, activeTab, onNavigate }) {
                 aria-current={isActive ? 'page' : undefined}
                 className={tabClass(isActive)}
               >
-                <Icon className="w-5 h-5" aria-hidden="true" />
+                <span className={`flex h-7 w-12 items-center justify-center rounded-full ${isActive ? 'bg-lemon' : ''}`}><Icon className="w-5 h-5" aria-hidden="true" /></span>
                 <span>{item.label}</span>
               </button>
             )

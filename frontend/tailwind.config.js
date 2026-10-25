@@ -16,6 +16,13 @@ module.exports = {
         mint: '#CDEDD8',
         lavender: '#E7DEFF',
         coral: '#FFAB91',
+        // Warm neutrals for the portals (borders, table headers, hovers) so they sit on ivory
+        sand: {
+          50: '#FBF7EC',
+          100: '#F4EEDD',
+          200: '#E9E1CB',
+          300: '#D5CBAF',
+        },
         sage: {
           DEFAULT: '#5E7163', // text-safe muted green (5.1:1 on ivory)
           soft: '#75877A',    // decorative only (3.7:1 on ivory)

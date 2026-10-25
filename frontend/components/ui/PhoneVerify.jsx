@@ -8,7 +8,7 @@ import { inputClass, Notice, TextInput } from './Form'
 // Mobile number with one-time-code verification.
 // purpose "register" -> onVerified({ phone, phoneToken }); purpose "login" -> onVerified({ phone, token, user }).
 // While no SMS provider is connected, the server can echo the code (OTP_DEV_ECHO) and it is shown here.
-export default function PhoneVerify({ role, purpose, phone, onPhoneChange, onVerified, verified, accent = 'blue', disabled }) {
+export default function PhoneVerify({ role, purpose, phone, onPhoneChange, onVerified, verified, disabled }) {
   const [stage, setStage] = useState('enter')
   const [code, setCode] = useState('')
   const [devCode, setDevCode] = useState('')
@@ -23,9 +23,7 @@ export default function PhoneVerify({ role, purpose, phone, onPhoneChange, onVer
   }, [cooldown])
 
   const validPhone = /^[6-9]\d{9}$/.test(phone || '')
-  const btn = accent === 'ink'
-    ? 'rounded-full border border-ink bg-lemon text-ink hover:bg-[#f2e04f]'
-    : accent === 'purple' ? 'rounded-lg bg-purple-600 text-white hover:bg-purple-700' : 'rounded-lg bg-blue-600 text-white hover:bg-blue-700'
+  const btn = 'rounded-full border border-ink bg-lemon text-ink hover:bg-[#f2e04f]'
 
   async function send() {
     setBusy(true); setError('')
@@ -81,7 +79,7 @@ export default function PhoneVerify({ role, purpose, phone, onPhoneChange, onVer
           disabled={disabled || stage === 'code'}
           onChange={e => onPhoneChange(e.target.value.replace(/\D/g, '').slice(0, 10))}
           hint="We send a one-time code to confirm the number"
-          accent={accent}
+         
         />
         {stage === 'enter' && (
           <button type="button" onClick={send} disabled={!validPhone || busy || cooldown > 0} className={`mb-[22px] min-h-[44px] shrink-0 px-4 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 ${btn}`}>
@@ -91,8 +89,8 @@ export default function PhoneVerify({ role, purpose, phone, onPhoneChange, onVer
       </div>
 
       {stage === 'code' && (
-        <form onSubmit={verify} className="space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
-          <label htmlFor={`otp-${role}-${purpose}`} className="block text-sm font-medium text-gray-800">Enter the 6-digit code sent to +91 {phone}</label>
+        <form onSubmit={verify} className="space-y-2 rounded-lg border border-sand-200 bg-sand-50 p-4">
+          <label htmlFor={`otp-${role}-${purpose}`} className="block text-sm font-medium text-ink">Enter the 6-digit code sent to +91 {phone}</label>
           <div className="flex gap-2">
             <input
               id={`otp-${role}-${purpose}`}
@@ -102,7 +100,7 @@ export default function PhoneVerify({ role, purpose, phone, onPhoneChange, onVer
               maxLength={6}
               value={code}
               onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              className={`${inputClass(false, accent)} max-w-[180px] text-center text-lg tracking-[0.4em]`}
+              className={`${inputClass(false)} max-w-[180px] text-center text-lg tracking-[0.4em]`}
             />
             <button type="button" onClick={verify} disabled={code.length !== 6 || busy} className={`min-h-[44px] px-4 text-sm font-semibold disabled:opacity-50 ${btn}`}>
               {busy ? 'Checking…' : 'Verify'}
@@ -110,10 +108,10 @@ export default function PhoneVerify({ role, purpose, phone, onPhoneChange, onVer
           </div>
           {devCode && <p className="text-xs text-amber-800">Development mode: your code is <strong className="tracking-widest">{devCode}</strong></p>}
           <div className="flex flex-wrap gap-4 text-sm">
-            <button type="button" onClick={send} disabled={cooldown > 0 || busy} className="font-medium text-blue-700 underline-offset-2 hover:underline disabled:text-gray-400 disabled:no-underline">
+            <button type="button" onClick={send} disabled={cooldown > 0 || busy} className="font-medium text-ink underline decoration-lemon decoration-2 underline-offset-4 hover:decoration-ink disabled:text-sage-soft disabled:no-underline">
               {cooldown > 0 ? `Resend code in ${cooldown}s` : 'Resend code'}
             </button>
-            <button type="button" onClick={() => { setStage('enter'); setError('') }} className="font-medium text-gray-600 hover:underline">Change number</button>
+            <button type="button" onClick={() => { setStage('enter'); setError('') }} className="font-medium text-sage hover:underline">Change number</button>
           </div>
         </form>
       )}

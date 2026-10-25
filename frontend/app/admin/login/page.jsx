@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import Logo from '../../../components/landing/Logo'
 import { api, getSession, setSession } from '../../../lib/api'
 import { Notice, TextInput } from '../../../components/ui/Form'
 import { btn } from '../../../components/ui/Card'
@@ -37,18 +39,42 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <div>
-          <div aria-hidden="true" className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 font-bold text-white">ht</div>
-          <h1 className="text-xl font-bold text-gray-900">Operations sign-in</h1>
-          <p className="text-sm text-gray-500">For staff only.</p>
+    <div className="grid min-h-screen bg-ivory font-landing text-ink lg:grid-cols-2">
+      <aside className="relative hidden overflow-hidden bg-ink p-12 text-ivory lg:flex lg:flex-col lg:justify-between">
+        <Link href="/" className="flex items-center gap-2.5">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-ivory"><Logo className="h-8 w-8" /></span>
+          <span className="text-lg font-bold">Home Tuition</span>
+        </Link>
+        <div className="relative z-10 max-w-md">
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-lemon">Operations console</p>
+          <h2 className="mt-4 text-4xl font-bold leading-tight tracking-tight">Every lead, tutor and class in one place.</h2>
+          <p className="mt-4 text-ivory/70">Match tutors, schedule demos, convert enrolments and keep fees on track.</p>
         </div>
-        <TextInput label="Email" type="email" autoComplete="username" required value={email} onChange={e => setEmail(e.target.value)} />
-        <TextInput label="Password" type="password" autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} />
-        <Notice>{error}</Notice>
-        <button type="submit" disabled={busy || !email || !password} className={`${btn.primary} w-full`}>{busy ? 'Signing in…' : 'Sign in'}</button>
-      </form>
+        <p className="relative z-10 text-xs text-ivory/50">Staff access only. Every action is recorded in the audit log.</p>
+        <span aria-hidden="true" className="absolute -right-24 top-24 h-72 w-72 rounded-full border-[16px] border-lavender/25" />
+        <span aria-hidden="true" className="absolute bottom-20 right-24 h-24 w-24 rounded-full bg-lemon" />
+        <span aria-hidden="true" className="absolute bottom-48 right-56 h-6 w-6 rounded-full bg-coral" />
+      </aside>
+
+      <div className="flex items-center justify-center px-4 py-10">
+        <div className="w-full max-w-sm">
+          <Link href="/" className="mb-8 flex items-center justify-center gap-2.5 lg:hidden">
+            <Logo />
+            <span className="text-lg font-bold">Home Tuition</span>
+          </Link>
+          <form onSubmit={submit} className="space-y-4 rounded-2xl border border-ink/10 bg-white p-6 shadow-sm sm:p-8">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sage">For staff</p>
+              <h1 className="mt-1 text-2xl font-bold">Operations sign-in</h1>
+            </div>
+            <TextInput label="Email" type="email" autoComplete="username" required value={email} onChange={e => setEmail(e.target.value)} />
+            <TextInput label="Password" type="password" autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} />
+            <Notice>{error}</Notice>
+            <button type="submit" disabled={busy || !email || !password} className={`${btn.primary} min-h-[48px] w-full`}>{busy ? 'Signing in…' : 'Sign in'}</button>
+          </form>
+          <p className="mt-6 text-center text-xs text-sage">Parent or tutor? <Link href="/login" className="font-semibold text-ink underline decoration-lemon decoration-2 underline-offset-4">Sign in here</Link></p>
+        </div>
+      </div>
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { FiMapPin } from 'react-icons/fi'
+import Logo from '../../../components/landing/Logo'
 import PhoneVerify from '../../../components/ui/PhoneVerify'
 import SlotGrid from '../../../components/ui/SlotGrid'
 import { Checkbox, ChipGroup, Notice, Select, TextArea, TextInput } from '../../../components/ui/Form'
@@ -22,8 +23,8 @@ const STEP_FIELDS = [
   ['bio', 'teachingMethod', 'achievements', 'consent.terms', 'consent.communication', 'consent.location'],
 ]
 
-const primary = 'inline-flex min-h-[48px] items-center justify-center rounded-lg bg-purple-600 px-6 font-semibold text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2'
-const secondary = 'inline-flex min-h-[48px] items-center justify-center rounded-lg border border-gray-300 bg-white px-6 font-semibold text-gray-800 hover:bg-gray-50'
+const primary = 'inline-flex min-h-[48px] items-center justify-center rounded-full border border-ink bg-lemon px-6 font-semibold text-ink hover:bg-[#f2e04f] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2'
+const secondary = 'inline-flex min-h-[48px] items-center justify-center rounded-full border border-ink/25 bg-white px-6 font-semibold text-ink hover:bg-mint/50'
 
 function validateStep(step, f) {
   const e = {}
@@ -134,11 +135,11 @@ export default function TutorRegisterPage() {
 
   if (done) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-purple-50 p-4">
-        <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-sm">
+      <div className="flex min-h-screen items-center justify-center bg-ivory p-4 font-landing text-ink">
+        <div className="w-full max-w-md rounded-2xl border border-ink/10 bg-white p-8 text-center shadow-sm">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-2xl text-green-700" aria-hidden="true">✓</div>
-          <h1 className="text-2xl font-bold text-gray-900">You're registered</h1>
-          <p className="mt-2 text-gray-600">Next, upload your photo, identity document and qualification certificate. We review them before you can receive leads.</p>
+          <h1 className="text-2xl font-bold text-ink">You're registered</h1>
+          <p className="mt-2 text-sage">Next, upload your photo, identity document and qualification certificate. We review them before you can receive leads.</p>
           <button type="button" onClick={() => router.push('/tutor/dashboard?tab=verification')} className={`${primary} mt-6 w-full`}>Upload documents</button>
         </div>
       </div>
@@ -147,40 +148,40 @@ export default function TutorRegisterPage() {
 
   const dayOptions = masters.days
   return (
-    <div className="min-h-screen bg-purple-50 px-4 pb-16 pt-8">
+    <div className="min-h-screen bg-ivory px-4 font-landing text-ink pb-16 pt-8">
       <div className="mx-auto max-w-2xl">
         <div className="mb-6 text-center">
-          <Link href="/" className="text-sm font-semibold text-purple-700 hover:underline">← Home Tuition</Link>
-          <h1 className="mt-3 text-3xl font-bold text-gray-900 sm:text-4xl">Teach with us</h1>
-          <p className="mt-2 text-gray-600">Get matched with students near you and online.</p>
+          <Link href="/" className="mb-6 flex items-center justify-center gap-2.5"><Logo /><span className="text-lg font-bold">Home Tuition</span></Link>
+          <h1 className="text-3xl font-bold text-ink sm:text-4xl">Teach with us</h1>
+          <p className="mt-2 text-sage">Get matched with students near you and online.</p>
         </div>
 
         <ol className="mb-6 grid grid-cols-4 gap-2" aria-label="Progress">
           {STEPS.map((label, i) => (
             <li key={label} aria-current={i === step ? 'step' : undefined}>
-              <div className={`h-2 rounded-full ${i <= step ? 'bg-purple-600' : 'bg-purple-200'}`} />
-              <p className={`mt-1.5 hidden text-xs sm:block ${i === step ? 'font-semibold text-gray-900' : 'text-gray-500'}`}>{i + 1}. {label}</p>
+              <div className={`h-2 rounded-full ${i <= step ? 'bg-ink' : 'bg-ink/15'}`} />
+              <p className={`mt-1.5 hidden text-xs sm:block ${i === step ? 'font-semibold text-ink' : 'text-sage'}`}>{i + 1}. {label}</p>
             </li>
           ))}
         </ol>
         <p className="mb-3 text-sm font-semibold sm:hidden">Step {step + 1} of 4: {STEPS[step]}</p>
 
-        <div className="space-y-5 rounded-2xl bg-white p-5 shadow-sm sm:p-8">
+        <div className="space-y-5 rounded-2xl border border-ink/10 bg-white p-5 shadow-sm sm:p-8">
           {step === 0 && (
             <>
-              <h2 className="text-xl font-bold text-gray-900">Personal details</h2>
-              <TextInput label="Full name" required autoComplete="name" value={f.name} onChange={e => set('name', e.target.value)} error={errors.name} accent="purple" />
-              <PhoneVerify role="tutor" purpose="register" phone={f.phone} onPhoneChange={v => setF(p => ({ ...p, phone: v, phoneToken: '' }))} verified={!!f.phoneToken} onVerified={({ phoneToken }) => set('phoneToken', phoneToken)} accent="purple" />
+              <h2 className="text-xl font-bold text-ink">Personal details</h2>
+              <TextInput label="Full name" required autoComplete="name" value={f.name} onChange={e => set('name', e.target.value)} error={errors.name} />
+              <PhoneVerify role="tutor" purpose="register" phone={f.phone} onPhoneChange={v => setF(p => ({ ...p, phone: v, phoneToken: '' }))} verified={!!f.phoneToken} onVerified={({ phoneToken }) => set('phoneToken', phoneToken)} />
               {errors.phone && <p role="alert" className="-mt-3 text-xs font-medium text-red-600">{errors.phone}</p>}
               <div className="grid gap-4 sm:grid-cols-2">
-                <TextInput label="Email" required type="email" autoComplete="email" value={f.email} onChange={e => set('email', e.target.value)} error={errors.email} accent="purple" />
-                <TextInput label="Date of birth" type="date" max={maxDob} hint="Optional" value={f.dob} onChange={e => set('dob', e.target.value)} accent="purple" />
+                <TextInput label="Email" required type="email" autoComplete="email" value={f.email} onChange={e => set('email', e.target.value)} error={errors.email} />
+                <TextInput label="Date of birth" type="date" max={maxDob} hint="Optional" value={f.dob} onChange={e => set('dob', e.target.value)} />
               </div>
-              <ChipGroup label="Gender" required single options={masters.genders} value={f.gender} onChange={v => set('gender', v)} error={errors.gender} accent="purple" />
-              <TextArea label="Current address" required rows={2} autoComplete="street-address" value={f.address} onChange={e => set('address', e.target.value)} error={errors.address} accent="purple"
+              <ChipGroup label="Gender" required single options={masters.genders} value={f.gender} onChange={v => set('gender', v)} error={errors.gender} />
+              <TextArea label="Current address" required rows={2} autoComplete="street-address" value={f.address} onChange={e => set('address', e.target.value)} error={errors.address}
                 hint="Used to match you with nearby students. Parents never see your address." />
               <div className="grid gap-4 sm:grid-cols-2">
-                <TextInput label="Pincode" required inputMode="numeric" maxLength={6} value={f.pincode} onChange={e => set('pincode', e.target.value.replace(/\D/g, ''))} error={errors.pincode} accent="purple" />
+                <TextInput label="Pincode" required inputMode="numeric" maxLength={6} value={f.pincode} onChange={e => set('pincode', e.target.value.replace(/\D/g, ''))} error={errors.pincode} />
                 <div className="flex items-end">
                   <button type="button" onClick={useMyLocation} disabled={locating} className={`${secondary} w-full gap-2 text-sm`}>
                     <FiMapPin className="h-4 w-4" aria-hidden="true" /> {locating ? 'Locating…' : f.latitude !== undefined ? 'Location added ✓' : 'Use my current location'}
@@ -192,31 +193,31 @@ export default function TutorRegisterPage() {
 
           {step === 1 && (
             <>
-              <h2 className="text-xl font-bold text-gray-900">What you teach</h2>
+              <h2 className="text-xl font-bold text-ink">What you teach</h2>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Select label="Highest qualification" required options={masters.qualifications} value={f.qualification} onChange={e => set('qualification', e.target.value)} error={errors.qualification} accent="purple" />
-                <TextInput label="Years of teaching experience" required type="number" min={0} max={50} inputMode="numeric" value={f.experienceYears} onChange={e => set('experienceYears', e.target.value)} error={errors.experienceYears} accent="purple" />
+                <Select label="Highest qualification" required options={masters.qualifications} value={f.qualification} onChange={e => set('qualification', e.target.value)} error={errors.qualification} />
+                <TextInput label="Years of teaching experience" required type="number" min={0} max={50} inputMode="numeric" value={f.experienceYears} onChange={e => set('experienceYears', e.target.value)} error={errors.experienceYears} />
               </div>
-              <TextInput label="College / university" hint="Optional" value={f.college} onChange={e => set('college', e.target.value)} accent="purple" />
-              <ChipGroup label="Subjects" required options={masters.subjects} value={f.subjects} onChange={v => set('subjects', v)} error={errors.subjects} accent="purple" />
-              <ChipGroup label="Classes" required options={masters.classes.map(c => ({ value: c, label: classLabel(c) }))} value={f.classes} onChange={v => set('classes', v)} error={errors.classes} accent="purple" />
-              <ChipGroup label="Boards" required options={masters.boards} value={f.boards} onChange={v => set('boards', v)} error={errors.boards} accent="purple" />
-              <ChipGroup label="Teaching languages" required options={masters.languages} value={f.languages} onChange={v => set('languages', v)} error={errors.languages} accent="purple" />
-              <ChipGroup label="Teaching mode" required options={masters.tutorModes.map(m => ({ value: m, label: m === 'home' ? "At the student's home" : 'Online' }))} value={f.modes} onChange={v => set('modes', v)} error={errors.modes} accent="purple" />
+              <TextInput label="College / university" hint="Optional" value={f.college} onChange={e => set('college', e.target.value)} />
+              <ChipGroup label="Subjects" required options={masters.subjects} value={f.subjects} onChange={v => set('subjects', v)} error={errors.subjects} />
+              <ChipGroup label="Classes" required options={masters.classes.map(c => ({ value: c, label: classLabel(c) }))} value={f.classes} onChange={v => set('classes', v)} error={errors.classes} />
+              <ChipGroup label="Boards" required options={masters.boards} value={f.boards} onChange={v => set('boards', v)} error={errors.boards} />
+              <ChipGroup label="Teaching languages" required options={masters.languages} value={f.languages} onChange={v => set('languages', v)} error={errors.languages} />
+              <ChipGroup label="Teaching mode" required options={masters.tutorModes.map(m => ({ value: m, label: m === 'home' ? "At the student's home" : 'Online' }))} value={f.modes} onChange={v => set('modes', v)} error={errors.modes} />
             </>
           )}
 
           {step === 2 && (
             <>
-              <h2 className="text-xl font-bold text-gray-900">When and where</h2>
+              <h2 className="text-xl font-bold text-ink">When and where</h2>
               {f.modes.includes('home') && (
-                <TextInput label="How far will you travel for home tuition? (km)" type="number" min={1} max={50} value={f.serviceRadiusKm} onChange={e => set('serviceRadiusKm', e.target.value)} error={errors.serviceRadiusKm} accent="purple"
+                <TextInput label="How far will you travel for home tuition? (km)" type="number" min={1} max={50} value={f.serviceRadiusKm} onChange={e => set('serviceRadiusKm', e.target.value)} error={errors.serviceRadiusKm}
                   hint="You will only receive home leads within this distance." />
               )}
-              <SlotGrid days={dayOptions} slots={masters.slots} value={f.availability} onChange={v => set('availability', v)} error={errors.availability} accent="purple" />
+              <SlotGrid days={dayOptions} slots={masters.slots} value={f.availability} onChange={v => set('availability', v)} error={errors.availability} />
               <div className="grid gap-4 sm:grid-cols-2">
-                <TextInput label="Expected fee from (₹ / month)" type="number" min={0} inputMode="numeric" hint="Optional" value={f.feeMin} onChange={e => set('feeMin', e.target.value)} accent="purple" />
-                <TextInput label="Expected fee up to (₹ / month)" type="number" min={0} inputMode="numeric" value={f.feeMax} onChange={e => set('feeMax', e.target.value)} error={errors.feeMax} accent="purple" />
+                <TextInput label="Expected fee from (₹ / month)" type="number" min={0} inputMode="numeric" hint="Optional" value={f.feeMin} onChange={e => set('feeMin', e.target.value)} />
+                <TextInput label="Expected fee up to (₹ / month)" type="number" min={0} inputMode="numeric" value={f.feeMax} onChange={e => set('feeMax', e.target.value)} error={errors.feeMax} />
               </div>
               <Checkbox checked={f.demoAvailable} onChange={v => set('demoAvailable', v)} label="I can give a free demo class before a parent decides" />
             </>
@@ -224,14 +225,14 @@ export default function TutorRegisterPage() {
 
           {step === 3 && (
             <>
-              <h2 className="text-xl font-bold text-gray-900">Your profile</h2>
-              <TextArea label="About you" required rows={5} maxLength={1000} value={f.bio} onChange={e => set('bio', e.target.value)} error={errors.bio} accent="purple"
+              <h2 className="text-xl font-bold text-ink">Your profile</h2>
+              <TextArea label="About you" required rows={5} maxLength={1000} value={f.bio} onChange={e => set('bio', e.target.value)} error={errors.bio}
                 hint="Parents read this. Mention your experience, approach and what students achieve with you (50–1000 characters)." />
-              <TextArea label="Teaching method" hint="Optional" maxLength={1000} value={f.teachingMethod} onChange={e => set('teachingMethod', e.target.value)} accent="purple" />
-              <TextArea label="Achievements" hint="Optional" maxLength={1000} value={f.achievements} onChange={e => set('achievements', e.target.value)} accent="purple" />
-              <div className="rounded-xl bg-gray-50 p-4 text-sm">
-                <p className="font-semibold text-gray-800">Summary</p>
-                <p className="mt-1 text-gray-600">{f.subjects.join(', ')} · {f.classes.map(classLabel).join(', ')} · {f.modes.map(m => MODE_LABELS[m]).join(' & ')} · {f.availability.length} weekly time slot(s)</p>
+              <TextArea label="Teaching method" hint="Optional" maxLength={1000} value={f.teachingMethod} onChange={e => set('teachingMethod', e.target.value)} />
+              <TextArea label="Achievements" hint="Optional" maxLength={1000} value={f.achievements} onChange={e => set('achievements', e.target.value)} />
+              <div className="rounded-xl bg-sand-50 p-4 text-sm">
+                <p className="font-semibold text-ink">Summary</p>
+                <p className="mt-1 text-sage">{f.subjects.join(', ')} · {f.classes.map(classLabel).join(', ')} · {f.modes.map(m => MODE_LABELS[m]).join(' & ')} · {f.availability.length} weekly time slot(s)</p>
               </div>
               <fieldset className="space-y-3">
                 <legend className="sr-only">Consent</legend>
@@ -250,7 +251,7 @@ export default function TutorRegisterPage() {
 
           <Notice>{serverError}</Notice>
 
-          <div className="flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-between">
+          <div className="flex flex-col-reverse gap-3 border-t border-sand-100 pt-5 sm:flex-row sm:justify-between">
             {step > 0 ? <button type="button" onClick={() => setStep(s => s - 1)} className={secondary}>Back</button> : <span />}
             {step < 3
               ? <button type="button" onClick={next} className={primary}>Continue</button>
@@ -258,8 +259,8 @@ export default function TutorRegisterPage() {
           </div>
         </div>
 
-        <p className="mt-6 text-center text-sm text-gray-600">
-          Already registered? <Link href="/login?role=tutor" className="font-semibold text-purple-700 hover:underline">Sign in</Link>
+        <p className="mt-6 text-center text-sm text-sage">
+          Already registered? <Link href="/login?role=tutor" className="font-semibold text-ink underline decoration-lemon decoration-2 underline-offset-4 hover:decoration-ink">Sign in</Link>
         </p>
       </div>
     </div>

@@ -53,13 +53,13 @@ function Dashboard() {
   const needsAction = r => pendingOutcome.includes(r) || toRate.includes(r)
   const openRequest = data.requests.find(r => r.id === openRequestId)
   const requestColumns = [
-    { key: 'code', header: 'Request', sortable: true, sortValue: r => r.code, render: r => <button type="button" className="font-semibold text-blue-700 hover:underline" onClick={() => setOpenRequestId(r.id)}>{r.code}</button> },
-    { key: 'student', header: 'Student', sortable: true, sortValue: r => r.student?.name || '', render: r => <span>{r.student?.name}<br /><span className="text-xs text-gray-500">{classLabel(r.class)} · {r.board}</span></span> },
+    { key: 'code', header: 'Request', sortable: true, sortValue: r => r.code, render: r => <button type="button" className="font-semibold text-ink underline decoration-lemon decoration-2 underline-offset-4 hover:decoration-ink" onClick={() => setOpenRequestId(r.id)}>{r.code}</button> },
+    { key: 'student', header: 'Student', sortable: true, sortValue: r => r.student?.name || '', render: r => <span>{r.student?.name}<br /><span className="text-xs text-sage">{classLabel(r.class)} · {r.board}</span></span> },
     { key: 'subjects', header: 'Subjects', render: r => r.subjects.join(', ') },
     { key: 'mode', header: 'Mode', render: r => MODE_LABELS[r.mode] },
     { key: 'tutor', header: 'Tutor', render: r => (r.tutor ? `${r.tutor.name}${r.tutor.confirmed ? '' : ' (pending)'}` : '—') },
     { key: 'demo', header: 'Demo', render: r => { const d = r.demos[0]; return d ? <span>{formatDateTime(d.scheduledAt)}<br /><StatusBadge map={DEMO_STATUS} value={d.status} /></span> : '—' } },
-    { key: 'update', header: 'Latest update', render: r => <span className="text-xs">{r.timeline.at(-1)?.text}<br /><span className="text-gray-500">{formatDateTime(r.timeline.at(-1)?.at)}</span></span> },
+    { key: 'update', header: 'Latest update', render: r => <span className="text-xs">{r.timeline.at(-1)?.text}<br /><span className="text-sage">{formatDateTime(r.timeline.at(-1)?.at)}</span></span> },
     { key: 'status', header: 'Status', render: r => <span className="flex flex-col items-start gap-1"><StatusBadge map={LEAD_STATUS} value={r.status} />{needsAction(r) && <span className="text-xs font-semibold text-amber-700">Action needed</span>}</span> },
     { key: 'open', header: '', align: 'right', sticky: true, render: r => <button type="button" className={btn.secondary} onClick={() => setOpenRequestId(r.id)}>Open</button> },
   ]
@@ -158,7 +158,7 @@ function Dashboard() {
         {tab === 'profile' && (
           <Card title="Your details">
             <Details items={[['Name', data.parent.name], ['Mobile', `+91 ${data.parent.phone}`], ['Email', data.parent.email], ['Relationship', data.parent.relationship], ['Address', data.parent.address ? `${data.parent.address}, ${data.parent.pincode}` : '']]} />
-            <p className="mt-4 text-sm text-gray-500">To change these details, contact support.</p>
+            <p className="mt-4 text-sm text-sage">To change these details, contact support.</p>
             <button type="button" onClick={logout} className={`${btn.danger} mt-4`}>Sign out</button>
           </Card>
         )}
@@ -192,7 +192,7 @@ function RequestDetail({ request: r, masters, busy, act }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600"><StatusBadge map={LEAD_STATUS} value={r.status} /> {r.subjects.join(', ')} · {classLabel(r.class)} {r.board} · {MODE_LABELS[r.mode]}</div>
+      <div className="flex flex-wrap items-center gap-2 text-sm text-sage"><StatusBadge map={LEAD_STATUS} value={r.status} /> {r.subjects.join(', ')} · {classLabel(r.class)} {r.board} · {MODE_LABELS[r.mode]}</div>
       <div className="space-y-5">
           <Details items={[
             ['Days', daysText(r.preferredDays)], ['Times', slotsText(r.preferredSlots)],
@@ -252,12 +252,12 @@ function RequestDetail({ request: r, masters, busy, act }) {
           )}
 
           {canRate && (
-            <div className="rounded-lg border border-gray-200 p-4">
+            <div className="rounded-lg border border-sand-200 p-4">
               <p className="font-semibold">Rate {r.tutor?.name || 'the tutor'} {stage === 'demo' ? 'after the demo' : 'so far'}</p>
               <div className="mt-2 flex gap-1" role="radiogroup" aria-label="Rating">
                 {[1, 2, 3, 4, 5].map(n => (
                   <button key={n} type="button" role="radio" aria-checked={rating === n} aria-label={`${n} star${n > 1 ? 's' : ''}`} onClick={() => setRating(n)} className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-yellow-50">
-                    <FiStar className={`h-6 w-6 ${n <= rating ? 'fill-current text-yellow-500' : 'text-gray-300'}`} aria-hidden="true" />
+                    <FiStar className={`h-6 w-6 ${n <= rating ? 'fill-current text-yellow-500' : 'text-sand-300'}`} aria-hidden="true" />
                   </button>
                 ))}
               </div>
@@ -303,7 +303,7 @@ function ClassesTab({ run }) {
       searchText={r => `${r.studentName} ${r.tutorName} ${r.subjects.join(' ')} ${r.notes || ''}`}
       filters={[{ key: 'status', label: 'statuses', get: r => r.status, options: Object.entries(SESSION_STATUS).map(([value, v]) => ({ value, label: v.label })) }]}
       columns={[
-        { key: 'date', header: 'Date', sortable: true, sortValue: r => r.scheduledDate, render: r => <span className="font-medium">{weekday(r.scheduledDate)} {formatDate(r.scheduledDate)}<br /><span className="text-xs text-gray-500">{SLOT_SHORT[r.slot]}</span></span> },
+        { key: 'date', header: 'Date', sortable: true, sortValue: r => r.scheduledDate, render: r => <span className="font-medium">{weekday(r.scheduledDate)} {formatDate(r.scheduledDate)}<br /><span className="text-xs text-sage">{SLOT_SHORT[r.slot]}</span></span> },
         { key: 'student', header: 'Student', render: r => `${r.studentName} · ${r.subjects.join(', ')}` },
         { key: 'tutor', header: 'Tutor', render: r => r.tutorName },
         { key: 'attendance', header: 'Attendance', render: r => (r.status === 'completed' ? (r.studentPresent ? 'Attended' : 'Student absent') : '—') },

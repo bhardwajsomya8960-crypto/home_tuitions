@@ -54,11 +54,11 @@ function Dashboard() {
   const isActive = tutor.status === 'active'
   const today = new Date(Date.now() + 330 * 60000).toISOString().slice(0, 10)
   const dueAttendance = data.classes.filter(c => c.status === 'scheduled' && c.scheduledDate <= today)
-  const requirement = o => <span><span className="font-medium">{classLabel(o.lead.class)} {o.lead.board}</span><br /><span className="text-xs text-gray-600">{o.lead.subjects.join(', ')}</span></span>
+  const requirement = o => <span><span className="font-medium">{classLabel(o.lead.class)} {o.lead.board}</span><br /><span className="text-xs text-sage">{o.lead.subjects.join(', ')}</span></span>
   const offerColumns = [
     { key: 'code', header: 'Lead', render: o => <span className="whitespace-nowrap font-medium">{o.lead.code}</span> },
     { key: 'need', header: 'Requirement', render: requirement },
-    { key: 'where', header: 'Mode / area', render: o => <span>{MODE_LABELS[o.lead.mode]}<br /><span className="inline-flex items-center gap-1 text-xs text-gray-600"><FiMapPin className="h-3 w-3" aria-hidden="true" />{o.lead.locality}</span></span> },
+    { key: 'where', header: 'Mode / area', render: o => <span>{MODE_LABELS[o.lead.mode]}<br /><span className="inline-flex items-center gap-1 text-xs text-sage"><FiMapPin className="h-3 w-3" aria-hidden="true" />{o.lead.locality}</span></span> },
     { key: 'distance', header: 'Distance', render: o => (o.lead.mode === 'online' ? '—' : o.distanceKm != null ? `${o.distanceKm} km` : 'Same area') },
     { key: 'when', header: 'Days / times', render: o => <span className="text-xs">{daysText(o.lead.preferredDays)}<br />{slotsText(o.lead.preferredSlots)}</span> },
     { key: 'budget', header: 'Budget / start', render: o => <span className="text-xs">{o.lead.budget || '—'}<br />{o.lead.startDate ? formatDate(o.lead.startDate) : o.lead.urgency || ''}</span> },
@@ -66,10 +66,10 @@ function Dashboard() {
   ]
   // Narrower layout for the respond table: lead + requirement, place + distance, when, budget + notes.
   const offerRespondColumns = [
-    { key: 'need', header: 'Lead', render: o => <span><span className="whitespace-nowrap font-medium">{classLabel(o.lead.class)} {o.lead.board}</span><br /><span className="text-xs text-gray-600">{o.lead.subjects.join(', ')}</span><br /><span className="text-xs text-gray-400">{o.lead.code}</span></span> },
-    { key: 'where', header: 'Where', render: o => <span>{MODE_LABELS[o.lead.mode]}{o.lead.mode !== 'online' && <><br /><span className="text-xs text-gray-600">{o.lead.locality}</span><br /><span className="text-xs text-gray-600">{o.distanceKm != null ? `${o.distanceKm} km away` : 'Same area'}</span></>}</span> },
+    { key: 'need', header: 'Lead', render: o => <span><span className="whitespace-nowrap font-medium">{classLabel(o.lead.class)} {o.lead.board}</span><br /><span className="text-xs text-sage">{o.lead.subjects.join(', ')}</span><br /><span className="text-xs text-sage-soft">{o.lead.code}</span></span> },
+    { key: 'where', header: 'Where', render: o => <span>{MODE_LABELS[o.lead.mode]}{o.lead.mode !== 'online' && <><br /><span className="text-xs text-sage">{o.lead.locality}</span><br /><span className="text-xs text-sage">{o.distanceKm != null ? `${o.distanceKm} km away` : 'Same area'}</span></>}</span> },
     offerColumns[4],
-    { key: 'details', header: 'Budget / notes', render: o => <span className="text-xs">{o.lead.budget || 'Budget not given'}<br /><span className="text-gray-600">{[o.lead.startDate ? `Start ${formatDate(o.lead.startDate)}` : o.lead.urgency, o.lead.specialRequirements, o.infoRequest && `Your question: ${o.infoRequest}`].filter(Boolean).join(' · ')}</span></span> },
+    { key: 'details', header: 'Budget / notes', render: o => <span className="text-xs">{o.lead.budget || 'Budget not given'}<br /><span className="text-sage">{[o.lead.startDate ? `Start ${formatDate(o.lead.startDate)}` : o.lead.urgency, o.lead.specialRequirements, o.infoRequest && `Your question: ${o.infoRequest}`].filter(Boolean).join(' · ')}</span></span> },
   ]
   const upcomingDemos = data.demos.filter(d => d.status === 'scheduled')
   const upcomingClasses = data.classes.filter(c => c.scheduledDate >= today && c.status === 'scheduled')
@@ -144,7 +144,7 @@ function Dashboard() {
                 <SimpleTable rows={data.assignments} minWidth={900} columns={[
                   offerColumns[0], offerColumns[1], offerColumns[2],
                   { key: 'status', header: 'Status', render: o => <StatusBadge map={OFFER_STATUS} value={o.status} /> },
-                  { key: 'parent', header: 'Parent / student', render: o => (o.contact ? <span>{o.contact.parentName}<br /><span className="text-xs text-gray-600">{o.contact.studentName}</span></span> : <span className="text-xs text-gray-500">After confirmation</span>) },
+                  { key: 'parent', header: 'Parent / student', render: o => (o.contact ? <span>{o.contact.parentName}<br /><span className="text-xs text-sage">{o.contact.studentName}</span></span> : <span className="text-xs text-sage">After confirmation</span>) },
                   { key: 'phone', header: 'Phone', render: o => (o.contact ? <a className="whitespace-nowrap underline" href={`tel:+91${o.contact.phone}`}>+91 {o.contact.phone}</a> : '—') },
                   { key: 'address', header: 'Address', render: o => (o.contact ? <span className="text-xs">{o.contact.address || 'Online'}</span> : '—') },
                 ]} />
@@ -181,7 +181,7 @@ function Dashboard() {
               searchText={r => `${r.studentName} ${r.subjects.join(' ')}`}
               filters={[{ key: 'status', label: 'statuses', get: r => r.status, options: Object.entries(SESSION_STATUS).map(([value, v]) => ({ value, label: v.label })) }]}
               columns={[
-                { key: 'date', header: 'Date', sortable: true, sortValue: r => r.scheduledDate, render: r => <span className="font-medium">{weekday(r.scheduledDate)} {formatDate(r.scheduledDate)}<br /><span className="text-xs text-gray-500">{SLOT_SHORT[r.slot]}</span></span> },
+                { key: 'date', header: 'Date', sortable: true, sortValue: r => r.scheduledDate, render: r => <span className="font-medium">{weekday(r.scheduledDate)} {formatDate(r.scheduledDate)}<br /><span className="text-xs text-sage">{SLOT_SHORT[r.slot]}</span></span> },
                 { key: 'student', header: 'Student', render: r => `${r.studentName} · ${r.subjects.join(', ')}` },
                 { key: 'attendance', header: 'Attendance', render: r => (r.status === 'completed' ? `${r.tutorPresent ? 'You ✓' : 'You ✗'} · ${r.studentPresent ? 'Student ✓' : 'Student ✗'}` : '—') },
                 { key: 'notes', header: 'Notes', render: r => <span className="text-xs">{r.notes || '—'}</span> },
@@ -197,7 +197,7 @@ function Dashboard() {
             searchText={r => `${r.studentName} ${r.parentName} ${r.subjects.join(' ')}`}
             filters={[{ key: 'status', label: 'statuses', get: r => r.status, options: Object.entries(ENROLMENT_STATUS).map(([value, v]) => ({ value, label: v.label })) }]}
             columns={[
-              { key: 'student', header: 'Student', sortable: true, sortValue: r => r.studentName, render: r => <span><span className="font-medium">{r.studentName}</span><br /><span className="text-xs text-gray-500">{classLabel(r.class)} · {r.board}</span></span> },
+              { key: 'student', header: 'Student', sortable: true, sortValue: r => r.studentName, render: r => <span><span className="font-medium">{r.studentName}</span><br /><span className="text-xs text-sage">{classLabel(r.class)} · {r.board}</span></span> },
               { key: 'subjects', header: 'Subjects', render: r => r.subjects.join(', ') },
               { key: 'schedule', header: 'Schedule', render: r => <span className="text-xs">{scheduleText(r.schedule)}</span> },
               { key: 'mode', header: 'Mode', render: r => MODE_LABELS[r.mode] },
@@ -331,12 +331,12 @@ function AvailabilityForm({ tutor, masters, busy, onSave }) {
           {f.modes.includes('home') && <TextInput className="max-w-xs" label="Home tuition travel distance (km)" type="number" min={1} max={50} value={f.serviceRadiusKm} onChange={e => setF({ ...f, serviceRadiusKm: e.target.value })} error={errors.serviceRadiusKm} />}
         </div>
       </Card>
-      <Card title="When you can teach"><SlotGrid days={masters.days} slots={masters.slots} value={f.availability} onChange={v => setF({ ...f, availability: v })} error={errors.availability} accent="purple" /></Card>
+      <Card title="When you can teach"><SlotGrid days={masters.days} slots={masters.slots} value={f.availability} onChange={v => setF({ ...f, availability: v })} error={errors.availability} /></Card>
       <Card title="What you teach">
         <div className="space-y-4">
-          <ChipGroup label="Subjects" options={masters.subjects} value={f.subjects} onChange={v => setF({ ...f, subjects: v })} error={errors.subjects} accent="purple" />
-          <ChipGroup label="Classes" options={masters.classes.map(c => ({ value: c, label: classLabel(c) }))} value={f.classes} onChange={v => setF({ ...f, classes: v })} error={errors.classes} accent="purple" />
-          <ChipGroup label="Modes" options={masters.tutorModes.map(m => ({ value: m, label: MODE_LABELS[m] }))} value={f.modes} onChange={v => setF({ ...f, modes: v })} error={errors.modes} accent="purple" />
+          <ChipGroup label="Subjects" options={masters.subjects} value={f.subjects} onChange={v => setF({ ...f, subjects: v })} error={errors.subjects} />
+          <ChipGroup label="Classes" options={masters.classes.map(c => ({ value: c, label: classLabel(c) }))} value={f.classes} onChange={v => setF({ ...f, classes: v })} error={errors.classes} />
+          <ChipGroup label="Modes" options={masters.tutorModes.map(m => ({ value: m, label: MODE_LABELS[m] }))} value={f.modes} onChange={v => setF({ ...f, modes: v })} error={errors.modes} />
           <div className="grid gap-4 sm:grid-cols-2">
             <TextInput label="Fee from (₹ / month)" type="number" min={0} value={f.feeMin} onChange={e => setF({ ...f, feeMin: e.target.value })} />
             <TextInput label="Fee up to (₹ / month)" type="number" min={0} value={f.feeMax} onChange={e => setF({ ...f, feeMax: e.target.value })} error={errors.feeMax} />
@@ -357,15 +357,15 @@ function VerificationTab({ tutor, masters, busy, onUpload }) {
         <ol className="flex flex-wrap gap-2 text-xs">
           {['pending', 'documents_submitted', 'under_review', 'verified', 'active'].map((s, i, all) => {
             const reached = all.indexOf(tutor.status) >= i
-            return <li key={s} className={`rounded-full px-3 py-1 font-semibold ${reached ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>{i + 1}. {TUTOR_STATUS[s].label}</li>
+            return <li key={s} className={`rounded-full px-3 py-1 font-semibold ${reached ? 'bg-green-100 text-green-800' : 'bg-sand-100 text-sage'}`}>{i + 1}. {TUTOR_STATUS[s].label}</li>
           })}
         </ol>
-        {tutor.statusNotes && <p className="mt-3 text-sm text-gray-600">Note from our team: {tutor.statusNotes}</p>}
+        {tutor.statusNotes && <p className="mt-3 text-sm text-sage">Note from our team: {tutor.statusNotes}</p>}
       </Card>
       <Card title="Documents" subtitle="PDF, JPG or PNG up to 5 MB. Photos must be JPG or PNG.">
         <SimpleTable rows={masters.documentTypes.map(t => ({ ...t, id: t.value, doc: latest(t.value) }))} minWidth={720} columns={[
           { key: 'type', header: 'Document', render: t => <span className="font-medium">{t.label}{t.required && <span className="text-red-600"> *</span>}</span> },
-          { key: 'file', header: 'File', render: t => (t.doc ? <span className="text-xs">{t.doc.originalName}</span> : <span className="text-xs text-gray-500">Not uploaded</span>) },
+          { key: 'file', header: 'File', render: t => (t.doc ? <span className="text-xs">{t.doc.originalName}</span> : <span className="text-xs text-sage">Not uploaded</span>) },
           { key: 'date', header: 'Uploaded', render: t => (t.doc ? formatDate(t.doc.createdAt) : '—') },
           { key: 'status', header: 'Status', render: t => (t.doc ? <span className="flex flex-col items-start gap-1"><StatusBadge map={DOC_STATUS} value={t.doc.status} />{t.doc.rejectReason && <span className="text-xs text-red-700">{t.doc.rejectReason}</span>}</span> : '—') },
           { key: 'act', header: '', align: 'right', render: t => (

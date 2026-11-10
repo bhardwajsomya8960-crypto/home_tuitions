@@ -3,10 +3,9 @@
 import { useEffect, useState } from 'react'
 import { FiCheckCircle, FiMail, FiMessageCircle, FiPhone } from 'react-icons/fi'
 import { Notice, Select, TextArea, TextInput } from '@/shared/ui/Form'
-import { api } from '@/shared/lib/api'
-import { WEBSITE_API } from '@/shared/lib/endpoints'
-import { useMasters } from '@/shared/lib/useMasters'
 import { CONTACT, hasContact } from '@/features/website/contact'
+import { sendEnquiry } from '@/features/website/api/enquiryApi'
+import { ENQUIRY_LEVELS } from '@/features/website/enquiryLevels'
 
 const TABS = [
   { id: 'parent', label: 'I need a tutor', hash: '#enquire' },
@@ -16,10 +15,13 @@ const blank = { phone: '', name: '', role: '', level: '', message: '' }
 const primaryBtn = 'inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-full border border-ink bg-lemon px-7 text-base font-semibold text-ink shadow-[0_1px_0_rgba(38,53,47,0.9)] transition-transform duration-150 motion-safe:hover:-translate-y-0.5 hover:bg-[#f2e04f] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2'
 
 // "Request a callback": parents, students and tutors leave a phone number (the only required
-// field) and we call them back. No account or sign-in code; the request goes to the staff
-// console under Enquiries. Links to #enquire open the parent tab, #enquire-tutor the tutor tab.
+// field) and we call them back. No account or sign-in code. The form needs nothing from the
+// backend API: its choices are fixed here and the request is emailed to the team by the
+// website itself (see api/enquiryApi.js). Links to #enquire open the parent tab,
+// #enquire-tutor the tutor tab.
+const levels = ENQUIRY_LEVELS
+
 export default function EnquirySection() {
-  const { masters } = useMasters()
   const [kind, setKind] = useState('parent')
   const [f, setF] = useState(blank)
   const [extra, setExtra] = useState({ website: '', courseSlug: '' })
@@ -42,7 +44,6 @@ export default function EnquirySection() {
   }, [])
 
   const set = (k, v) => setF(p => ({ ...p, [k]: v }))
-  const levels = masters?.enquiryLevels || []
 
   async function submit(e) {
     e.preventDefault()
@@ -56,7 +57,7 @@ export default function EnquirySection() {
       if (kind === 'parent' && f.role) body.role = f.role
       if (kind === 'parent' && extra.courseSlug) body.courseSlug = extra.courseSlug
       if (extra.website) body.website = extra.website
-      await api(WEBSITE_API.enquiries, { method: 'POST', body })
+      await sendEnquiry(body)
       setSentTo(f.phone)
       setF(blank)
     } catch (err) {

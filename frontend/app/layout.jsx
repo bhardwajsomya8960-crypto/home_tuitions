@@ -1,4 +1,6 @@
 import './globals.css'
+import WhatsAppWidget from '@/features/website/components/WhatsAppWidget'
+import StudyCorner from '@/features/website/components/StudyCorner'
 
 export const metadata = {
   manifest: '/manifest.webmanifest',
@@ -36,6 +38,8 @@ export default function RootLayout({ children }) {
       </head>
       <body>
         {children}
+        <StudyCorner />
+        <WhatsAppWidget />
       </body>
     </html>
   )

@@ -55,25 +55,49 @@ More detail: [docs/SETUP.md](docs/SETUP.md).
 
 ## City landing pages
 
-`/noida`, `/delhi` and area pages such as `/noida/sector-62` are generated from one config file, [`frontend/features/website/cities/cities.config.js`](frontend/features/website/cities/cities.config.js), using one template ([`CityPage.jsx`](frontend/features/website/cities/CityPage.jsx)). Each page has its own title, description, canonical URL, Open Graph tags and JSON-LD (EducationalOrganization + FAQPage), and is listed in `/sitemap.xml`. Leads from the page's form go to the same email route as the homepage form, with the city, area, page and UTM parameters.
+`/noida`, `/delhi` and area pages such as `/noida/sector-62` are generated from one config file, [`frontend/features/website/cities/cities.config.js`](frontend/features/website/cities/cities.config.js), using one template ([`CityPage.jsx`](frontend/features/website/cities/CityPage.jsx)). They are static pages built at deploy time. Each has its own title, description, canonical URL, Open Graph and Twitter tags, breadcrumbs, and JSON-LD (LocalBusiness + EducationalOrganization, BreadcrumbList, FAQPage). Leads from the page's form go to the same email route as the homepage form, with the city, area, page and UTM parameters.
 
 ### Adding a new city
 
 1. Add an entry to `CITIES` in `cities.config.js` (copy an existing one):
    - `slug` (the address, e.g. `gurgaon` → `/gurgaon`), `name`, `nameHindi`.
-   - `areas`: the localities you serve, each `{ name, slug }`. Every area gets a page at `/<city>/<area slug>`.
    - `intro`: **write a new paragraph for this city.** Mention its localities and how families there live and commute; do not copy another city's text with the name swapped.
+   - `areas`: the localities you serve. Every area gets a page at `/<city>/<area slug>` (see below).
    - `tutorCount`: the real number of tutors there, or `null` to hide the stat. Never estimate it.
    - `homeTuitionAvailable`: `false` if you only offer online classes there.
-   - `whatsappNumber` (defaults to the business number) and `seo` (`title`, `description`).
-2. Run `npm run build` in `frontend/` and open `/<city>` to check it.
+   - `whatsappNumber` (defaults to the business number), `address` (only a public address customers can visit, else `null`), and `seo` (`title` up to 60 characters, `description` up to 155).
+2. Run `npm run build` in `frontend/`, then `npm start` and `npm run check:seo` (below).
 3. Deploy. The page, its area pages, the sitemap entry and the footer link appear automatically.
 
-To get an **area page** indexed by search engines, give that area its own `intro` (a few sentences about the locality). Area pages without one are `noindex` and left out of the sitemap, so near-identical pages do not compete with the city page.
+### Area pages
 
-`VERIFICATION_ENABLED` at the top of the config hides every "verified" / "ID-checked" claim on the city pages (headings, titles, the ID-check card, the verification steps and that FAQ) when set to `false`.
+Each area in the config has `name`, `slug` (and an optional `shortName` for titles), plus content fields: `intro` (80–150 words written for that area only), `nearbyLandmarks`, `nearbyAreas` (slugs of neighbouring areas, shown as "Nearby areas we also cover"), `schoolsNearby` (names only; the page says we are not affiliated) and `notes` (internal, never shown). Fill them only with real information.
 
-**Tracking** (optional, set in Vercel → Settings → Environment Variables): `NEXT_PUBLIC_META_PIXEL_ID` loads the Meta Pixel (PageView, `Lead` on a sent form, `Contact` on WhatsApp/Call taps, each with the city as a custom parameter) and `NEXT_PUBLIC_GA4_ID` loads Google Analytics 4. Nothing is loaded when they are unset. `NEXT_PUBLIC_SITE_URL` overrides the site address used in canonical URLs and the sitemap (default `https://hometuitions.koshatech.com`).
+An area page is **noindex and left out of the sitemap** until you set `indexable: true` **and** its intro is 80–150 words. This keeps near-identical pages from competing with the city page (Google treats them as doorway pages). Until then the page still works for ads and links, showing the city intro and the city's other areas.
+
+### Verification claims
+
+`VERIFICATION_ENABLED` at the top of the config controls every "verified" / "ID-checked" claim: the word "Verified" in headings, the ID-check card, the verification steps, that FAQ, and the `/how-we-verify` trust page with every link to it (city pages and the footer). Set it to `false` and all of them disappear (`/how-we-verify` returns 404).
+
+### Business details, profiles and tracking
+
+Name, service area, phone, email and profile links live in [`frontend/features/website/contact.js`](frontend/features/website/contact.js): the footer's NAP line ("Home & Online Tutor Hub · Serving Noida & Delhi NCR · +91 89602 74119") and all structured data read them from there. Set in Vercel → Settings → Environment Variables (then redeploy):
+
+| Variable | Used for |
+|---|---|
+| `NEXT_PUBLIC_CONTACT_EMAIL` | email in the footer and the Organization data |
+| `NEXT_PUBLIC_GBP_URL`, `NEXT_PUBLIC_FACEBOOK_URL`, `NEXT_PUBLIC_JUSTDIAL_URL` | `sameAs` profile links (empty ones are left out) |
+| `NEXT_PUBLIC_META_PIXEL_ID` | Meta Pixel: PageView, `Lead` on a sent form, `Contact` on WhatsApp/Call taps, with the city |
+| `NEXT_PUBLIC_GA4_ID` | Google Analytics 4 |
+| `NEXT_PUBLIC_SITE_URL` | site address for canonical URLs and the sitemap (default `https://hometuitions.koshatech.com`) |
+
+### Blog
+
+Posts are Markdown files in `frontend/content/blog/<slug>.md`, published at `/blog/<slug>` with Article structured data and a "find a tutor in this city" box. [`content/blog/example-draft.md`](frontend/content/blog/example-draft.md) explains the front matter (title, description, author, date, city, draft). Drafts are noindex and kept off the blog list and the sitemap; `/blog` itself stays noindex until the first post is published.
+
+### SEO check
+
+`npm run check:seo` (in `frontend/`, against a running site: `npm run build && npm start` first, or pass a URL) loads every public page and checks the JSON-LD parses and matches the page (FAQ text, breadcrumbs), title and description lengths and uniqueness, canonical / Open Graph / Twitter tags and the share image, alt text, `#anchor` targets, and that `sitemap.xml` lists exactly the indexable pages with `lastmod`. Add `--print /noida,/noida/sector-62` to print those pages' JSON-LD.
 
 ## Tests
 

@@ -3,9 +3,14 @@ import { notFound } from 'next/navigation'
 import SiteHeader from '@/features/website/components/landing/SiteHeader'
 import { SiteFooter } from '@/features/website/components/landing/Sections'
 import CatalogueUnavailable from '@/features/website/components/catalogue/CatalogueUnavailable'
-import { CatalogueUnavailableError, getCourse } from '@/features/website/api/catalogueApi'
+import { CatalogueUnavailableError, getCourse, listCourses } from '@/features/website/api/catalogueApi'
+import { pageMetadata } from '@/shared/lib/seo'
 
-export const revalidate = 60
+// Built at deploy time from the website's catalogue data.
+export async function generateStaticParams() {
+  const { items } = await listCourses({ limit: 100 })
+  return items.map(course => ({ slug: course.slug }))
+}
 
 const MODE_TEXT = {
   home: 'Home tuition is available for this course.',
@@ -25,16 +30,11 @@ export async function generateMetadata({ params }) {
   const { course, failed } = await load(params.slug)
   if (failed) return { title: 'Course | Home & Online Tutor Hub' }
   if (!course) return { title: 'Course not found | Home & Online Tutor Hub' }
-  return {
+  return pageMetadata({
     title: course.seoTitle || `${course.name} | Home & Online Tutor Hub`,
     description: course.seoDescription || course.shortDescription || undefined,
-    alternates: { canonical: `/courses/${course.slug}` },
-    openGraph: {
-      title: course.seoTitle || course.name,
-      description: course.seoDescription || course.shortDescription || undefined,
-      type: 'website',
-    },
-  }
+    path: `/courses/${course.slug}`,
+  })
 }
 
 function Section({ title, children }) {

@@ -2,16 +2,17 @@ import { FaWhatsapp } from 'react-icons/fa'
 import SiteHeader from '@/features/website/components/landing/SiteHeader'
 import { SiteFooter } from '@/features/website/components/landing/Sections'
 import { whatsappLink } from '@/features/website/contact'
+import { pageMetadata } from '@/shared/lib/seo'
 
 // TODO(tutor page): placeholder. A separate task builds the tutor sign-up form here. Until
 // then it points tutors to the homepage's "I want to teach" callback form and WhatsApp, and
 // is kept out of search results and the sitemap.
-export const metadata = {
+export const metadata = pageMetadata({
   title: 'Become a Tutor | Home & Online Tutor Hub',
   description: 'Teach home and online tuition classes with Home & Online Tutor Hub.',
-  alternates: { canonical: '/become-a-tutor' },
-  robots: { index: false, follow: true },
-}
+  path: '/become-a-tutor',
+  noindex: true,
+})
 
 const btn = 'inline-flex min-h-[52px] items-center justify-center gap-2 rounded-full border border-ink px-6 text-base font-semibold text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-ivory'
 

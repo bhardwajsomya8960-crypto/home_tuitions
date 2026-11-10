@@ -3,10 +3,12 @@ import { FaWhatsapp } from 'react-icons/fa'
 import { FiArrowRight, FiChevronDown, FiClock, FiGift, FiMapPin, FiMessageCircle, FiShield, FiUser } from 'react-icons/fi'
 import SiteHeader from '@/features/website/components/landing/SiteHeader'
 import { SiteFooter } from '@/features/website/components/landing/Sections'
+import Breadcrumbs from '@/shared/ui/Breadcrumbs'
+import JsonLd from '@/shared/ui/JsonLd'
 import { VERIFICATION_ENABLED } from './cities.config'
 import {
-  SUBJECTS_AND_LEVELS, VERIFICATION_STEPS, cityFaqs, faqJsonLd, heroHeading, howItWorks, organizationJsonLd,
-  placeName, tutorRequestText, whatsappDigits, whatsappHref, whyCards,
+  SUBJECTS_AND_LEVELS, VERIFICATION_STEPS, VERIFY_PATH, breadcrumbItems, cityFaqs, faqJsonLd, heroHeading, howItWorks,
+  localBusinessJsonLd, nearbyAreasFor, placeName, tutorRequestText, whatsappDigits, whatsappHref, whyCards,
 } from './cityContent'
 import CityLeadForm from './CityLeadForm'
 import StickyContactBar from './StickyContactBar'
@@ -14,23 +16,45 @@ import TrackedLink from './TrackedLink'
 
 // The landing page for one city (/noida) or one area in it (/noida/sector-62). Everything
 // city-specific comes from cities.config.js; copy shared by all cities is in cityContent.js.
-// Server-rendered; only the form, the sticky bar and the tracked links run in the browser.
+// Server-rendered (static at build time); only the form, the sticky bar and the tracked links
+// run in the browser.
 const ICONS = { id: FiShield, clock: FiClock, demo: FiGift, chat: FiMessageCircle, person: FiUser }
 
 const eyebrow = 'text-xs font-bold uppercase tracking-[0.18em] text-sage'
 const h2 = 'text-2xl font-extrabold tracking-tight text-ink sm:text-3xl'
 const card = 'rounded-3xl border border-ink/10 bg-white p-6'
 const btnBase = 'inline-flex min-h-[52px] items-center justify-center gap-2 rounded-full border px-6 text-base font-semibold text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-ivory'
+const textLink = 'font-semibold text-ink underline underline-offset-4'
+const chip = active => `inline-flex min-h-[40px] items-center gap-1.5 rounded-full border px-4 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink ${active ? 'border-ink bg-ink text-white' : 'border-ink/15 bg-white text-ink hover:border-ink/40'}`
 
-const JsonLd = ({ data }) => (
-  <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data).replace(/</g, '\\u003c') }} />
-)
+function AreaChips({ city, areas, current }) {
+  return (
+    <ul className="mt-6 flex flex-wrap gap-2">
+      {areas.map(a => (
+        <li key={a.slug}>
+          <Link href={`/${city.slug}/${a.slug}`} aria-current={a.slug === current ? 'page' : undefined} className={chip(a.slug === current)}>
+            <FiMapPin className="h-3.5 w-3.5" aria-hidden="true" /> {a.name}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  )
+}
 
 export default function CityPage({ city, area = null }) {
   const place = placeName(city, area)
   const track = { city: city.name, area: area?.name }
   const whatsapp = whatsappHref(city, tutorRequestText(city, area))
   const faqs = cityFaqs(city)
+  const askAboutArea = (
+    <p className="mt-5 text-sm text-sage">
+      Don&apos;t see your area?{' '}
+      <TrackedLink href={whatsapp} target="_blank" rel="noopener noreferrer" track={{ ...track, method: 'whatsapp' }} className={textLink}>
+        Message us
+      </TrackedLink>{' '}
+      — we&apos;re expanding.
+    </p>
+  )
 
   return (
     <div className="min-h-screen bg-ivory pb-[calc(4.75rem+env(safe-area-inset-bottom))] font-landing text-ink lg:pb-0">
@@ -41,7 +65,8 @@ export default function CityPage({ city, area = null }) {
 
       <main id="main">
         {/* 1. Hero */}
-        <section className="mx-auto max-w-6xl px-4 pb-12 pt-10 sm:px-6 md:pb-16 md:pt-16">
+        <section className="mx-auto max-w-6xl px-4 pb-12 pt-6 sm:px-6 md:pb-16 md:pt-10">
+          <Breadcrumbs items={breadcrumbItems(city, area)} className="mb-6 md:mb-8" />
           <p className={eyebrow}><span lang="hi">{city.nameHindi}</span> · {area ? `${area.name}, ` : ''}{city.name}</p>
           <h1 className="mt-4 max-w-[18ch] text-4xl font-extrabold leading-[1.08] tracking-tight sm:text-5xl">{heroHeading(city, area)}</h1>
           <p className="mt-5 max-w-[52ch] text-lg leading-relaxed text-ink/85">
@@ -57,33 +82,56 @@ export default function CityPage({ city, area = null }) {
             </TrackedLink>
             <a href="#city-form" className={`${btnBase} border-ink/25 bg-transparent hover:border-ink/60 hover:bg-white`}>Request a Callback</a>
           </div>
+          {VERIFICATION_ENABLED && (
+            <p className="mt-5 text-sm text-sage"><Link href={VERIFY_PATH} className={textLink}>How we verify tutors</Link></p>
+          )}
           {city.tutorCount !== null && city.tutorCount !== undefined && (
             <p className="mt-6 text-sm font-semibold text-ink">{city.tutorCount} tutors available in {city.name}</p>
           )}
         </section>
 
-        {/* 2. Areas we serve, with the intro written for this city */}
+        {/* 2. Areas we serve (city page) / this area, with nearby areas (area page) */}
         <section aria-labelledby="areas-title" className="border-y border-ink/5 bg-white/60">
           <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 md:py-16">
-            <h2 id="areas-title" className={h2}>Areas we serve in {city.name}</h2>
-            <p className="mt-4 max-w-[68ch] text-base leading-relaxed text-ink/85">{area?.intro || city.intro}</p>
-            <ul className="mt-6 flex flex-wrap gap-2">
-              {city.areas.map(a => (
-                <li key={a.slug}>
-                  <Link href={`/${city.slug}/${a.slug}`} aria-current={a.slug === area?.slug ? 'page' : undefined}
-                    className={`inline-flex min-h-[40px] items-center gap-1.5 rounded-full border px-4 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink ${a.slug === area?.slug ? 'border-ink bg-ink text-white' : 'border-ink/15 bg-white text-ink hover:border-ink/40'}`}>
-                    <FiMapPin className="h-3.5 w-3.5" aria-hidden="true" /> {a.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-5 text-sm text-sage">
-              Don&apos;t see your area?{' '}
-              <TrackedLink href={whatsapp} target="_blank" rel="noopener noreferrer" track={{ ...track, method: 'whatsapp' }} className="font-semibold text-ink underline underline-offset-4">
-                Message us
-              </TrackedLink>{' '}
-              — we&apos;re expanding.
-            </p>
+            {area ? (
+              <>
+                <h2 id="areas-title" className={h2}>Home tuition in {place}</h2>
+                <p data-area-intro className="mt-4 max-w-[68ch] text-base leading-relaxed text-ink/85">{area.intro || city.intro}</p>
+                {area.nearbyLandmarks?.length > 0 && (
+                  <div className="mt-6">
+                    <h3 className="text-lg font-bold">Landmarks near {area.name}</h3>
+                    <ul className="mt-2 list-disc space-y-1 pl-5 text-base text-ink/85">{area.nearbyLandmarks.map(l => <li key={l}>{l}</li>)}</ul>
+                  </div>
+                )}
+                {area.schoolsNearby?.length > 0 && (
+                  <div className="mt-6">
+                    <h3 className="text-lg font-bold">Schools near {area.name}</h3>
+                    <ul className="mt-2 list-disc space-y-1 pl-5 text-base text-ink/85">{area.schoolsNearby.map(s => <li key={s}>{s}</li>)}</ul>
+                    <p className="mt-2 text-sm text-sage">Listed to help you place us. We are not affiliated with these schools.</p>
+                  </div>
+                )}
+                {(() => {
+                  const nearby = nearbyAreasFor(city, area)
+                  return (
+                    <div className="mt-10">
+                      <h3 className="text-xl font-bold">{nearby.heading}</h3>
+                      <AreaChips city={city} areas={nearby.areas} />
+                      <p className="mt-5 text-sm text-sage">
+                        <Link href={`/${city.slug}`} className={textLink}>All home tutors in {city.name}</Link>
+                      </p>
+                      {askAboutArea}
+                    </div>
+                  )
+                })()}
+              </>
+            ) : (
+              <>
+                <h2 id="areas-title" className={h2}>Areas we serve in {city.name}</h2>
+                <p className="mt-4 max-w-[68ch] text-base leading-relaxed text-ink/85">{city.intro}</p>
+                <AreaChips city={city} areas={city.areas} />
+                {askAboutArea}
+              </>
+            )}
           </div>
         </section>
 
@@ -98,6 +146,7 @@ export default function CityPage({ city, area = null }) {
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-mint" aria-hidden="true"><Icon className="h-5 w-5" /></span>
                   <h3 className="mt-4 text-lg font-bold">{c.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-ink/80">{c.text}</p>
+                  {c.link && <p className="mt-3 text-sm"><Link href={c.link.href} className={textLink}>{c.link.label}</Link></p>}
                 </li>
               )
             })}
@@ -147,6 +196,7 @@ export default function CityPage({ city, area = null }) {
                   </li>
                 ))}
               </ol>
+              <p className="mt-6 text-sm"><Link href={VERIFY_PATH} className={textLink}>Read the full verification process</Link></p>
             </div>
           </section>
         )}
@@ -167,7 +217,7 @@ export default function CityPage({ city, area = null }) {
           </div>
         </section>
 
-        {/* 8. FAQ */}
+        {/* 8. FAQ: the answers below are exactly the text in the FAQPage JSON-LD */}
         <section aria-labelledby="faq-title" className="border-y border-ink/5 bg-white/60">
           <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 md:py-16">
             <h2 id="faq-title" className={h2}>Questions parents ask</h2>
@@ -179,6 +229,7 @@ export default function CityPage({ city, area = null }) {
                     <FiChevronDown className="h-5 w-5 shrink-0 transition-transform group-open:rotate-180" aria-hidden="true" />
                   </summary>
                   <p className="px-5 pb-5 text-base leading-relaxed text-ink/85">{f.a}</p>
+                  {f.link && <div className="-mt-2 px-5 pb-5 text-sm"><Link href={f.link.href} className={textLink}>{f.link.label}</Link></div>}
                 </details>
               ))}
             </div>
@@ -195,7 +246,7 @@ export default function CityPage({ city, area = null }) {
           </div>
         </section>
 
-        <JsonLd data={organizationJsonLd(city, area)} />
+        <JsonLd data={localBusinessJsonLd(city, area)} />
         <JsonLd data={faqJsonLd(faqs)} />
       </main>
 

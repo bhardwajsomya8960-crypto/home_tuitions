@@ -48,9 +48,9 @@ export default function SiteHeader({ ctaHref = '/#enquire' }) {
       }`}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6 xl:gap-6">
-        {/* Icon only; the name stays available to screen readers and as a tooltip. */}
-        <Link href="/" aria-label={BRAND_NAME} title="Home" className="shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-ivory">
-          <Logo className="h-11 w-11" />
+        {/* Icon only; its alt text names the link for screen readers and search engines. */}
+        <Link href="/" title="Home" className="shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-ivory">
+          <Logo className="h-11 w-11" alt={BRAND_NAME} />
         </Link>
 
         <nav aria-label="Main" className="hidden flex-1 items-center justify-center gap-4 lg:flex xl:gap-6">

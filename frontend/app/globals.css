@@ -183,3 +183,16 @@ h3 {
   .sc-scene, .sc-scene * { animation: none !important; }
   .sc-scene .sc-idea[src$='idea-bulb.png'] { opacity: 1; }
 }
+
+/* Blog post body (app/blog/[slug]): Markdown rendered to HTML. */
+.post-body { @apply text-lg leading-relaxed text-ink/85; }
+.post-body > * + * { @apply mt-5; }
+.post-body h2 { @apply mt-10 text-2xl font-extrabold tracking-tight text-ink; }
+.post-body h3 { @apply mt-8 text-xl font-bold text-ink; }
+.post-body ul { @apply list-disc pl-6; }
+.post-body ol { @apply list-decimal pl-6; }
+.post-body li + li, .post-body li > ul, .post-body li > ol { @apply mt-2; }
+.post-body a { @apply font-semibold text-ink underline underline-offset-4; }
+.post-body strong { @apply font-semibold text-ink; }
+.post-body blockquote { @apply border-l-4 border-lemon pl-4 italic; }
+.post-body code { @apply rounded bg-sand-100 px-1.5 py-0.5 text-base; }

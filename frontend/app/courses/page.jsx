@@ -4,11 +4,13 @@ import { SiteFooter } from '@/features/website/components/landing/Sections'
 import CourseCard from '@/features/website/components/catalogue/CourseCard'
 import CatalogueUnavailable from '@/features/website/components/catalogue/CatalogueUnavailable'
 import { CatalogueUnavailableError, listCategories, listCourses } from '@/features/website/api/catalogueApi'
+import { pageMetadata } from '@/shared/lib/seo'
 
-export const metadata = {
+export const metadata = pageMetadata({
   title: 'Courses | Home & Online Tutor Hub',
   description: 'Browse school, competitive exam, college and computer courses for home and online tuition.',
-}
+  path: '/courses',
+})
 
 export const revalidate = 60
 

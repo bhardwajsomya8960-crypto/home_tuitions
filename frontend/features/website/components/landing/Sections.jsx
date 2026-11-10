@@ -1,6 +1,6 @@
 import { FiArrowRight } from 'react-icons/fi'
-import { CONTACT } from '@/features/website/contact'
-import { CITIES } from '@/features/website/cities/cities.config'
+import { CONTACT, SERVICE_AREA } from '@/features/website/contact'
+import { CITIES, VERIFICATION_ENABLED } from '@/features/website/cities/cities.config'
 import Logo, { BrandLockup, BRAND_NAME } from '@/shared/brand/Logo'
 import Reveal from '@/features/website/components/landing/Reveal'
 import HeroArt from '@/features/website/components/landing/HeroArt'
@@ -205,7 +205,7 @@ export function SiteFooter() {
     <footer className="border-t border-ink/10">
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10 sm:px-6 md:flex-row md:items-center md:justify-between">
         {/* self-start: in the stacked phone layout the logo would otherwise stretch to the full width */}
-        <BrandLockup className="h-16 w-auto self-start md:self-center" />
+        <BrandLockup className="h-16 w-auto self-start md:self-center" loading="lazy" />
         <nav aria-label="Footer" className="flex flex-wrap gap-x-6 gap-y-3 text-sm font-medium">
           <a href="/#learning-match" className={linkClass}>Find a Tutor</a>
           <a href="/#how-it-works" className={linkClass}>How It Works</a>
@@ -214,9 +214,12 @@ export function SiteFooter() {
           {CITIES.map(city => (
             <a key={city.slug} href={`/${city.slug}`} className={linkClass}>Home tutors in {city.name}</a>
           ))}
+          {VERIFICATION_ENABLED && <a href="/how-we-verify" className={linkClass}>How we verify tutors</a>}
         </nav>
         <div className="space-y-1 text-sm text-sage md:text-right">
-          {CONTACT.phone && <p><a href={CONTACT.phoneHref} className={linkClass}>{CONTACT.phone}</a></p>}
+          {/* NAP: name, area and phone, identical on every page and matching the structured data
+              (features/website/contact.js). */}
+          <p data-nap className="text-ink/85">{BRAND_NAME} · Serving {SERVICE_AREA} · <a href={CONTACT.phoneHref} className="font-semibold text-ink underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink rounded-sm">{CONTACT.phone}</a></p>
           {CONTACT.email && <p><a href={`mailto:${CONTACT.email}`} className={linkClass}>{CONTACT.email}</a></p>}
           <p>© {year} {BRAND_NAME}</p>
         </div>

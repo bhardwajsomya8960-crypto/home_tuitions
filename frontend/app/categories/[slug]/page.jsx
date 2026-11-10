@@ -4,9 +4,14 @@ import SiteHeader from '@/features/website/components/landing/SiteHeader'
 import { SiteFooter } from '@/features/website/components/landing/Sections'
 import CourseCard from '@/features/website/components/catalogue/CourseCard'
 import CatalogueUnavailable from '@/features/website/components/catalogue/CatalogueUnavailable'
-import { CatalogueUnavailableError, getCategory } from '@/features/website/api/catalogueApi'
+import { CatalogueUnavailableError, getCategory, listCategories } from '@/features/website/api/catalogueApi'
+import { pageMetadata } from '@/shared/lib/seo'
 
-export const revalidate = 60
+// Built at deploy time from the website's catalogue data.
+export async function generateStaticParams() {
+  const { items } = await listCategories({ limit: 100 })
+  return items.map(category => ({ slug: category.slug }))
+}
 
 async function load(slug) {
   try {
@@ -21,11 +26,11 @@ export async function generateMetadata({ params }) {
   const { category, failed } = await load(params.slug)
   if (failed) return { title: 'Category | Home & Online Tutor Hub' }
   if (!category) return { title: 'Category not found | Home & Online Tutor Hub' }
-  return {
+  return pageMetadata({
     title: category.seoTitle || `${category.name} | Home & Online Tutor Hub`,
     description: category.seoDescription || category.shortDescription || undefined,
-    alternates: { canonical: `/categories/${category.slug}` },
-  }
+    path: `/categories/${category.slug}`,
+  })
 }
 
 export default async function CategoryPage({ params }) {

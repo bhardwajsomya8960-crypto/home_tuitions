@@ -1,16 +1,31 @@
-// Copy and structured data for the city pages, built from a city (and optional area) in
-// cities.config.js. One source for what is shown and what search engines read (the FAQ
-// accordion and its FAQPage JSON-LD come from the same list).
+// Copy, metadata and structured data for the city pages, built from a city (and optional area)
+// in cities.config.js. One source for what is shown and what search engines read: the FAQ
+// accordion and its FAQPage JSON-LD, and the visible breadcrumbs and BreadcrumbList, come
+// from the same lists, so they always match.
 import { BRAND_NAME } from '@/shared/brand/Logo'
 import { absoluteUrl } from '@/shared/lib/site'
+import { ORGANIZATION_ID, pageMetadata } from '@/shared/lib/seo'
+import { CONTACT, SOCIAL_PROFILES } from '@/features/website/contact'
 import { DEFAULT_WHATSAPP, VERIFICATION_ENABLED } from './cities.config'
+
+export const VERIFY_PATH = '/how-we-verify'
 
 export const placeName = (city, area) => (area ? `${area.name}, ${city.name}` : city.name)
 export const cityPath = (city, area) => (area ? `/${city.slug}/${area.slug}` : `/${city.slug}`)
 const tutorKind = city => (city.homeTuitionAvailable ? 'Home Tutors' : 'Online Tutors')
 
-// An area page is indexed only once it has its own intro (see cities.config.js).
-export const isIndexable = area => !area || Boolean(area.intro)
+// How people search for an area: "Noida Sector 62", "Noida Extension", "Dwarka, Delhi".
+export function areaSearchName(city, area) {
+  const name = area.shortName || area.name
+  if (name.toLowerCase().includes(city.name.toLowerCase())) return name
+  return /^sector\b/i.test(name) ? `${city.name} ${name}` : `${name}, ${city.name}`
+}
+
+export const wordCount = text => (text || '').trim().split(/\s+/).filter(Boolean).length
+
+// An area page is indexed only when it is marked indexable AND has its own 80–150 word intro;
+// otherwise it is noindex and kept out of the sitemap (see cities.config.js).
+export const isIndexable = area => !area || (area.indexable === true && wordCount(area.intro) >= 80 && wordCount(area.intro) <= 150)
 
 export const heroHeading = (city, area) => `${VERIFICATION_ENABLED ? 'Verified ' : ''}${tutorKind(city)} in ${placeName(city, area)}`
 
@@ -19,12 +34,28 @@ export const whatsappHref = (city, text) => `https://wa.me/${whatsappDigits(city
 export const tutorRequestText = (city, area) =>
   `Hi, I need ${city.homeTuitionAvailable ? 'a home tutor' : 'an online tutor'} in ${city.name}. Class: __, Subject: __, Area: ${area ? area.name : '__'}`
 
+// Neighbouring areas for the "Nearby areas we also cover" block. Until nearbyAreas is filled
+// in, the block lists the city's other areas under a heading that says so.
+export function nearbyAreasFor(city, area) {
+  const nearby = (area.nearbyAreas || []).map(slug => city.areas.find(a => a.slug === slug)).filter(Boolean)
+  return nearby.length
+    ? { heading: 'Nearby areas we also cover', areas: nearby }
+    : { heading: `Other areas we cover in ${city.name}`, areas: city.areas.filter(a => a.slug !== area.slug) }
+}
+
+export const breadcrumbItems = (city, area) => [
+  { name: 'Home', path: '/' },
+  { name: city.name, path: `/${city.slug}` },
+  ...(area ? [{ name: area.name, path: cityPath(city, area) }] : []),
+]
+
 export function whyCards(city) {
   return [
     VERIFICATION_ENABLED && {
       icon: 'id',
       title: 'ID and qualification checked tutors',
       text: 'We check every tutor’s government ID and qualifications, and meet them in an interview or demo, before they teach your child.',
+      link: { href: VERIFY_PATH, label: 'How we verify tutors' },
     },
     {
       icon: 'clock',
@@ -64,7 +95,7 @@ export const SUBJECTS_AND_LEVELS = [
   { title: 'Computer / Coding', text: 'School computer science and beginner programming' },
 ]
 
-// Plain steps only: no badges or certifications we do not have.
+// Plain steps only: no badges or certifications we do not have. Also used by /how-we-verify.
 export const VERIFICATION_STEPS = [
   { title: 'Government ID check', text: 'We check a government-issued photo ID for every tutor.' },
   { title: 'Qualification check', text: 'We check their degree or marksheets for the subjects they will teach.' },
@@ -72,6 +103,8 @@ export const VERIFICATION_STEPS = [
   { title: 'Parent feedback after the first month', text: 'We ask how it is going after the first month, and act on what you tell us.' },
 ]
 
+// `a` is the answer exactly as shown and as sent in the FAQPage JSON-LD. `link` is shown
+// after the answer only (not part of the answer text).
 export function cityFaqs(city) {
   return [
     {
@@ -83,6 +116,7 @@ export function cityFaqs(city) {
     VERIFICATION_ENABLED && {
       q: 'How are tutors verified?',
       a: 'We check each tutor’s government ID and qualifications, they take an interview or a demo class with our team, and we ask for your feedback after the first month.',
+      link: { href: VERIFY_PATH, label: 'Read how we verify tutors' },
     },
     {
       q: 'Can I change the tutor?',
@@ -93,43 +127,47 @@ export function cityFaqs(city) {
   ].filter(Boolean)
 }
 
-// Search result title and description. The config's seo text may say "Verified"; with
-// verification switched off, neutral defaults are used so no claim leaks into search results.
+// Search result title (max 60 characters) and description (max 155), unique per page.
 export function seoFor(city, area) {
-  const place = placeName(city, area)
-  const fallback = {
-    title: `${tutorKind(city)} in ${place} | Free Demo | ${BRAND_NAME}`,
-    description: `${city.homeTuitionAvailable ? 'Home' : 'Online'} tutors for Class 1 to 12 in ${place}. Evening and weekend classes after office hours, with a free demo class first.`,
+  const kind = city.homeTuitionAvailable ? 'Home' : 'Online'
+  if (area) {
+    const where = areaSearchName(city, area)
+    return {
+      title: area.seoTitle || `${kind} Tutor in ${where} | Free Demo`,
+      description: area.seoDescription || `${kind} tutors in ${where} for Class 1–12, after office hours. Evening and weekend slots, and a free demo class before you pay.`,
+    }
   }
-  if (!VERIFICATION_ENABLED) return fallback
-  if (area) return { ...fallback, title: `${tutorKind(city)} in ${place} | Verified, Free Demo | ${BRAND_NAME}` }
-  return { ...fallback, ...city.seo }
+  const fallback = {
+    title: `${kind} Tutors in ${city.name} | Free Demo Class`,
+    description: `${kind} tutors for Class 1–12 in ${city.name}. Evening and weekend classes after office hours, with a free demo class first.`,
+  }
+  const seo = { ...fallback, ...city.seo }
+  // A configured title or description must not keep a verification claim once it is switched off.
+  return !VERIFICATION_ENABLED && /verif/i.test(`${seo.title} ${seo.description}`) ? fallback : seo
 }
 
 export function cityMetadata(city, area) {
-  const { title, description } = seoFor(city, area)
-  const path = cityPath(city, area)
-  return {
-    title,
-    description,
-    alternates: { canonical: path },
-    openGraph: { title, description, url: path, siteName: BRAND_NAME, locale: 'en_IN', type: 'website' },
-    ...(isIndexable(area) ? {} : { robots: { index: false, follow: true } }),
-  }
+  return pageMetadata({ ...seoFor(city, area), path: cityPath(city, area), noindex: !isIndexable(area) })
 }
 
-export function organizationJsonLd(city, area) {
+// The business as it serves this city (or area). No address unless the city has a public one,
+// and no ratings until real review data is wired in.
+export function localBusinessJsonLd(city, area) {
+  const place = name => ({ '@type': 'Place', name })
   return {
     '@context': 'https://schema.org',
-    '@type': 'EducationalOrganization',
+    '@type': ['LocalBusiness', 'EducationalOrganization'],
+    '@id': absoluteUrl(`${cityPath(city, area)}#business`),
     name: BRAND_NAME,
     url: absoluteUrl(cityPath(city, area)),
-    telephone: `+${whatsappDigits(city)}`,
+    telephone: CONTACT.phoneE164,
     description: seoFor(city, area).description,
-    areaServed: [
-      { '@type': 'City', name: city.name },
-      ...(area ? [area] : city.areas).map(a => ({ '@type': 'Place', name: `${a.name}, ${city.name}` })),
-    ],
+    areaServed: area
+      ? [place(`${area.name}, ${city.name}`), place(city.name)]
+      : [place(city.name), ...city.areas.map(a => place(`${a.name}, ${city.name}`))],
+    parentOrganization: { '@id': ORGANIZATION_ID },
+    ...(SOCIAL_PROFILES.length ? { sameAs: SOCIAL_PROFILES } : {}),
+    ...(city.address ? { address: { '@type': 'PostalAddress', ...city.address } } : {}),
   }
 }
 

@@ -4,7 +4,7 @@ import { CatalogueUnavailableError, listCategories } from '@/features/website/ap
 import CatalogueUnavailable from '@/features/website/components/catalogue/CatalogueUnavailable'
 import Reveal from '@/features/website/components/landing/Reveal'
 
-// Published categories from the catalogue API. Nothing here is hardcoded.
+// Published categories from the catalogue (features/website/catalogue/catalogue.data.js).
 export default async function CategoryDiscovery() {
   let categories
   try {

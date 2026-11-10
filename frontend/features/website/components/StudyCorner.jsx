@@ -2,11 +2,13 @@
 
 import { usePathname } from 'next/navigation'
 
-// A small animated scene in the bottom-left corner of the public pages: two happy students
-// at a desk, one on a laptop and one with a book and a hand up, while ideas float up between
-// them (a light bulb, sparkles, a globe for research, 100 points, books). Purely decorative:
-// it ignores clicks, is hidden from screen readers, shows only on large screens (on phones it
-// would cover the content), and stands still for visitors who turn off motion.
+// Two happy students at a desk, one on a laptop and one with a book and a hand up, while ideas
+// float up between them (a light bulb, sparkles, a globe for research, 100 points, books).
+// Purely decorative: it ignores taps, is hidden from screen readers, and stands still for
+// visitors who turn off motion. Two placements:
+//   - StudyCorner: fixed in the bottom-left corner on large screens (public pages).
+//   - StudyCornerInline: part of the page on phones and tablets (in the homepage hero), where
+//     a fixed scene would cover the text and the callback form.
 // Animations: "Study corner" in app/globals.css.
 // Artwork: Microsoft Fluent Emoji, MIT licence (public/study-corner/LICENSE.txt).
 const SHOWN_ON = path => path === '/' || path.startsWith('/courses') || path.startsWith('/categories')
@@ -18,12 +20,10 @@ const art = (name, size, className = '', style) => (
   <img src={`/study-corner/${name}.png`} alt="" width={size} height={size} draggable={false} decoding="async" className={className} style={style} />
 )
 
-export default function StudyCorner() {
-  const pathname = usePathname() || '/'
-  if (!SHOWN_ON(pathname)) return null
-
+// The scene itself, drawn in a 240 x 160 box.
+function Scene() {
   return (
-    <div aria-hidden="true" className="sc-scene pointer-events-none fixed bottom-3 left-3 z-30 hidden h-[160px] w-[240px] origin-bottom-left select-none lg:block 2xl:scale-[1.3]">
+    <>
       {/* ideas rising from between the two students */}
       <div className="absolute bottom-[88px] left-[106px] h-7 w-7">
         {IDEAS.map((name, i) => (
@@ -49,6 +49,25 @@ export default function StudyCorner() {
           {art('pencil', 24, 'sc-write h-6 w-6')}
         </div>
       </div>
+    </>
+  )
+}
+
+export default function StudyCorner() {
+  const pathname = usePathname() || '/'
+  if (!SHOWN_ON(pathname)) return null
+
+  return (
+    <div aria-hidden="true" className="sc-scene pointer-events-none fixed bottom-3 left-3 z-30 hidden h-[160px] w-[240px] origin-bottom-left select-none lg:block 2xl:scale-[1.3]">
+      <Scene />
+    </div>
+  )
+}
+
+export function StudyCornerInline({ className = '' }) {
+  return (
+    <div aria-hidden="true" className={`sc-scene pointer-events-none relative h-[160px] w-[240px] select-none lg:hidden ${className}`}>
+      <Scene />
     </div>
   )
 }

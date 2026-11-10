@@ -3,6 +3,7 @@ import { CONTACT } from '@/features/website/contact'
 import Logo, { BrandLockup, BRAND_NAME } from '@/shared/brand/Logo'
 import Reveal from '@/features/website/components/landing/Reveal'
 import HeroArt from '@/features/website/components/landing/HeroArt'
+import { StudyCornerInline } from '@/features/website/components/StudyCorner'
 import LearningMatch from '@/features/website/components/landing/LearningMatch'
 
 const primaryBtn =
@@ -29,6 +30,8 @@ export function Hero() {
           <a href="/#enquire-tutor" className={secondaryBtn}>I&apos;m a Tutor</a>
         </div>
         <p className="mt-5 text-sm text-sage">Home &amp; online classes · Leave your number and we&apos;ll call you back</p>
+        {/* On phones and tablets the study scene sits here; large screens show it in the corner. */}
+        <StudyCornerInline className="mx-auto mt-8 sm:mx-0" />
       </div>
       <div className="order-2">
         <HeroArt />

@@ -46,13 +46,16 @@ export default function WhatsAppWidget() {
 
   if (HIDDEN_ON.some(path => pathname.startsWith(path))) return null
 
+  // The wrapper lets taps through: while the card is closed it still takes up space, and on a
+  // phone that space covers the lower half of the screen (the callback form included). Only the
+  // button, and the card while open, take taps.
   return (
-    <div ref={rootRef} className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-50 flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
+    <div ref={rootRef} className="pointer-events-none fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-50 flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
       <div
         id="whatsapp-chooser"
         role="dialog"
         aria-labelledby="whatsapp-chooser-title"
-        className={`w-[min(20rem,calc(100vw-2rem))] origin-bottom-right rounded-3xl border border-ink/10 bg-white p-4 shadow-[0_20px_50px_-12px_rgba(38,53,47,0.35)] transition duration-150 ease-out motion-reduce:transition-none ${open ? 'visible scale-100 opacity-100' : 'invisible pointer-events-none scale-95 opacity-0'}`}
+        className={`w-[min(20rem,calc(100vw-2rem))] origin-bottom-right rounded-3xl border border-ink/10 bg-white p-4 shadow-[0_20px_50px_-12px_rgba(38,53,47,0.35)] transition duration-150 ease-out motion-reduce:transition-none ${open ? 'pointer-events-auto visible scale-100 opacity-100' : 'invisible scale-95 opacity-0'}`}
       >
         <div className="flex items-start gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-white" aria-hidden="true">
@@ -90,7 +93,7 @@ export default function WhatsAppWidget() {
         aria-controls="whatsapp-chooser"
         aria-label={open ? 'Close WhatsApp chat' : 'Chat with us on WhatsApp'}
         title="Chat with us on WhatsApp"
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_10px_30px_-6px_rgba(37,211,102,0.65)] ring-1 ring-ink/10 transition-transform duration-150 motion-safe:hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 sm:h-16 sm:w-16"
+        className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_10px_30px_-6px_rgba(37,211,102,0.65)] ring-1 ring-ink/10 transition-transform duration-150 motion-safe:hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 sm:h-16 sm:w-16"
       >
         {open ? <FiX className="h-7 w-7" aria-hidden="true" /> : <FaWhatsapp className="h-8 w-8 sm:h-9 sm:w-9" aria-hidden="true" />}
       </button>

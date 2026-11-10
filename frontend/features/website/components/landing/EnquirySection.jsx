@@ -5,13 +5,13 @@ import { FiCheckCircle, FiMail, FiMessageCircle, FiPhone } from 'react-icons/fi'
 import { Notice, Select, TextArea, TextInput } from '@/shared/ui/Form'
 import { CONTACT, hasContact } from '@/features/website/contact'
 import { sendEnquiry } from '@/features/website/api/enquiryApi'
-import { ENQUIRY_LEVELS } from '@/features/website/enquiryLevels'
+import { ENQUIRY_LEVELS, TUITION_LEVELS } from '@/features/website/enquiryLevels'
 
 const TABS = [
   { id: 'parent', label: 'I need a tutor', hash: '#enquire' },
   { id: 'tutor', label: 'I want to teach', hash: '#enquire-tutor' },
 ]
-const blank = { phone: '', name: '', role: '', level: '', message: '' }
+const blank = { phone: '', name: '', role: '', level: '', location: '', landmark: '', message: '' }
 const primaryBtn = 'inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-full border border-ink bg-lemon px-7 text-base font-semibold text-ink shadow-[0_1px_0_rgba(38,53,47,0.9)] transition-transform duration-150 motion-safe:hover:-translate-y-0.5 hover:bg-[#f2e04f] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2'
 
 // "Request a callback": parents, students and tutors leave a phone number (the only required
@@ -19,7 +19,6 @@ const primaryBtn = 'inline-flex min-h-[52px] w-full items-center justify-center 
 // backend API: its choices are fixed here and the request is emailed to the team by the
 // website itself (see api/enquiryApi.js). Links to #enquire open the parent tab,
 // #enquire-tutor the tutor tab.
-const levels = ENQUIRY_LEVELS
 
 export default function EnquirySection() {
   const [kind, setKind] = useState('parent')
@@ -53,7 +52,7 @@ export default function EnquirySection() {
     setBusy(true)
     try {
       const body = { kind, phone: f.phone }
-      for (const key of ['name', 'level', 'message']) if (f[key].trim()) body[key] = f[key].trim()
+      for (const key of ['name', 'level', 'location', 'landmark', 'message']) if (f[key].trim()) body[key] = f[key].trim()
       if (kind === 'parent' && f.role) body.role = f.role
       if (kind === 'parent' && extra.courseSlug) body.courseSlug = extra.courseSlug
       if (extra.website) body.website = extra.website
@@ -107,7 +106,7 @@ export default function EnquirySection() {
               <div role="tablist" aria-label="Who is this for" className="grid grid-cols-2 gap-1 rounded-full border border-ink/10 bg-sand-50 p-1">
                 {TABS.map(t => (
                   <button key={t.id} type="button" role="tab" aria-selected={kind === t.id}
-                    onClick={() => { setKind(t.id); setError('') }}
+                    onClick={() => { if (t.id !== kind) set('level', ''); setKind(t.id); setError('') }}
                     className={`min-h-[44px] rounded-full text-sm font-semibold transition ${kind === t.id ? 'border border-ink bg-lemon text-ink' : 'text-sage hover:text-ink'}`}>
                     {t.label}
                   </button>
@@ -120,13 +119,20 @@ export default function EnquirySection() {
                 <TextInput label="Name" hint="Optional" autoComplete="name" maxLength={80} value={f.name} onChange={e => set('name', e.target.value)} />
                 {kind === 'parent'
                   ? <Select label="I am" hint="Optional" placeholder="Choose…" options={[{ value: 'parent', label: 'A parent' }, { value: 'student', label: 'A student' }]} value={f.role} onChange={e => set('role', e.target.value)} />
-                  : <Select label="I teach" hint="Optional" placeholder="Choose…" options={levels} value={f.level} onChange={e => set('level', e.target.value)} />}
+                  : <Select label="I teach" hint="Optional" placeholder="Choose…" options={ENQUIRY_LEVELS} value={f.level} onChange={e => set('level', e.target.value)} />}
               </div>
               {kind === 'parent' && (
-                <Select label="Looking for tuition in" hint="Optional" placeholder="Choose…" options={levels} value={f.level} onChange={e => set('level', e.target.value)} />
+                <Select label="Looking for tuition in" hint="Optional" placeholder="Choose class…" options={TUITION_LEVELS} value={f.level} onChange={e => set('level', e.target.value)} />
               )}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <TextInput label="Location" hint="Optional" autoComplete="address-level2" maxLength={100}
+                  placeholder={kind === 'parent' ? 'e.g. Sector 62, Noida' : 'e.g. Dwarka, Delhi'}
+                  value={f.location} onChange={e => set('location', e.target.value)} />
+                <TextInput label="Nearby landmark" hint="Optional" maxLength={100} placeholder="e.g. near the metro station"
+                  value={f.landmark} onChange={e => set('landmark', e.target.value)} />
+              </div>
               <TextArea label={kind === 'parent' ? 'Anything else?' : 'About your teaching'} hint="Optional" rows={3} maxLength={1000}
-                placeholder={kind === 'parent' ? 'For example: Class 8, maths and science, home tuition in Ameerpet' : 'For example: subjects, experience, area you can travel to'}
+                placeholder={kind === 'parent' ? 'For example: maths and science, home tuition, weekday evenings' : 'For example: subjects, experience, area you can travel to'}
                 value={f.message} onChange={e => set('message', e.target.value)} />
 
               {/* Hidden from people; bots fill it in and their requests are ignored. */}

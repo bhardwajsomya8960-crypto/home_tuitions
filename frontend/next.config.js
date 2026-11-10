@@ -11,6 +11,8 @@ const apiOrigin = (() => {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Lint the whole website, not only app/ (the default), during `next build` and `next lint`.
+  eslint: { dirs: ['app', 'features', 'shared'] },
   // Docker images use the self-contained server build (see Dockerfile); `npm start` does not.
   output: process.env.NEXT_OUTPUT_STANDALONE ? 'standalone' : undefined,
   // Each dev server needs its own build dir; several servers sharing .next serve 404s

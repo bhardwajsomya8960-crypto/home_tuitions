@@ -56,7 +56,7 @@ export default function ConnectionStatus() {
       {!online && (
         <div role="status" className="pointer-events-auto flex items-center gap-2 bg-ink text-white text-sm rounded-lg px-4 py-2 shadow-lg max-w-md w-full">
           <FiWifiOff className="w-4 h-4 shrink-0" aria-hidden="true" />
-          <span>You're offline. Information shown may be out of date.</span>
+          <span>You&apos;re offline. Information shown may be out of date.</span>
         </div>
       )}
       {waitingReg && (

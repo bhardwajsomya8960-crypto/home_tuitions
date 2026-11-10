@@ -9,9 +9,9 @@ export default function OfflinePage() {
         <div aria-hidden="true" className="mx-auto w-14 h-14 rounded-full bg-lemon text-ink flex items-center justify-center mb-4">
           <FiWifiOff className="w-7 h-7" />
         </div>
-        <h1 className="text-xl font-bold text-ink">You're offline</h1>
+        <h1 className="text-xl font-bold text-ink">You&apos;re offline</h1>
         <p className="text-sm text-sage mt-2">
-          This page isn't available without a connection. Your account data is not stored on this device, so nothing is shown until you reconnect.
+          This page isn&apos;t available without a connection. Your account data is not stored on this device, so nothing is shown until you reconnect.
         </p>
         <button
           type="button"

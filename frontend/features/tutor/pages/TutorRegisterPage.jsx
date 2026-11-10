@@ -140,7 +140,7 @@ export default function TutorRegisterPage() {
       <div className="flex min-h-screen items-center justify-center bg-ivory p-4 font-landing text-ink">
         <div className="w-full max-w-md rounded-2xl border border-ink/10 bg-white p-8 text-center shadow-sm">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-2xl text-green-700" aria-hidden="true">✓</div>
-          <h1 className="text-2xl font-bold text-ink">You're registered</h1>
+          <h1 className="text-2xl font-bold text-ink">You&apos;re registered</h1>
           <p className="mt-2 text-sage">Next, upload your photo, identity document and qualification certificate. We review them before you can receive leads.</p>
           <button type="button" onClick={() => router.push('/tutor/dashboard?tab=verification')} className={`${primary} mt-6 w-full`}>Upload documents</button>
         </div>

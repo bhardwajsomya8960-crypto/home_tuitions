@@ -53,6 +53,28 @@ Sign-in codes for parents and tutors are printed in the API log. Set `OTP_DEV_EC
 
 More detail: [docs/SETUP.md](docs/SETUP.md).
 
+## City landing pages
+
+`/noida`, `/delhi` and area pages such as `/noida/sector-62` are generated from one config file, [`frontend/features/website/cities/cities.config.js`](frontend/features/website/cities/cities.config.js), using one template ([`CityPage.jsx`](frontend/features/website/cities/CityPage.jsx)). Each page has its own title, description, canonical URL, Open Graph tags and JSON-LD (EducationalOrganization + FAQPage), and is listed in `/sitemap.xml`. Leads from the page's form go to the same email route as the homepage form, with the city, area, page and UTM parameters.
+
+### Adding a new city
+
+1. Add an entry to `CITIES` in `cities.config.js` (copy an existing one):
+   - `slug` (the address, e.g. `gurgaon` → `/gurgaon`), `name`, `nameHindi`.
+   - `areas`: the localities you serve, each `{ name, slug }`. Every area gets a page at `/<city>/<area slug>`.
+   - `intro`: **write a new paragraph for this city.** Mention its localities and how families there live and commute; do not copy another city's text with the name swapped.
+   - `tutorCount`: the real number of tutors there, or `null` to hide the stat. Never estimate it.
+   - `homeTuitionAvailable`: `false` if you only offer online classes there.
+   - `whatsappNumber` (defaults to the business number) and `seo` (`title`, `description`).
+2. Run `npm run build` in `frontend/` and open `/<city>` to check it.
+3. Deploy. The page, its area pages, the sitemap entry and the footer link appear automatically.
+
+To get an **area page** indexed by search engines, give that area its own `intro` (a few sentences about the locality). Area pages without one are `noindex` and left out of the sitemap, so near-identical pages do not compete with the city page.
+
+`VERIFICATION_ENABLED` at the top of the config hides every "verified" / "ID-checked" claim on the city pages (headings, titles, the ID-check card, the verification steps and that FAQ) when set to `false`.
+
+**Tracking** (optional, set in Vercel → Settings → Environment Variables): `NEXT_PUBLIC_META_PIXEL_ID` loads the Meta Pixel (PageView, `Lead` on a sent form, `Contact` on WhatsApp/Call taps, each with the city as a custom parameter) and `NEXT_PUBLIC_GA4_ID` loads Google Analytics 4. Nothing is loaded when they are unset. `NEXT_PUBLIC_SITE_URL` overrides the site address used in canonical URLs and the sitemap (default `https://hometuitions.koshatech.com`).
+
 ## Tests
 
 ```bash

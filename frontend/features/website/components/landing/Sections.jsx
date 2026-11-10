@@ -1,5 +1,6 @@
 import { FiArrowRight } from 'react-icons/fi'
 import { CONTACT } from '@/features/website/contact'
+import { CITIES } from '@/features/website/cities/cities.config'
 import Logo, { BrandLockup, BRAND_NAME } from '@/shared/brand/Logo'
 import Reveal from '@/features/website/components/landing/Reveal'
 import HeroArt from '@/features/website/components/landing/HeroArt'
@@ -203,12 +204,16 @@ export function SiteFooter() {
   return (
     <footer className="border-t border-ink/10">
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10 sm:px-6 md:flex-row md:items-center md:justify-between">
-        <BrandLockup className="h-16 w-auto" />
+        {/* self-start: in the stacked phone layout the logo would otherwise stretch to the full width */}
+        <BrandLockup className="h-16 w-auto self-start md:self-center" />
         <nav aria-label="Footer" className="flex flex-wrap gap-x-6 gap-y-3 text-sm font-medium">
           <a href="/#learning-match" className={linkClass}>Find a Tutor</a>
           <a href="/#how-it-works" className={linkClass}>How It Works</a>
           <a href="/#enquire-tutor" className={linkClass}>Become a Tutor</a>
           <a href="/#enquire" className={linkClass}>Find My Tutor</a>
+          {CITIES.map(city => (
+            <a key={city.slug} href={`/${city.slug}`} className={linkClass}>Home tutors in {city.name}</a>
+          ))}
         </nav>
         <div className="space-y-1 text-sm text-sage md:text-right">
           {CONTACT.phone && <p><a href={CONTACT.phoneHref} className={linkClass}>{CONTACT.phone}</a></p>}

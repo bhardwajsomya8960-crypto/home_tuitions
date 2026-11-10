@@ -18,7 +18,8 @@ const NAV = [
   { href: '/#enquire', label: 'Contact' },
 ]
 
-export default function SiteHeader() {
+// ctaHref: where "Find My Tutor" goes; city pages point it at their own form.
+export default function SiteHeader({ ctaHref = '/#enquire' }) {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
   const reduce = useReducedMotion()
@@ -73,7 +74,7 @@ export default function SiteHeader() {
           <Link href="/login" className={`${linkClass} hidden px-2 text-sm lg:inline-flex`}>Sign in</Link>
           */}
           <a href="/#enquire-tutor" className={`${linkClass} hidden px-3 lg:inline-flex`}>I&apos;m a Tutor</a>
-          <a href="/#enquire" className={`${btnBase} h-10 shrink-0 bg-lemon px-5 text-ink shadow-[0_1px_0_rgba(38,53,47,0.9)] border border-ink hover:bg-[#f2e04f]`}>
+          <a href={ctaHref} className={`${btnBase} h-10 shrink-0 bg-lemon px-5 text-ink shadow-[0_1px_0_rgba(38,53,47,0.9)] border border-ink hover:bg-[#f2e04f]`}>
             Find My Tutor
           </a>
           <button

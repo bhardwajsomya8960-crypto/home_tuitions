@@ -1,8 +1,11 @@
 import './globals.css'
 import WhatsAppWidget from '@/features/website/components/WhatsAppWidget'
 import StudyCorner from '@/features/website/components/StudyCorner'
+import SiteAnalytics from '@/features/website/components/SiteAnalytics'
+import { SITE_URL } from '@/shared/lib/site'
 
 export const metadata = {
+  metadataBase: new URL(SITE_URL),
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
@@ -40,6 +43,7 @@ export default function RootLayout({ children }) {
         {children}
         <StudyCorner />
         <WhatsAppWidget />
+        <SiteAnalytics />
       </body>
     </html>
   )

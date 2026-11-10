@@ -1,10 +1,14 @@
 import nodemailer from 'nodemailer'
 import { BRAND_NAME } from '@/shared/brand/Logo'
-import { ENQUIRY_LEVELS } from '@/features/website/enquiryLevels'
+import { levelLabel } from '@/features/website/enquiryLevels'
+import { getCity } from '@/features/website/cities/cities.config'
+import { CLASS_OPTIONS, MODE_OPTIONS, SUBJECT_OPTIONS, TIME_OPTIONS, labelOf } from '@/features/website/cities/leadOptions'
+import { UTM_KEYS } from '@/shared/lib/utm'
 
 // Emails each website callback request to the team's Gmail. It runs on the website's own
 // server (a Vercel function) and does not need the backend API, which is not deployed.
-// The form posts here (see features/website/api/enquiryApi.js).
+// Both the homepage form and the city page forms post here (features/website/api/enquiryApi.js).
+// Only known choices are accepted for the city form's options; anything else is left out.
 //
 // Server-only settings (Vercel → Project → Settings → Environment Variables, or frontend/.env.local):
 //   GMAIL_USER          the Gmail address that sends the email, e.g. you@gmail.com
@@ -50,13 +54,29 @@ export async function POST(request) {
   const role = body.kind === 'parent' ? ({ parent: 'Parent', student: 'Student' })[body.role] || 'Parent / student' : 'Tutor'
   const name = line(body.name, 80)
   const message = typeof body.message === 'string' ? body.message.trim().slice(0, 1000) : ''
+  // From the city pages (/noida, /delhi/dwarka, …).
+  const city = getCity(line(body.city, 40))
+  const area = line(body.area, 80)
+  const subjects = Array.isArray(body.subjects) ? body.subjects.map(v => labelOf(SUBJECT_OPTIONS, v)).filter(Boolean).join(', ') : ''
+  const sourcePage = line(body.source_page, 200)
   const rows = [
     ['Who', role],
     ['Name', name],
     ['Mobile', `+91 ${phone}`],
-    [body.kind === 'tutor' ? 'Teaches' : 'Tuition for', ENQUIRY_LEVELS.find(l => l.value === body.level)?.label || ''],
+    ['City', city?.name || ''],
+    ['Area', area],
+    ['Location', line(body.location, 100)],
+    ['Nearby landmark', line(body.landmark, 100)],
+    ['Class', labelOf(CLASS_OPTIONS, body.class_level)],
+    ['Subjects', subjects],
+    ['Mode', labelOf(MODE_OPTIONS, body.mode)],
+    ['Preferred time', labelOf(TIME_OPTIONS, body.preferred_time)],
+    ['Female tutor', body.female_tutor === true ? 'Preferred' : ''],
+    [body.kind === 'tutor' ? 'Teaches' : 'Tuition for', levelLabel(body.level)],
     ['Course', line(body.courseSlug, 80).replace(/-/g, ' ')],
     ['Message', message],
+    ['Sent from', sourcePage.startsWith('/') ? sourcePage : ''],
+    ...UTM_KEYS.map(key => [key, line(body[key], 100)]),
     ['Received', new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' }) + ' IST'],
   ].filter(([, value]) => value)
 
@@ -65,7 +85,7 @@ export async function POST(request) {
   const mail = {
     from: `"${BRAND_NAME} website" <${process.env.GMAIL_USER.trim()}>`,
     to: process.env.ENQUIRY_EMAIL_TO?.trim() || process.env.GMAIL_USER.trim(),
-    subject: `New ${role.toLowerCase()} enquiry: ${name ? `${name}, ` : ''}+91 ${phone}`,
+    subject: `New ${role.toLowerCase()} enquiry${city ? ` (${[city.name, area].filter(Boolean).join(', ')})` : ''}: ${name ? `${name}, ` : ''}+91 ${phone}`,
     text: [...rows.map(([k, v]) => `${k}: ${v}`), '', `Call: ${call}`, `WhatsApp: ${whatsapp}`].join('\n'),
     html: `<div style="font-family:Arial,sans-serif;font-size:15px;color:#26352F">
 <h2 style="margin:0 0 12px">New callback request</h2>

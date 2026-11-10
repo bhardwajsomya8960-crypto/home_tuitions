@@ -243,7 +243,7 @@ function ParentRegisterForm() {
                     </div>
                   </div>
                   {f.latitude !== undefined && (
-                    <p className="text-xs text-sage">We'll use this location only to find tutors near you. <button type="button" className="font-semibold underline" onClick={() => setF(p => ({ ...p, latitude: undefined, longitude: undefined, consent: { ...p.consent, location: false } }))}>Remove</button></p>
+                    <p className="text-xs text-sage">We&apos;ll use this location only to find tutors near you. <button type="button" className="font-semibold underline" onClick={() => setF(p => ({ ...p, latitude: undefined, longitude: undefined, consent: { ...p.consent, location: false } }))}>Remove</button></p>
                   )}
                 </div>
               )}

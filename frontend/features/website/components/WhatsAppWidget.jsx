@@ -6,6 +6,7 @@ import { FaWhatsapp } from 'react-icons/fa'
 import { FiX } from 'react-icons/fi'
 import { BRAND_NAME } from '@/shared/brand/Logo'
 import { whatsappLink } from '@/features/website/contact'
+import { isCityPath } from '@/features/website/cities/cities.config'
 
 // The first message typed in for the visitor, by who they are. Change the wording here.
 const CHOICES = [
@@ -45,12 +46,14 @@ export default function WhatsAppWidget() {
   }, [open])
 
   if (HIDDEN_ON.some(path => pathname.startsWith(path))) return null
+  // City pages have their own WhatsApp + Call bar on phones, so the button shows on large screens only.
+  const onCityPage = isCityPath(pathname)
 
   // The wrapper lets taps through: while the card is closed it still takes up space, and on a
   // phone that space covers the lower half of the screen (the callback form included). Only the
   // button, and the card while open, take taps.
   return (
-    <div ref={rootRef} className="pointer-events-none fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-50 flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
+    <div ref={rootRef} className={`pointer-events-none fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-50 flex-col items-end gap-3 sm:bottom-6 sm:right-6 ${onCityPage ? 'hidden lg:flex' : 'flex'}`}>
       <div
         id="whatsapp-chooser"
         role="dialog"

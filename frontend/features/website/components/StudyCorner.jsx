@@ -17,6 +17,7 @@ const SHOWN_ON = path => path === '/' || path.startsWith('/courses') || path.sta
 const IDEAS = ['idea-bulb', 'idea-sparkles', 'idea-globe', 'idea-100', 'idea-books']
 
 const art = (name, size, className = '', style) => (
+  // eslint-disable-next-line @next/next/no-img-element -- tiny decorative PNGs, already sized for 2x screens
   <img src={`/study-corner/${name}.png`} alt="" width={size} height={size} draggable={false} decoding="async" className={className} style={style} />
 )
 

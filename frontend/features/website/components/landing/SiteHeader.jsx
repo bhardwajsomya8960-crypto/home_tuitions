@@ -68,7 +68,10 @@ export default function SiteHeader() {
             </span>
             <span className="hidden whitespace-nowrap text-sm font-semibold xl:inline">{localPhone}</span>
           </a>
+          {/* Sign in is hidden for now (the backend is not deployed). Uncomment to bring it back,
+              together with the one in the mobile menu below.
           <Link href="/login" className={`${linkClass} hidden px-2 text-sm lg:inline-flex`}>Sign in</Link>
+          */}
           <a href="/#enquire-tutor" className={`${linkClass} hidden px-3 lg:inline-flex`}>I&apos;m a Tutor</a>
           <a href="/#enquire" className={`${btnBase} h-10 shrink-0 bg-lemon px-5 text-ink shadow-[0_1px_0_rgba(38,53,47,0.9)] border border-ink hover:bg-[#f2e04f]`}>
             Find My Tutor
@@ -107,6 +110,7 @@ export default function SiteHeader() {
                   {item.label}
                 </a>
               ))}
+              {/* Sign in is hidden for now (the backend is not deployed). Uncomment to bring it back.
               <Link
                 href="/login"
                 onClick={() => setOpen(false)}
@@ -114,6 +118,7 @@ export default function SiteHeader() {
               >
                 Sign in
               </Link>
+              */}
               <a href="/#enquire-tutor"
                 onClick={() => setOpen(false)}
                 className="flex min-h-[48px] items-center rounded-xl px-3 text-base font-medium text-ink hover:bg-mint/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"

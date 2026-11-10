@@ -3,8 +3,12 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
-import { FiMenu, FiX } from 'react-icons/fi'
+import { FiMenu, FiPhone, FiX } from 'react-icons/fi'
 import Logo, { BRAND_NAME } from '@/shared/brand/Logo'
+import { CONTACT } from '@/features/website/contact'
+
+// Shown without +91 in the header to save space; the call link still dials +91.
+const localPhone = CONTACT.phone.replace(/^\+?91\s*/, '')
 
 const NAV = [
   { href: '/courses', label: 'Courses' },
@@ -42,19 +46,28 @@ export default function SiteHeader() {
         scrolled ? 'border-ink/10 shadow-sm' : 'border-transparent'
       }`}
     >
-      <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4 sm:px-6">
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6 xl:gap-6">
         {/* Icon only; the name stays available to screen readers and as a tooltip. */}
         <Link href="/" aria-label={BRAND_NAME} title="Home" className="shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-ivory">
           <Logo className="h-11 w-11" />
         </Link>
 
-        <nav aria-label="Main" className="hidden flex-1 items-center justify-center gap-5 lg:flex xl:gap-7">
+        <nav aria-label="Main" className="hidden flex-1 items-center justify-center gap-4 lg:flex xl:gap-6">
           {NAV.map(item => (
             <a key={item.href} href={item.href} className={linkClass}>{item.label}</a>
           ))}
         </nav>
 
-        <div className="ml-auto flex shrink-0 items-center gap-3 lg:ml-0">
+        <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3 lg:ml-0 lg:gap-2 xl:gap-3">
+          {/* Tap to call. A round icon on phones and smaller laptops, the full number on wide
+              screens. Below 360px there is no room, so it moves into the menu only. */}
+          <a href={CONTACT.phoneHref} aria-label={`Call us on ${CONTACT.phone}`} title={`Call ${CONTACT.phone}`}
+            className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-full border border-ink/15 text-ink transition-colors hover:border-ink/40 hover:bg-mint/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-ivory min-[360px]:inline-flex xl:w-auto xl:gap-2 xl:border-0 xl:px-1 xl:hover:bg-transparent">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full xl:h-7 xl:w-7 xl:bg-mint" aria-hidden="true">
+              <FiPhone className="h-[18px] w-[18px]" />
+            </span>
+            <span className="hidden whitespace-nowrap text-sm font-semibold xl:inline">{localPhone}</span>
+          </a>
           <Link href="/login" className={`${linkClass} hidden px-2 text-sm lg:inline-flex`}>Sign in</Link>
           <a href="/#enquire-tutor" className={`${linkClass} hidden px-3 lg:inline-flex`}>I&apos;m a Tutor</a>
           <a href="/#enquire" className={`${btnBase} h-10 shrink-0 bg-lemon px-5 text-ink shadow-[0_1px_0_rgba(38,53,47,0.9)] border border-ink hover:bg-[#f2e04f]`}>
@@ -106,6 +119,12 @@ export default function SiteHeader() {
                 className="flex min-h-[48px] items-center rounded-xl px-3 text-base font-medium text-ink hover:bg-mint/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
               >
                 I&apos;m a Tutor
+              </a>
+              <a href={CONTACT.phoneHref}
+                onClick={() => setOpen(false)}
+                className="flex min-h-[48px] items-center gap-3 rounded-xl px-3 text-base font-semibold text-ink hover:bg-mint/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
+              >
+                <FiPhone className="h-5 w-5" aria-hidden="true" /> Call {CONTACT.phone}
               </a>
             </nav>
           </motion.div>

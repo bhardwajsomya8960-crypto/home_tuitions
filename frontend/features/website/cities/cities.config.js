@@ -9,9 +9,14 @@ export const VERIFICATION_ENABLED = true
 
 export const DEFAULT_WHATSAPP = '+918960274119'
 
+// The ad landing page that greets visitors with their own city (app/tutors-near-me).
+export const NEAR_ME_PATH = '/tutors-near-me'
+
 // Each city:
 //   slug                  the address: /noida
 //   name, nameHindi       shown on the page (the Hindi name sits above the heading)
+//   aliases               other names the visitor's location may report for this city
+//                         (e.g. 'New Delhi'); /tutors-near-me sends them to this page
 //   intro                 a paragraph written for this city. Write it fresh for each city:
 //                         mention its localities and how families there live and commute.
 //   tutorCount            number of tutors we actually have there, or null to hide the stat.
@@ -68,6 +73,7 @@ export const CITIES = [
     slug: 'delhi',
     name: 'Delhi',
     nameHindi: 'दिल्ली',
+    aliases: ['New Delhi'],
     intro: 'Delhi is a long city to cross after a working day, so we keep tuition close to home. We match families in Dwarka and Janakpuri in the west, Rohini in the north, Laxmi Nagar, Preet Vihar, Mayur Vihar and IP Extension across the Yamuna, and Saket in the south with tutors who can reach their colony, so evening classes are not lost to traffic.',
     tutorCount: null, // TODO(tutor count): set the real number of tutors here once known; null hides the stat.
     homeTuitionAvailable: true,
@@ -93,4 +99,12 @@ export const CITIES = [
 
 export const getCity = slug => CITIES.find(c => c.slug === slug) || null
 export const getArea = (city, areaSlug) => city?.areas.find(a => a.slug === areaSlug) || null
-export const isCityPath = pathname => CITIES.some(c => pathname === `/${c.slug}` || pathname.startsWith(`/${c.slug}/`))
+// City pages, area pages and the near-me page (they share the template and its phone bar).
+export const isCityPath = pathname => pathname === NEAR_ME_PATH || CITIES.some(c => pathname === `/${c.slug}` || pathname.startsWith(`/${c.slug}/`))
+
+// The configured city a place name refers to ("noida", "New Delhi" → Delhi), or null.
+export function findCityByName(name) {
+  const key = (name || '').trim().toLowerCase()
+  if (!key) return null
+  return CITIES.find(c => [c.name, c.slug, ...(c.aliases || [])].some(n => n.toLowerCase() === key)) || null
+}

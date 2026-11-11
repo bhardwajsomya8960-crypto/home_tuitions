@@ -55,7 +55,7 @@ More detail: [docs/SETUP.md](docs/SETUP.md).
 
 ## City landing pages
 
-`/noida`, `/delhi` and area pages such as `/noida/sector-62` are generated from one config file, [`frontend/features/website/cities/cities.config.js`](frontend/features/website/cities/cities.config.js), using one template ([`CityPage.jsx`](frontend/features/website/cities/CityPage.jsx)). They are static pages built at deploy time. Each has its own title, description, canonical URL, Open Graph and Twitter tags, breadcrumbs, and JSON-LD (LocalBusiness + EducationalOrganization, BreadcrumbList, FAQPage). Leads from the page's form go to the same email route as the homepage form, with the city, area, page and UTM parameters.
+`/noida`, `/delhi`, area pages such as `/noida/sector-62`, and the ad page `/tutors-near-me` are built from one config file, [`frontend/features/website/cities/cities.config.js`](frontend/features/website/cities/cities.config.js), using one template ([`CityPage.jsx`](frontend/features/website/cities/CityPage.jsx)). They are static pages built at deploy time. Each has its own title, description, canonical URL, Open Graph and Twitter tags, breadcrumbs, and JSON-LD (LocalBusiness + EducationalOrganization, BreadcrumbList, FAQPage). Leads from the page's form go to the same email route as the homepage form, with the city, area, page and UTM parameters.
 
 ### Adding a new city
 
@@ -74,6 +74,10 @@ More detail: [docs/SETUP.md](docs/SETUP.md).
 Each area in the config has `name`, `slug` (and an optional `shortName` for titles), plus content fields: `intro` (80–150 words written for that area only), `nearbyLandmarks`, `nearbyAreas` (slugs of neighbouring areas, shown as "Nearby areas we also cover"), `schoolsNearby` (names only; the page says we are not affiliated) and `notes` (internal, never shown). Fill them only with real information.
 
 An area page is **noindex and left out of the sitemap** until you set `indexable: true` **and** its intro is 80–150 words. This keeps near-identical pages from competing with the city page (Google treats them as doorway pages). Until then the page still works for ads and links, showing the city intro and the city's other areas.
+
+### Ad landing page: /tutors-near-me
+
+A third page greets each visitor with their own city: "Verified tutors in Lucknow, at home or online". The city comes from `?city=` in the link (use it for ads aimed at one city, e.g. `/tutors-near-me?city=Gurugram&utm_source=…`), or else from the visitor's location, which Vercel adds to each request (India only; IP locations are approximate, so the copy never depends on them). Visitors from a city with its own page (Noida, Delhi, New Delhi, or any `aliases` in the config) are sent there, keeping the UTM parameters. The page promises only what is true everywhere: a home tutor where one is nearby, live online classes otherwise. It is rendered per visit and is `noindex`; leads from it arrive with the city marked as "from the visitor's location or ad link". Logic: [`features/website/cities/nearMe.js`](frontend/features/website/cities/nearMe.js).
 
 ### Verification claims
 

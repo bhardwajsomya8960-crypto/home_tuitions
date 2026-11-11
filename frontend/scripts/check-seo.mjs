@@ -123,7 +123,7 @@ async function main() {
   }
 
   // Pages: the sitemap, everything linked from those pages, and blog drafts (not linked).
-  const queue = [...inSitemap, '/how-we-verify', '/blog', '/become-a-tutor']
+  const queue = [...inSitemap, '/how-we-verify', '/blog', '/become-a-tutor', '/tutors-near-me', '/tutors-near-me?city=Lucknow']
   const blogDir = new URL('../content/blog/', import.meta.url)
   if (existsSync(blogDir)) for (const f of readdirSync(blogDir)) if (f.endsWith('.md')) queue.push(`/blog/${f.slice(0, -3)}`)
   const seen = new Set()

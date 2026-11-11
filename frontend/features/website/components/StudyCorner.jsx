@@ -7,8 +7,8 @@ import { usePathname } from 'next/navigation'
 // Purely decorative: it ignores taps, is hidden from screen readers, and stands still for
 // visitors who turn off motion. Two placements:
 //   - StudyCorner: fixed in the bottom-left corner on large screens (public pages).
-//   - StudyCornerInline: part of the page on phones and tablets (in the homepage hero), where
-//     a fixed scene would cover the text and the callback form.
+//   - StudyCornerInline: part of the page itself: the homepage hero on phones and tablets
+//     (where a fixed scene would cover the text and the form) and the city pages' hero.
 // Animations: "Study corner" in app/globals.css.
 // Artwork: Microsoft Fluent Emoji, MIT licence (public/study-corner/LICENSE.txt).
 const SHOWN_ON = path => path === '/' || path.startsWith('/courses') || path.startsWith('/categories')
@@ -47,7 +47,7 @@ function Scene() {
       <div className="sc-book absolute bottom-[10px] right-[66px]">
         {art('open-book', 46, 'h-[46px] w-[46px]')}
         <div className="absolute bottom-[14px] left-[24px]">
-          {art('pencil', 24, 'sc-write h-6 w-6')}
+          {art('pencil', 24, 'sc-write h-6 w-6 max-w-none')}
         </div>
       </div>
     </>
@@ -67,7 +67,7 @@ export default function StudyCorner() {
 
 export function StudyCornerInline({ className = '' }) {
   return (
-    <div aria-hidden="true" className={`sc-scene pointer-events-none relative h-[160px] w-[240px] select-none lg:hidden ${className}`}>
+    <div aria-hidden="true" className={`sc-scene pointer-events-none relative h-[160px] w-[240px] select-none ${className}`}>
       <Scene />
     </div>
   )

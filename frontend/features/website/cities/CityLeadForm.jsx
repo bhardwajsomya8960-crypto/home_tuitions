@@ -10,6 +10,7 @@ import { trackContact, trackLead } from '@/shared/lib/tracking'
 import { CLASS_OPTIONS, MODE_OPTIONS, SUBJECT_OPTIONS, TIME_OPTIONS, labelOf } from './leadOptions'
 
 const OTHER = '__other'
+const FIRST_SUBJECTS = 7 // the rest open with "More subjects" so the form stays short on phones
 const PHONE_ERROR = 'Enter a 10-digit mobile number starting with 6, 7, 8 or 9.'
 
 // Accepts what people type or paste: 98765 43210, +91 98765 43210, 098765-43210.
@@ -25,7 +26,8 @@ const whatsappBtn = 'inline-flex min-h-[52px] w-full items-center justify-center
 
 // The city page's callback form. It posts to the same email route as the homepage form
 // (features/website/api/enquiryApi.js → app/api/notify/enquiry), adding the city, area,
-// the page it was sent from and the visit's UTM parameters.
+// the page it was sent from and the visit's UTM parameters. On the near-me page there is no
+// city config: citySlug is null, cityName is the visitor's city (or ''), and the area is typed.
 export default function CityLeadForm({ citySlug, cityName, areas, defaultArea = '', homeTuitionAvailable, whatsappDigits }) {
   const pathname = usePathname()
   const modes = homeTuitionAvailable ? MODE_OPTIONS : MODE_OPTIONS.filter(m => m.value === 'online')
@@ -35,6 +37,7 @@ export default function CityLeadForm({ citySlug, cityName, areas, defaultArea = 
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [sent, setSent] = useState(null)
+  const [allSubjects, setAllSubjects] = useState(false)
   const formRef = useRef(null)
   const thanksRef = useRef(null)
   const set = (key, value) => setF(prev => ({ ...prev, [key]: value }))
@@ -60,7 +63,8 @@ export default function CityLeadForm({ citySlug, cityName, areas, defaultArea = 
       role: 'parent',
       phone,
       name: f.name.trim(),
-      city: citySlug,
+      city: citySlug || undefined,
+      city_name: citySlug ? undefined : cityName || undefined,
       area: areaValue,
       class_level: f.classLevel,
       subjects: f.subjects,
@@ -71,7 +75,7 @@ export default function CityLeadForm({ citySlug, cityName, areas, defaultArea = 
     }
     try {
       await sendEnquiry(body)
-      trackLead({ city: cityName, area: areaValue })
+      trackLead({ city: cityName || 'near me', area: areaValue })
       setSent({ phone, area: areaValue, classLevel: labelOf(CLASS_OPTIONS, f.classLevel), subjects: f.subjects.map(s => labelOf(SUBJECT_OPTIONS, s)).join(', ') })
       setF(blank)
     } catch (err) {
@@ -82,14 +86,14 @@ export default function CityLeadForm({ citySlug, cityName, areas, defaultArea = 
   }
 
   if (sent) {
-    const text = `Hi, I just requested a callback on your website. I need ${homeTuitionAvailable ? 'a home tutor' : 'an online tutor'} in ${cityName}. Class: ${sent.classLevel || '__'}, Subject: ${sent.subjects || '__'}, Area: ${sent.area || '__'}`
+    const text = `Hi, I just requested a callback on your website. I need ${homeTuitionAvailable ? 'a home tutor' : 'an online tutor'} in ${cityName || 'my area'}. Class: ${sent.classLevel || '__'}, Subject: ${sent.subjects || '__'}, Area: ${sent.area || '__'}`
     return (
       <div className="flex flex-col items-start gap-4 py-4" role="status">
         <FiCheckCircle className="h-10 w-10 text-green-700" aria-hidden="true" />
         <h3 ref={thanksRef} tabIndex={-1} className="text-2xl font-bold text-ink focus:outline-none">Thank you! We&apos;ll call you on +91 {sent.phone} soon.</h3>
         <p className="text-sage">Want to move faster? Send us your details on WhatsApp now and we&apos;ll reply there.</p>
         <a href={`https://wa.me/${whatsappDigits}?text=${encodeURIComponent(text)}`} target="_blank" rel="noopener noreferrer"
-          onClick={() => trackContact({ city: cityName, area: sent.area, method: 'whatsapp' })} className={whatsappBtn}>
+          onClick={() => trackContact({ city: cityName || 'near me', area: sent.area, method: 'whatsapp' })} className={whatsappBtn}>
           <FaWhatsapp className="h-5 w-5" aria-hidden="true" /> Continue on WhatsApp
         </a>
         <button type="button" onClick={() => setSent(null)} className="font-semibold text-ink underline decoration-lemon decoration-4 underline-offset-4">
@@ -111,16 +115,30 @@ export default function CityLeadForm({ citySlug, cityName, areas, defaultArea = 
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="space-y-3">
-          <Select label="Area" hint="Optional" placeholder="Choose your area…" value={f.area} onChange={e => set('area', e.target.value)}
-            options={[...areas.map(name => ({ value: name, label: name })), { value: OTHER, label: 'Other' }]} />
-          {f.area === OTHER && (
-            <TextInput label="Your area" hint="Optional" maxLength={60} value={f.areaOther} onChange={e => set('areaOther', e.target.value)} placeholder={`Locality in ${cityName}`} />
+          {areas.length > 0 ? (
+            <>
+              <Select label="Area" hint="Optional" placeholder="Choose your area…" value={f.area} onChange={e => set('area', e.target.value)}
+                options={[...areas.map(name => ({ value: name, label: name })), { value: OTHER, label: 'Other' }]} />
+              {f.area === OTHER && (
+                <TextInput label="Your area" hint="Optional" maxLength={60} value={f.areaOther} onChange={e => set('areaOther', e.target.value)} placeholder={`Locality in ${cityName}`} />
+              )}
+            </>
+          ) : (
+            <TextInput label="Your area" hint="Optional" autoComplete="address-level2" maxLength={80} value={f.area} onChange={e => set('area', e.target.value)}
+              placeholder={cityName ? `Locality in ${cityName}` : 'Locality and city'} />
           )}
         </div>
         <Select label="Class" hint="Optional" placeholder="Choose class…" options={CLASS_OPTIONS} value={f.classLevel} onChange={e => set('classLevel', e.target.value)} />
       </div>
 
-      <ChipGroup label="Subjects" hint="Optional. Choose any that apply." options={SUBJECT_OPTIONS} value={f.subjects} onChange={v => set('subjects', v)} />
+      <div>
+        <ChipGroup label="Subjects" hint="Optional. Choose any that apply." value={f.subjects} onChange={v => set('subjects', v)}
+          options={allSubjects ? SUBJECT_OPTIONS : SUBJECT_OPTIONS.filter((o, i) => i < FIRST_SUBJECTS || f.subjects.includes(o.value))} />
+        <button type="button" onClick={() => setAllSubjects(v => !v)} aria-expanded={allSubjects}
+          className="mt-2 min-h-[40px] text-sm font-semibold text-ink underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink">
+          {allSubjects ? 'Fewer subjects' : `More subjects (${SUBJECT_OPTIONS.length - FIRST_SUBJECTS})`}
+        </button>
+      </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
         <ChipGroup single label="Preferred mode" options={modes} value={f.mode} onChange={v => set('mode', v || modes[0].value)} />
@@ -130,7 +148,7 @@ export default function CityLeadForm({ citySlug, cityName, areas, defaultArea = 
       <Checkbox label="I would prefer a female tutor" checked={f.female} onChange={v => set('female', v)} />
 
       <Notice>{error}</Notice>
-      <button type="submit" className={primaryBtn} disabled={busy}>{busy ? 'Sending…' : 'Request a Callback'}</button>
+      <button type="submit" className={primaryBtn} disabled={busy}>{busy ? 'Sending…' : 'Request a callback'}</button>
       <p className="text-sm text-sage">We never share your number.</p>
     </form>
   )

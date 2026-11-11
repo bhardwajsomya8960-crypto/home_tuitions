@@ -54,8 +54,9 @@ export async function POST(request) {
   const role = body.kind === 'parent' ? ({ parent: 'Parent', student: 'Student' })[body.role] || 'Parent / student' : 'Tutor'
   const name = line(body.name, 80)
   const message = typeof body.message === 'string' ? body.message.trim().slice(0, 1000) : ''
-  // From the city pages (/noida, /delhi/dwarka, …).
+  // From the city pages (/noida, /delhi/dwarka, …), or the visitor's own city on /tutors-near-me.
   const city = getCity(line(body.city, 40))
+  const cityName = city?.name || line(body.city_name, 40)
   const area = line(body.area, 80)
   const subjects = Array.isArray(body.subjects) ? body.subjects.map(v => labelOf(SUBJECT_OPTIONS, v)).filter(Boolean).join(', ') : ''
   const sourcePage = line(body.source_page, 200)
@@ -63,7 +64,7 @@ export async function POST(request) {
     ['Who', role],
     ['Name', name],
     ['Mobile', `+91 ${phone}`],
-    ['City', city?.name || ''],
+    ['City', city ? city.name : cityName ? `${cityName} (from the visitor's location or ad link)` : ''],
     ['Area', area],
     ['Location', line(body.location, 100)],
     ['Nearby landmark', line(body.landmark, 100)],
@@ -85,7 +86,7 @@ export async function POST(request) {
   const mail = {
     from: `"${BRAND_NAME} website" <${process.env.GMAIL_USER.trim()}>`,
     to: process.env.ENQUIRY_EMAIL_TO?.trim() || process.env.GMAIL_USER.trim(),
-    subject: `New ${role.toLowerCase()} enquiry${city ? ` (${[city.name, area].filter(Boolean).join(', ')})` : ''}: ${name ? `${name}, ` : ''}+91 ${phone}`,
+    subject: `New ${role.toLowerCase()} enquiry${cityName ? ` (${[cityName, area].filter(Boolean).join(', ')})` : ''}: ${name ? `${name}, ` : ''}+91 ${phone}`,
     text: [...rows.map(([k, v]) => `${k}: ${v}`), '', `Call: ${call}`, `WhatsApp: ${whatsapp}`].join('\n'),
     html: `<div style="font-family:Arial,sans-serif;font-size:15px;color:#26352F">
 <h2 style="margin:0 0 12px">New callback request</h2>

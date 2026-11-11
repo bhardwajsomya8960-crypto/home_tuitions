@@ -32,7 +32,7 @@ export function Hero() {
         </div>
         <p className="mt-5 text-sm text-sage">Home &amp; online classes · Leave your number and we&apos;ll call you back</p>
         {/* On phones and tablets the study scene sits here; large screens show it in the corner. */}
-        <StudyCornerInline className="mx-auto mt-8 sm:mx-0" />
+        <StudyCornerInline className="mx-auto mt-8 sm:mx-0 lg:hidden" />
       </div>
       <div className="order-2">
         <HeroArt />

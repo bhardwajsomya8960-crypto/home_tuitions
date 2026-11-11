@@ -6,7 +6,7 @@ import { BRAND_NAME } from '@/shared/brand/Logo'
 import { absoluteUrl } from '@/shared/lib/site'
 import { ORGANIZATION_ID, pageMetadata } from '@/shared/lib/seo'
 import { CONTACT, SOCIAL_PROFILES } from '@/features/website/contact'
-import { DEFAULT_WHATSAPP, VERIFICATION_ENABLED } from './cities.config'
+import { DEFAULT_WHATSAPP, NEAR_ME_PATH, VERIFICATION_ENABLED } from './cities.config'
 
 export const VERIFY_PATH = '/how-we-verify'
 
@@ -27,7 +27,20 @@ export const wordCount = text => (text || '').trim().split(/\s+/).filter(Boolean
 // otherwise it is noindex and kept out of the sitemap (see cities.config.js).
 export const isIndexable = area => !area || (area.indexable === true && wordCount(area.intro) >= 80 && wordCount(area.intro) <= 150)
 
-export const heroHeading = (city, area) => `${VERIFICATION_ENABLED ? 'Verified ' : ''}${tutorKind(city)} in ${placeName(city, area)}`
+export const heroHeading = (city, area) => {
+  const kind = city.homeTuitionAvailable ? 'home tutors' : 'online tutors'
+  return `${VERIFICATION_ENABLED ? `Verified ${kind}` : kind.replace(/^./, c => c.toUpperCase())} in ${placeName(city, area)}`
+}
+
+// The three promises shown as ticks under the hero heading.
+export const HERO_POINTS = ['Free demo class first', 'Pay only if you’re satisfied', 'Weekday evenings and weekends']
+
+// The hero illustration's caption: what a weekday looks like with an after-office tutor.
+export const EVENING_PLAN = [
+  { time: '6:30 pm', text: 'You’re home' },
+  { time: '7:00 pm', text: 'Tutor arrives' },
+  { time: '8:00 pm', text: 'Homework done' },
+]
 
 export const whatsappDigits = city => (city.whatsappNumber || DEFAULT_WHATSAPP).replace(/\D/g, '')
 export const whatsappHref = (city, text) => `https://wa.me/${whatsappDigits(city)}?text=${encodeURIComponent(text)}`
@@ -54,36 +67,36 @@ export function whyCards(city) {
     VERIFICATION_ENABLED && {
       icon: 'id',
       title: 'ID and qualification checked tutors',
-      text: 'We check every tutor’s government ID and qualifications, and meet them in an interview or demo, before they teach your child.',
+      text: 'Government ID, qualifications and an interview or demo, before they teach your child.',
       link: { href: VERIFY_PATH, label: 'How we verify tutors' },
     },
     {
       icon: 'clock',
       title: 'Evening and weekend slots',
-      text: `Classes fit around office hours: weekday evenings after you are home, weekends, or both. Tell us what works in your part of ${city.name}.`,
+      text: `Weekday evenings after you are home, weekends, or both${city.name ? `, wherever you are in ${city.name}` : ''}.`,
     },
     {
       icon: 'demo',
       title: 'Free demo class before you pay',
-      text: 'Meet the tutor and see a class first. You decide after the demo.',
+      text: 'Meet the tutor and see a class first. Decide after the demo.',
     },
     {
       icon: 'chat',
       title: 'Monthly progress update on WhatsApp',
-      text: 'A short note each month on what was covered and where your child needs more practice.',
+      text: 'A short note on what was covered and what needs more practice.',
     },
     {
       icon: 'person',
       title: 'Female tutor on request',
-      text: 'Prefer a female tutor? Tick the box in the form and we will look for one near you.',
+      text: 'Tick the box in the form and we will look for one near you.',
     },
   ].filter(Boolean)
 }
 
 export const howItWorks = city => [
-  { title: 'Tell us your need', text: `Class, subjects, your area in ${city.name} and the times that suit you. It takes a minute on WhatsApp or the form below.` },
-  { title: 'We share matched tutors within 24 hours', text: 'We call you with tutors who can reach your area and fit your timings.' },
-  { title: 'Free demo, then start', text: 'Take a free demo class. Start regular classes only if you are happy with the tutor.' },
+  { title: 'Tell us your need', text: `Class, subjects, your area${city.name ? ` in ${city.name}` : ''} and timings, on WhatsApp or the form.` },
+  { title: 'We share matched tutors within 24 hours', text: 'Tutors who can reach your area at the times you chose.' },
+  { title: 'Free demo, then start', text: 'Start regular classes only if you are happy with the tutor.' },
 ]
 
 export const SUBJECTS_AND_LEVELS = [
@@ -92,7 +105,7 @@ export const SUBJECTS_AND_LEVELS = [
   { title: 'Class 11–12', text: 'PCM, PCB, Commerce' },
   { title: 'Board exam preparation', text: 'Class 10 and Class 12' },
   { title: 'Spoken English', text: 'For school students and adults' },
-  { title: 'Computer / Coding', text: 'School computer science and beginner programming' },
+  { title: 'Computer / Coding', text: 'School computer science, coding basics' },
 ]
 
 // Plain steps only: no badges or certifications we do not have. Also used by /how-we-verify.
@@ -177,4 +190,50 @@ export function faqJsonLd(faqs) {
     '@type': 'FAQPage',
     mainEntity: faqs.map(f => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
   }
+}
+
+// ---- /tutors-near-me: the ad landing page that greets visitors with their own city ----------
+// `city` here is the visitor's city name (from their location or ?city=), or '' when unknown.
+// We only promise what is true everywhere: a home tutor where one is nearby, online otherwise.
+export const nearMeCity = name => ({ slug: null, name, nameHindi: '', areas: [], intro: '', tutorCount: null, homeTuitionAvailable: true, whatsappNumber: DEFAULT_WHATSAPP })
+
+export const nearMeHeading = name => `${VERIFICATION_ENABLED ? 'Verified tutors' : 'Tutors'} ${name ? `in ${name}` : 'near you'}, at home or online`
+
+export const nearMeRequestText = name => `Hi, I need a tutor in ${name || 'my area'}. Class: __, Subject: __, Area: __`
+
+export const nearMeBreadcrumbs = () => [{ name: 'Home', path: '/' }, { name: 'Tutors near you', path: NEAR_ME_PATH }]
+
+export function nearMeFaqs(name) {
+  const where = name ? `in ${name}` : 'near me'
+  return [
+    {
+      q: `Do you have home tutors ${where}?`,
+      a: 'We send home tutors wherever we have one nearby. Tell us your area and we’ll check; if no home tutor can reach you, your child can learn live online instead.',
+    },
+    { q: 'Is the demo class really free?', a: 'Yes. The first demo class is free, and you decide after it whether to continue.' },
+    {
+      q: 'How much does tuition cost?',
+      // TODO(fees): add typical fee ranges once confirmed. No rupee figures until then.
+      a: 'Fees depend on class, subject and hours. We’ll share options on call — no charge for matching.',
+    },
+    VERIFICATION_ENABLED && {
+      q: 'How are tutors verified?',
+      a: 'We check each tutor’s government ID and qualifications, they take an interview or a demo class with our team, and we ask for your feedback after the first month.',
+      link: { href: VERIFY_PATH, label: 'Read how we verify tutors' },
+    },
+    {
+      q: 'Can I change the tutor?',
+      // TODO(re-match policy): confirm the tutor change policy before relying on this answer.
+      a: 'Yes, we’ll re-match you at no extra cost.',
+    },
+  ].filter(Boolean)
+}
+
+export function nearMeMetadata(name) {
+  return pageMetadata({
+    title: name ? `Tutors in ${name} | Free Demo Class` : 'Tutors Near You | Free Demo Class',
+    description: `Class 1–12 tutors ${name ? `in ${name}` : 'near you'}: a home tutor where one is nearby, live online classes everywhere else. Free demo class first.`,
+    path: NEAR_ME_PATH,
+    noindex: true, // an ad landing page whose text changes with the visitor's location
+  })
 }
